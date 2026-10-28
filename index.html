@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Inselreich – Spielbare Testversion</title><style>
+*{box-sizing:border-box}body{margin:0;background:#deebca;font-family:-apple-system,system-ui,sans-serif;color:#263f2e}header{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;background:#f3f8e9}h1{margin:0;font-size:22px}.tag{font-size:12px;background:#e0edd0;padding:8px;border-radius:999px;font-weight:700}#game{height:72dvh;min-height:390px;position:relative;touch-action:none;background:#c5dbae}canvas{display:block;width:100%;height:100%;touch-action:none}#notice{position:absolute;bottom:12px;left:12px;right:12px;background:#fffffff0;border-radius:12px;padding:12px;font-size:13px;text-align:center;pointer-events:none}footer{padding:14px;display:flex;flex-direction:column;gap:9px}.buttons{display:flex;flex-wrap:wrap;gap:9px}.buttons button{min-width:40%;flex:1}button{border:0;border-radius:12px;background:#416d3e;color:white;padding:14px 12px;font-weight:700;flex:1;font-size:14px}button.secondary{background:#fff;color:#31552e}p{font-size:13px;color:#4f6a4c;margin:0;line-height:1.5}
+#buildPanel{background:#f4f8ec;padding:9px;border-radius:13px}#buildPanel[hidden],#placePanel[hidden]{display:none!important}.categoryRow,.itemRow,#placePanel{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px}.categoryRow button,.itemRow button{padding:11px 5px;font-size:12px;flex:1;min-width:42%}.categoryRow button.active{background:#31562d}.itemRow button[hidden]{display:none}#placePanel{align-items:center;background:#eff5dd;padding:9px;border-radius:12px}#placePanel span{flex:1;font-size:13px;font-weight:700}#placePanel button{padding:11px;flex:0 0 auto;font-size:12px}#cancelPlace{background:#7b8e70}.resetButton{width:100%;margin-top:10px}
+#editMenu{position:absolute;z-index:8;top:12px;left:12px;right:12px;padding:12px;background:#fffef5;border:2px solid #7e9d61;border-radius:14px;display:none;box-shadow:0 8px 22px #263b2355;flex-wrap:wrap;gap:7px}#editMenu.show{display:flex}#editMenu strong{width:100%}#editMenu button{padding:10px;font-size:13px}#demolish{background:#a7463f}</style></head><body>
+<header><h1>🏝️ Inselreich 3D</h1><span class="tag">🌲 <strong id="woodCount">0</strong> · 🌾 <strong id="foodCount">0</strong></span></header>
+<div id="game"><div id="editMenu"><strong id="editTitle">Gebäude</strong><button id="move">↔ Umsetzen</button><button id="demolish">🗑 Abreißen</button><button id="editClose">✕</button></div><div id="notice">👁️ Anschauen: nichts wird verändert · 👆 Drehen · 🤏 Zoomen</div></div>
+<footer><div class="buttons"><button id="view">👁️ Anschauen</button><button id="openBuild">🔨 Bauen</button></div>
+<div id="buildPanel" hidden><div class="categoryRow"><button data-cat="wohnen">🏠 Wohnen</button><button data-cat="land">🌾 Landwirtschaft</button><button data-cat="prod">🌲 Produktion</button><button data-cat="shop">🛒 Geschäfte</button></div><div class="itemRow"><button id="build">🏠 Haus</button><button id="farm">🚜 Bauernhof</button><button id="field">🌾 Weizenfeld</button><button id="lumber">🪓 Holzfäller</button><button id="market">🛒 Markt 2×2</button></div></div>
+<div id="placePanel" hidden><span id="placeLabel">Gebäude-Vorschau</span><button id="confirmPlace">✅ Bauen</button><button id="cancelPlace">✕ Abbrechen</button></div>
+<p>🔨 Bauen öffnet das Baumenü. Gebäude wählen, Bauplatz antippen und mit ✅ bestätigen. Im Ansichtsmodus wird nichts versehentlich gebaut. Gebäude lange drücken zum Umsetzen oder Abreißen. Im Baumodus erweitern helle Randfelder die Insel durch Antippen.</p><button id="reset" class="secondary resetButton">↺ Test zurücksetzen</button></footer>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+const holder=document.getElementById('game'),status=document.getElementById('notice'),buildButton=document.getElementById('build'),marketButton=document.getElementById('market'),lumberButton=document.getElementById('lumber'),viewButton=document.getElementById('view'),openBuildButton=document.getElementById('openBuild'),farmButton=document.getElementById('farm'),fieldButton=document.getElementById('field'),woodCount=document.getElementById('woodCount'),foodCount=document.getElementById('foodCount');
+const scene=new THREE.Scene();scene.background=new THREE.Color(0xc9dfba);
+const camera=new THREE.PerspectiveCamera(45,1,.1,150);const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;holder.prepend(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xffffff,0x6c865f,2.35));const sun=new THREE.DirectionalLight(0xffffff,2.6);sun.position.set(-6,10,8);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-12;sun.shadow.camera.right=12;sun.shadow.camera.top=12;sun.shadow.camera.bottom=-12;scene.add(sun);
+const mat=(hex)=>new THREE.MeshStandardMaterial({color:hex,roughness:0.9});
+const grass=[mat(0x81bd5b),mat(0x8fc767)],soil=mat(0x97704c),wall=mat(0xead1a6),roof=mat(0xac5944),roofSide=mat(0x843f34),door=mat(0x65432e),glass=mat(0x93c6cc),trunk=mat(0x8e653c);
+const land=new THREE.Group();scene.add(land);
+const tiles=[],tileModels=new Map(),buildings=new Map(),markets=new Map(),lumberjacks=new Map(),farms=new Map(),fields=new Map(),owned=new Set();
+const LIMIT=5,KEY='inselreich-pages-test-01',OLD_KEY='inselreich-3d-test-01';
+const key=(x,z)=>x+','+z;
+const pos=k=>k.split(',').map(Number);
+const inside=(x,z)=>Math.abs(x)<=LIMIT&&Math.abs(z)<=LIMIT;
+const neighbors=(x,z)=>[[x-1,z],[x+1,z],[x,z-1],[x,z+1]];
+function validFrontier(x,z){return inside(x,z)&&!owned.has(key(x,z))&&neighbors(x,z).some(([a,b])=>owned.has(key(a,b)))}
+const edgeMaterial=new THREE.MeshBasicMaterial({color:0xc9ec8b,transparent:true,opacity:.23,depthWrite:false,side:THREE.DoubleSide});
+function tile(k,unlocked){const [x,z]=pos(k);const group=new THREE.Group();group.position.set(x,0,z);land.add(group);
+ if(unlocked){const block=new THREE.Mesh(new THREE.BoxGeometry(1,.30,1),[grass[(x+z+50)%2],soil,soil,soil,soil,soil]);block.castShadow=true;block.receiveShadow=true;group.add(block);
+ const outline=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1,.302,1)),new THREE.LineBasicMaterial({color:0xe4f8c8,transparent:true,opacity:.85}));group.add(outline);
+ }else{const marker=new THREE.Mesh(new THREE.PlaneGeometry(.94,.94),edgeMaterial);marker.rotation.x=-Math.PI/2;marker.position.y=.15;group.add(marker);
+ const line=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(.94,.94)),new THREE.LineBasicMaterial({color:0xe2f7b9,transparent:true,opacity:.65}));line.rotation.x=-Math.PI/2;line.position.y=.155;group.add(line)}
+ const hit=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({visible:false,side:THREE.DoubleSide}));hit.rotation.x=-Math.PI/2;hit.position.y=.16;hit.userData={key:k};group.add(hit);tiles.push(hit);tileModels.set(k,group)}
+function refreshEdge(){for(const [k,obj] of tileModels){const [x,z]=pos(k);const unlocked=owned.has(k);if(!unlocked&&!validFrontier(x,z)){land.remove(obj);tileModels.delete(k);const h=obj.children.find(c=>c.userData?.key===k);if(h){const idx=tiles.indexOf(h);if(idx>=0)tiles.splice(idx,1)}}}
+ for(const k of owned){if(!tileModels.has(k))tile(k,true)}
+ for(const k of owned){const [x,z]=pos(k);for(const [a,b] of neighbors(x,z)){const nk=key(a,b);if(validFrontier(a,b)&&!tileModels.has(nk))tile(nk,false)}}}
+function expand(k){const [x,z]=pos(k);if(!validFrontier(x,z))return;owned.add(k);const model=tileModels.get(k);if(model){land.remove(model);const h=model.children.find(c=>c.userData?.key===k);if(h){const idx=tiles.indexOf(h);if(idx>=0)tiles.splice(idx,1)}tileModels.delete(k)}refreshEdge();save();status.textContent='🌱 Neues Land! Tippe auf das grüne Feld, um darauf zu bauen.'}
+function box(w,h,d,m,x,y,z,parent){const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh}
+function occupied(k){if(buildings.has(k)||lumberjacks.has(k)||farms.has(k)||fields.has(k))return true;for(const anchor of markets.keys()){const [x,z]=pos(anchor),[a,b]=pos(k);if(a>=x&&a<x+2&&b>=z&&b<z+2)return true}return false}
+function addHouse(k){if(occupied(k)||!owned.has(k))return;let [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.16,z);land.add(g);box(.67,.57,.68,wall,0,.29,0,g);box(.82,.1,.86,roofSide,0,.61,0,g);let left=new THREE.Mesh(new THREE.BoxGeometry(.48,.11,.95),roof);left.rotation.z=Math.PI/5;left.position.set(-.18,.81,0);left.castShadow=true;g.add(left);let right=new THREE.Mesh(new THREE.BoxGeometry(.48,.11,.95),roof);right.rotation.z=-Math.PI/5;right.position.set(.18,.81,0);right.castShadow=true;g.add(right);box(.18,.36,.04,door,0,.19,.365,g);box(.19,.19,.04,glass,.22,.40,.365,g);box(.19,.19,.04,glass,-.22,.40,-.365,g);box(.04,.18,.18,glass,.355,.36,0,g);box(.04,.18,.18,glass,-.355,.36,0,g);box(.12,.3,.16,trunk,.18,1.04,-.14,g);buildings.set(k,g);save()}
+const marketRoof=mat(0xb54f3c),marketCanvas=mat(0xe7d6b0),marketStone=mat(0xc7b28b),marketWood=mat(0x76543a),marketProduce=[mat(0xc3412b),mat(0xe6b84f),mat(0x69a547)];
+function marketCells(k){const [x,z]=pos(k);return [key(x,z),key(x+1,z),key(x,z+1),key(x+1,z+1)]}
+function canMarket(k){const [x,z]=pos(k);return inside(x+1,z+1)&&marketCells(k).every(c=>owned.has(c)&&!occupied(c))}
+function addMarket(k){if(!canMarket(k))return false;const [x,z]=pos(k),g=new THREE.Group();g.position.set(x+.5,.165,z+.5);land.add(g);
+box(1.91,.10,1.91,marketStone,0,.02,0,g);
+box(1.52,.62,.69,marketCanvas,0,.40,-.48,g);
+box(1.67,.12,.92,marketRoof,0,.81,-.48,g);
+box(.34,.22,.18,marketWood,-.47,.39,.0,g);
+box(.34,.22,.18,marketWood,.47,.39,.0,g);
+for(let n=0;n<3;n++){const sx=-.67+n*.67;box(.51,.12,.40,marketWood,sx,.34,.56,g);box(.52,.08,.44,marketRoof,sx,.77,.56,g);for(const px of [-.17,.17])for(const pz of [-.11,.11])box(.105,.105,.11,marketProduce[(n+(px>0?1:0)+(pz>0?1:0))%3],sx+px,.48,.56+pz,g);for(const p of [-.2,.2])box(.045,.43,.045,marketWood,sx+p,.57,.56+p*.2,g)}
+for(const xx of [-.78,.78])for(const zz of [-.78,.78])box(.06,.65,.06,marketWood,xx,.39,zz,g);
+markets.set(k,g);save();return true}
+const pine=mat(0x397e44),pineLight=mat(0x4c9950),logWood=mat(0xad7744);
+let wood=0,woodElapsed=0;
+function addLumberjack(k){if(!owned.has(k)||occupied(k))return false;const [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.16,z);land.add(g);
+box(.54,.42,.5,marketWood,-.16,.23,-.15,g);box(.68,.12,.63,marketRoof,-.16,.5,-.15,g);box(.13,.25,.025,door,-.14,.17,.108,g);
+const tree=new THREE.Mesh(new THREE.ConeGeometry(.26,.57,7),pine);tree.position.set(.28,.69,-.24);tree.castShadow=true;g.add(tree);
+const tree2=new THREE.Mesh(new THREE.ConeGeometry(.19,.38,7),pineLight);tree2.position.set(.28,.94,-.24);tree2.castShadow=true;g.add(tree2);
+box(.10,.35,.10,trunk,.28,.34,-.24,g);
+for(let i=0;i<3;i++)box(.34,.13,.14,logWood,.15+i*.025,.14+i*.13,.3,g);
+lumberjacks.set(k,g);save();return true}
+const hay=mat(0xddba4c),straw=mat(0x9e8536),barnRed=mat(0xad5343),fieldEarth=mat(0x785637);
+let food=0,foodElapsed=0;
+function addFarm(k){if(!owned.has(k)||occupied(k))return false;const [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.16,z);land.add(g);
+box(.72,.53,.69,barnRed,0,.28,0,g);box(.86,.12,.83,roofSide,0,.61,0,g);
+const r1=box(.53,.09,.89,roof,-.18,.79,0,g);r1.rotation.z=.49;const r2=box(.53,.09,.89,roof,.18,.79,0,g);r2.rotation.z=-.49;
+box(.25,.32,.025,door,0,.18,.355,g);box(.18,.15,.025,hay,.26,.37,.355,g);
+box(.2,.18,.28,hay,-.32,.13,.40,g);box(.15,.2,.15,straw,.32,.13,.36,g);
+farms.set(k,g);save();return true}
+function nearFarm(k){const [x,z]=pos(k);return neighbors(x,z).some(([a,b])=>farms.has(key(a,b)))}
+function addField(k){if(!owned.has(k)||occupied(k)||!nearFarm(k))return false;const [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.16,z);land.add(g);
+box(.89,.045,.89,fieldEarth,0,.025,0,g);
+for(let a=-3;a<=3;a++)for(let b=-3;b<=3;b++){const stem=box(.025,.23,.025,straw,a*.112,.16,b*.112,g);box(.075,.14,.064,hay,a*.112,.31,b*.112,g)}
+fields.set(k,g);save();return true}
+function productionFields(){let count=0;for(const k of fields.keys())if(nearFarm(k))count++;return count}
+function refreshFood(){foodCount.textContent=food.toLocaleString('de-DE')}
+function refreshWood(){woodCount.textContent=wood.toLocaleString('de-DE')}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({land:[...owned],houses:[...buildings.keys()],markets:[...markets.keys()],lumberjacks:[...lumberjacks.keys()],farms:[...farms.keys()],fields:[...fields.keys()],food,foodElapsed,wood,woodElapsed,lastUpdate:Date.now()}))}catch(e){}}
+let restored=false;try{let data=JSON.parse(localStorage.getItem(KEY)||'null');if(data&&Array.isArray(data.land)&&Array.isArray(data.houses)){for(const k of data.land){const [x,z]=pos(k);if(inside(x,z))owned.add(k)}if(owned.size){refreshEdge();data.houses.forEach(k=>{if(owned.has(k))addHouse(k)});if(Array.isArray(data.markets))data.markets.forEach(k=>{if(typeof k==="string")addMarket(k)});if(Array.isArray(data.lumberjacks))data.lumberjacks.forEach(k=>{if(typeof k==="string")addLumberjack(k)});if(Array.isArray(data.farms))data.farms.forEach(k=>{if(typeof k==='string')addFarm(k)});if(Array.isArray(data.fields))data.fields.forEach(k=>{if(typeof k==='string')addField(k)});food=Math.max(0,Math.floor(Number(data.food)||0));foodElapsed=Math.max(0,Math.min(9999,Number(data.foodElapsed)||0));wood=Math.max(0,Math.floor(Number(data.wood)||0));woodElapsed=Math.max(0,Math.min(9999,Number(data.woodElapsed)||0));const away=Math.max(0,Math.min(21600000,Date.now()-(Number(data.lastUpdate)||Date.now())));const total=woodElapsed+away;if(lumberjacks.size){wood+=Math.floor(total/15000)*lumberjacks.size;woodElapsed=total%15000}else woodElapsed=0;const foodTotal=foodElapsed+away;if(productionFields()){food+=Math.floor(foodTotal/12000)*productionFields();foodElapsed=foodTotal%12000}else foodElapsed=0;restored=true}}}catch(e){}
+if(!restored){for(let x=-1;x<=1;x++)for(let z=-1;z<=1;z++)owned.add(key(x,z));refreshEdge();
+ try{const prev=JSON.parse(localStorage.getItem(OLD_KEY)||'null');if(Array.isArray(prev)){prev.forEach(i=>{if(Number.isInteger(i)&&i>=0&&i<9)addHouse(key(i%3-1,Math.floor(i/3)-1))})}else addHouse(key(0,0))}catch(e){addHouse(key(0,0))}}
+refreshWood();refreshFood();save();
+let orbit=0.72,elevation=.84,distance=8,modeBuild=false,buildType='house';const focus=new THREE.Vector3(0,.2,0);
+function placeCamera(){camera.position.set(Math.sin(orbit)*Math.cos(elevation)*distance,Math.sin(elevation)*distance+focus.y,Math.cos(orbit)*Math.cos(elevation)*distance);camera.lookAt(focus)}
+function resize(){const w=holder.clientWidth,h=holder.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}new ResizeObserver(resize).observe(holder);resize();
+const points=new Map();let down=null,pinch=null,ignoreClick=false,holdTimer=null,selected=null,moving=null;
+const canvas=renderer.domElement,editMenu=document.getElementById('editMenu'),buildPanel=document.getElementById('buildPanel'),placePanel=document.getElementById('placePanel');let pending=null;
+const ghost=new THREE.Group();scene.add(ghost);
+const ghostGreen=new THREE.MeshBasicMaterial({color:0x4ee16c,transparent:true,opacity:.48,depthWrite:false,side:THREE.DoubleSide});
+const ghostRed=new THREE.MeshBasicMaterial({color:0xe65753,transparent:true,opacity:.48,depthWrite:false,side:THREE.DoubleSide});
+function canPlace(type,k){if(!owned.has(k))return false;if(type==='market')return canMarket(k);if(occupied(k))return false;if(type==='field')return nearFarm(k);return true}
+function preview(k){pending={key:k,type:buildType};ghost.clear();const good=canPlace(buildType,k),m=good?ghostGreen:ghostRed;const [x,z]=pos(k),big=buildType==='market',w=big?1.88:.82;const footprint=new THREE.Mesh(new THREE.BoxGeometry(w,.06,w),m);footprint.position.set(x+(big?.5:0),.23,z+(big?.5:0));ghost.add(footprint);const shape=new THREE.Mesh(new THREE.BoxGeometry(big?1.35:.65,buildType==='field'?.15:.65,big?1.3:.65),m);shape.position.set(x+(big?.5:0),buildType==='field'?.34:.60,z+(big?.5:0));ghost.add(shape);document.getElementById('placeLabel').textContent=good?'✅ Platz frei – hier bauen?':'❌ Platz nicht geeignet';document.getElementById('confirmPlace').disabled=!good;placePanel.hidden=false;status.textContent=good?'Durchsichtige Vorschau: ✅ bestätigen oder ✕ abbrechen.':'Dieser Bauplatz ist nicht geeignet.'}
+function clearPreview(){pending=null;ghost.clear();placePanel.hidden=true}
+function confirmPlacement(){if(!pending)return;const {key:k,type}=pending;if(!canPlace(type,k))return;let ok=type==='market'?addMarket(k):type==='lumber'?addLumberjack(k):type==='farm'?addFarm(k):type==='field'?addField(k):(addHouse(k),true);if(ok){clearPreview();viewMode();status.textContent='✅ Gebäude gebaut! Du bist wieder im Ansichtsmodus.'}}
+document.getElementById('confirmPlace').onclick=confirmPlacement;document.getElementById('cancelPlace').onclick=()=>{clearPreview();status.textContent='Vorschau abgebrochen. Wähle einen anderen Bauplatz.'};
+function coords(e){let r=canvas.getBoundingClientRect();return {x:(e.clientX-r.left)/r.width*2-1,y:-(e.clientY-r.top)/r.height*2+1}}
+function hit(e){const p=coords(e);const ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2(p.x,p.y),camera);return ray.intersectObjects(tiles,false)[0]?.object.userData.key}
+function at(k){if(buildings.has(k))return {type:'house',anchor:k};if(lumberjacks.has(k))return {type:'lumber',anchor:k};if(farms.has(k))return {type:'farm',anchor:k};if(fields.has(k))return {type:'field',anchor:k};const [a,b]=pos(k);for(const m of markets.keys()){const [x,z]=pos(m);if(a>=x&&a<x+2&&b>=z&&b<z+2)return {type:'market',anchor:m}}return null}
+function cancelHold(){if(holdTimer!==null){clearTimeout(holdTimer);holdTimer=null}}
+function closeEdit(){editMenu.classList.remove('show');selected=null}
+function showEdit(info){moving=null;selected=info;editMenu.classList.add('show');document.getElementById('editTitle').textContent=(info.type==='market'?'🛒 Markt':info.type==='lumber'?'🪓 Holzfäller':info.type==='farm'?'🚜 Bauernhof':info.type==='field'?'🌾 Weizenfeld':'🏠 Haus')+' bearbeiten';status.textContent='↔ Umsetzen oder 🗑 Abreißen auswählen.'}
+function mapOf(type){return type==='house'?buildings:type==='market'?markets:type==='lumber'?lumberjacks:type==='farm'?farms:fields}
+function relocate(from,to){const targetCells=from.type==='market'?marketCells(to):[to];if(!targetCells.every(k=>owned.has(k)&&(!at(k)||(at(k).type===from.type&&at(k).anchor===from.anchor)))){status.textContent=from.type==='market'?'❌ Der Markt braucht vier freie Felder (2×2).':'❌ Bitte einen freien Bauplatz wählen.';return false}
+if(from.type==='field'){const [x,z]=pos(to);const touches=neighbors(x,z).some(([a,b])=>farms.has(key(a,b))||(from.type==='farm'&&from.anchor===key(a,b)));if(!touches){status.textContent='🌾 Das Weizenfeld muss neben einem Bauernhof liegen.';return false}}const map=mapOf(from.type),g=map.get(from.anchor);if(!g)return false;map.delete(from.anchor);map.set(to,g);const [x,z]=pos(to);g.position.set(x+(from.type==='market'?.5:0),.16,z+(from.type==='market'?.5:0));save();status.textContent='✅ Gebäude umgesetzt!';return true}
+document.getElementById('move').onclick=()=>{moving=selected;closeEdit();status.textContent='↔ Tippe auf den neuen Standort. Für den Markt brauchst du 2×2 freie Felder.'};
+document.getElementById('demolish').onclick=()=>{if(!selected)return;const t=selected;if(confirm('Dieses Gebäude wirklich abreißen?')){const m=mapOf(t.type),g=m.get(t.anchor);if(g){land.remove(g);m.delete(t.anchor);save();status.textContent='🗑 Gebäude abgerissen!'}}closeEdit()};
+document.getElementById('editClose').onclick=closeEdit;
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('pointerdown',e=>{points.set(e.pointerId,{x:e.clientX,y:e.clientY});canvas.setPointerCapture(e.pointerId);cancelHold();if(points.size>=2){const p=[...points.values()];pinch={d:Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y),distance};down=null;ignoreClick=true}else{down={id:e.pointerId,x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,moved:false};const k=hit(e),info=k===undefined?null:at(k);if(info&&!moving){holdTimer=setTimeout(()=>{if(down&&!down.moved&&points.size===1){showEdit(info);down=null;ignoreClick=true}holdTimer=null},650)}}e.preventDefault()});
+canvas.addEventListener('pointermove',e=>{if(!points.has(e.pointerId))return;points.set(e.pointerId,{x:e.clientX,y:e.clientY});if(points.size>=2){cancelHold();const p=[...points.values()];if(!pinch)pinch={d:Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y),distance};const d=Math.max(10,Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y));distance=THREE.MathUtils.clamp(pinch.distance*pinch.d/d,3.5,15);placeCamera();return}if(!down||down.id!==e.pointerId||pinch)return;if(Math.hypot(e.clientX-down.x,e.clientY-down.y)>7){down.moved=true;cancelHold()}if(down.moved){orbit-=(e.clientX-down.lastX)*.012;elevation=THREE.MathUtils.clamp(elevation+(e.clientY-down.lastY)*.004,.40,1.32);placeCamera()}down.lastX=e.clientX;down.lastY=e.clientY;e.preventDefault()});
+canvas.addEventListener('pointerup',e=>{cancelHold();points.delete(e.pointerId);if(pinch){if(points.size<2)pinch=null;down=null;return}if(down?.id===e.pointerId&&!down.moved&&!ignoreClick){const i=hit(e);if(i!==undefined){if(moving){if(relocate(moving,i))moving=null}else if(modeBuild){if(!owned.has(i))expand(i);else preview(i)}}}down=null;if(points.size===0)ignoreClick=false});
+canvas.addEventListener('pointercancel',e=>{cancelHold();points.delete(e.pointerId);pinch=null;down=null;ignoreClick=false});
+function updateTools(){viewButton.style.background=!modeBuild?'#416d3e':'#879c79';openBuildButton.style.background=modeBuild?'#416d3e':'#879c79'}
+function viewMode(){moving=null;closeEdit();clearPreview();modeBuild=false;buildPanel.hidden=true;updateTools();status.textContent='👁️ Anschauen: Tippen baut nichts. Halte ein Gebäude gedrückt zum Bearbeiten.'}
+function chooseType(type){moving=null;closeEdit();clearPreview();buildType=type;modeBuild=true;buildPanel.hidden=true;updateTools();status.textContent='🔨 '+({house:'Haus',farm:'Bauernhof',field:'Weizenfeld',lumber:'Holzfäller',market:'Markt 2×2'}[type])+' gewählt: Tippe auf einen Bauplatz für die Vorschau.'}
+const typeButtons={house:buildButton,farm:farmButton,field:fieldButton,lumber:lumberButton,market:marketButton};for(const [name,btn] of Object.entries(typeButtons))btn.onclick=()=>chooseType(name);
+const categoryTypes={wohnen:['house'],land:['farm','field'],prod:['lumber'],shop:['market']};
+function category(cat){for(const [name,btn] of Object.entries(typeButtons))btn.hidden=!categoryTypes[cat].includes(name);for(const btn of document.querySelectorAll('[data-cat]'))btn.classList.toggle('active',btn.dataset.cat===cat)}
+for(const btn of document.querySelectorAll('[data-cat]'))btn.onclick=()=>category(btn.dataset.cat);
+viewButton.onclick=viewMode;openBuildButton.onclick=()=>{modeBuild=false;moving=null;closeEdit();clearPreview();buildPanel.hidden=!buildPanel.hidden;updateTools();status.textContent=buildPanel.hidden?'👁️ Ansichtsmodus':'🔨 Wähle eine Kategorie und dann dein Gebäude.'};
+category('wohnen');updateTools();
+document.getElementById('reset').onclick=()=>{clearPreview();cancelHold();moving=null;closeEdit();if(!confirm('3D-Test zurücksetzen? Das alte Inselreich bleibt erhalten.'))return;for(const g of buildings.values())land.remove(g);buildings.clear();for(const g of markets.values())land.remove(g);markets.clear();for(const g of lumberjacks.values())land.remove(g);lumberjacks.clear();for(const g of farms.values())land.remove(g);farms.clear();for(const g of fields.values())land.remove(g);fields.clear();food=0;foodElapsed=0;refreshFood();wood=0;woodElapsed=0;refreshWood();owned.clear();for(const obj of tileModels.values())land.remove(obj);tileModels.clear();tiles.length=0;for(let x=-1;x<=1;x++)for(let z=-1;z<=1;z++)owned.add(key(x,z));refreshEdge();addHouse(key(0,0));status.textContent='🌱 3D-Test zurückgesetzt.'};
+let lastFrame=performance.now(),autosave=0;function animate(now){requestAnimationFrame(animate);const dt=Math.min(1,(now-lastFrame)/1000||0);lastFrame=now;if(lumberjacks.size){woodElapsed+=dt*1000;if(woodElapsed>=15000){const batches=Math.floor(woodElapsed/15000);woodElapsed%=15000;wood+=batches*lumberjacks.size;refreshWood();save()}}if(productionFields()){foodElapsed+=dt*1000;if(foodElapsed>=12000){const batches=Math.floor(foodElapsed/12000);foodElapsed%=12000;food+=batches*productionFields();refreshFood();save()}}autosave+=dt;if(autosave>10){autosave=0;save()}renderer.render(scene,camera)}placeCamera();requestAnimationFrame(animate);
+</script></body></html>
