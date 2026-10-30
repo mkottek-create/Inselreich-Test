@@ -38,67 +38,238 @@ function refreshEdge(){for(const [k,obj] of tileModels){const [x,z]=pos(k);const
  for(const k of owned){const [x,z]=pos(k);for(const [a,b] of neighbors(x,z)){const nk=key(a,b);if(validFrontier(a,b)&&!tileModels.has(nk))tile(nk,false)}}}
 function expand(k){const [x,z]=pos(k);if(!validFrontier(x,z)){status.textContent='⚠️ Das Feld liegt außerhalb der erweiterbaren Inselgrenze.';return;}owned.add(k);const model=tileModels.get(k);if(model){land.remove(model);const h=model.children.find(c=>c.userData?.key===k);if(h){const idx=tiles.indexOf(h);if(idx>=0)tiles.splice(idx,1)}tileModels.delete(k)}refreshEdge();save();status.textContent='🌱 Neues Land! Tippe auf das grüne Feld, um darauf zu bauen.'}
 function box(w,h,d,m,x,y,z,parent){const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh}
-const plaster=mat(0xeee0c4),darkTrim=mat(0x604734),tileRed=mat(0x954637),stoneDetail=mat(0xb4a68d),blueGlass=mat(0x8bb9c9),hayGold=mat(0xeacb69),pineDeep=mat(0x387a40),fabricBlue=mat(0x376e7c);
-function cone(parent,r,h,m,x,y,z){const o=new THREE.Mesh(new THREE.ConeGeometry(r,h,7),m);o.position.set(x,y,z);o.castShadow=true;parent.add(o);return o}
-function barrel(parent,x,y,z){const o=new THREE.Mesh(new THREE.CylinderGeometry(.058,.067,.13,9),marketWood);o.position.set(x,y,z);o.castShadow=true;parent.add(o);box(.14,.012,.14,darkTrim,x,y+.07,z,parent)}
-function window3(parent,x,y,z){box(.17,.19,.035,plaster,x,y,z,parent);box(.135,.145,.04,blueGlass,x,y,z+.023,parent);box(.015,.16,.04,plaster,x,y,z+.045,parent);box(.145,.014,.04,plaster,x,y,z+.045,parent)}
-function roofPair(parent,w,d,y,m){const a=box(w,.105,d,m,-w*.27,y,0,parent);a.rotation.z=.54;const b=box(w,.105,d,m,w*.27,y,0,parent);b.rotation.z=-.54}
-function crate(parent,x,y,z){box(.13,.13,.13,marketWood,x,y,z,parent);box(.13,.018,.13,stoneDetail,x,y+.07,z,parent)}
+
+const plaster=mat(0xf1e0c2),darkTrim=mat(0x60442f),timber=mat(0x986d48),
+tileRed=mat(0xa95240),tileShadow=mat(0x7c392e),stoneDetail=mat(0xb7aa93),
+blueGlass=new THREE.MeshStandardMaterial({color:0x8fbccc,roughness:.3,metalness:.08}),
+hayGold=mat(0xe5c65e),pineDeep=mat(0x337845),pineTip=mat(0x559d53),
+fabricBlue=mat(0x3d7994),fabricCream=mat(0xf0d6a3),flowerRed=mat(0xd96453),
+leafDark=mat(0x4c8e4d),dirtDark=mat(0x6a4a2e);
+function cone(parent,r,h,m,x,y,z,sides=7){
+ const o=new THREE.Mesh(new THREE.ConeGeometry(r,h,sides),m);o.position.set(x,y,z);o.castShadow=true;parent.add(o);return o
+}
+function cylinder(parent,r1,r2,h,m,x,y,z,sides=9){
+ const o=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,sides),m);o.position.set(x,y,z);o.castShadow=true;parent.add(o);return o
+}
+function smallBall(parent,r,m,x,y,z){
+ const o=new THREE.Mesh(new THREE.IcosahedronGeometry(r,0),m);o.position.set(x,y,z);o.castShadow=true;parent.add(o);return o
+}
+function barrel(parent,x,y,z){
+ cylinder(parent,.073,.078,.16,marketWood,x,y,z,10);
+ cylinder(parent,.079,.079,.018,darkTrim,x,y-.055,z,10);
+ cylinder(parent,.079,.079,.018,darkTrim,x,y+.055,z,10)
+}
+function crate(parent,x,y,z){
+ box(.15,.14,.15,marketWood,x,y,z,parent);
+ box(.145,.018,.145,timber,x,y+.073,z,parent);
+ box(.018,.13,.16,darkTrim,x-.056,y,z,parent)
+}
+function window3(parent,x,y,z){
+ box(.19,.22,.04,plaster,x,y,z,parent);
+ box(.145,.165,.046,blueGlass,x,y,z+.026,parent);
+ box(.018,.175,.048,plaster,x,y,z+.05,parent);
+ box(.155,.017,.048,plaster,x,y,z+.05,parent);
+ box(.065,.20,.027,timber,x-.134,y,z,parent);
+ box(.065,.20,.027,timber,x+.134,y,z,parent);
+ box(.24,.027,.065,stoneDetail,x,y-.125,z+.035,parent)
+}
+function door3(parent,x,z,w=.18,h=.32){
+ box(w,h,.055,darkTrim,x,.17+h/2,z,parent);
+ box(w*.78,h*.88,.06,timber,x,.17+h/2,z+.01,parent);
+ box(.023,.024,.017,hayGold,x+w*.28,.17+h*.54,z+.051,parent);
+ box(w+.095,.043,.15,stoneDetail,x,.175,z+.09,parent)
+}
+function pitchedRoof(parent,w,d,eaveY,m){
+ const slope=.55,half=w/2,len=half/Math.cos(slope)+.035,cy=eaveY+half*Math.tan(slope)/2;
+ for(const side of [-1,1]){
+  const angle=-side*slope,cx=side*half/2;
+  const roofMesh=box(len,.095,d+.09,m,cx,cy,0,parent);roofMesh.rotation.z=angle;
+  for(let i=-1;i<=1;i++){
+   const along=i*len*.31,normal=.054;
+   const strip=box(.025,.013,d+.095,tileShadow,
+     cx+along*Math.cos(angle)-normal*Math.sin(angle),
+     cy+along*Math.sin(angle)+normal*Math.cos(angle),0,parent);
+   strip.rotation.z=angle
+  }
+ }
+ cylinder(parent,.052,.052,d+.14,tileShadow,0,eaveY+half*Math.tan(slope),0,8).rotation.x=Math.PI/2
+}
+function gable(parent,halfW,wallY,peakY,z,m){
+ const geom=new THREE.BufferGeometry();
+ geom.setAttribute('position',new THREE.Float32BufferAttribute([-halfW,wallY,z,halfW,wallY,z,0,peakY,z],3));
+ geom.computeVertexNormals();
+ const mesh=new THREE.Mesh(geom,new THREE.MeshStandardMaterial({color:m,side:THREE.DoubleSide,roughness:.9}));
+ mesh.castShadow=true;parent.add(mesh)
+}
+function hayBale(parent,x,y,z){
+ box(.21,.13,.16,hayGold,x,y,z,parent);
+ for(const t of [-.055,.055])box(.012,.135,.17,marketWood,x+t,y,z,parent)
+}
+function post(parent,x,z){box(.045,.27,.045,timber,x,.20,z,parent)}
+function pineTree(parent,x,z,height=1){
+ cylinder(parent,.055,.073,height*.44,trunk,x,height*.24,z);
+ cone(parent,.28*height,.45*height,pineDeep,x,height*.45,z);
+ cone(parent,.225*height,.40*height,pineTip,x,height*.68,z);
+ cone(parent,.155*height,.32*height,pineDeep,x,height*.87,z)
+}
+
 function occupied(k){if(buildings.has(k)||lumberjacks.has(k)||farms.has(k)||fields.has(k))return true;for(const anchor of markets.keys()){const [x,z]=pos(anchor),[a,b]=pos(k);if(a>=x&&a<x+2&&b>=z&&b<z+2)return true}return false}
-function addHouse(k){if(occupied(k)||!owned.has(k))return;const [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.16,z);land.add(g);
-box(.77,.11,.8,stoneDetail,0,.06,0,g);box(.67,.57,.67,plaster,0,.36,0,g);roofPair(g,.47,.91,.79,tileRed);
-box(.1,.21,.12,stoneDetail,.19,1.02,-.15,g);box(.19,.33,.04,darkTrim,0,.23,.36,g);
-window3(g,-.22,.42,.355);window3(g,.22,.42,.355);
-box(.11,.16,.33,marketWood,.33,.25,-.04,g);box(.28,.05,.4,tileRed,.37,.46,-.04,g);
-box(.06,.04,.2,stoneDetail,-.12,.15,.45,g);box(.06,.04,.2,stoneDetail,0,.15,.45,g);
-buildings.set(k,g);save()}
+
+function addHouse(k){
+ if(occupied(k)||!owned.has(k))return;
+ const [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.16,z);land.add(g);
+ // Foundation, warm stucco and exposed timber framing
+ box(.85,.105,.84,stoneDetail,0,.05,0,g);
+ box(.72,.57,.70,plaster,0,.39,0,g);
+ for(const xx of [-.35,.35])for(const zz of [-.34,.34])box(.045,.59,.045,timber,xx,.39,zz,g);
+ box(.72,.04,.05,timber,0,.54,.355,g);
+ pitchedRoof(g,.91,.84,.70,tileRed);
+ gable(g,.365,.68,.99,.354,0xe8cba5);
+ door3(g,0,.387,.18,.31);
+ window3(g,-.235,.43,.386);window3(g,.235,.43,.386);
+ box(.12,.22,.125,stoneDetail,.20,1.075,-.14,g);
+ box(.11,.025,.13,tileShadow,.20,1.196,-.14,g);
+ // Side porch with small awning
+ box(.13,.24,.32,timber,.37,.29,-.04,g);
+ const awn=box(.29,.045,.42,tileRed,.40,.53,-.04,g);awn.rotation.z=-.13;
+ // Flower pots, steps and fine facade details
+ cylinder(g,.067,.052,.10,marketWood,-.30,.17,.40,8);
+ smallBall(g,.08,leafDark,-.30,.245,.40);
+ for(const off of [-.04,.04])smallBall(g,.035,flowerRed,-.30+off,.29,.42);
+ box(.27,.035,.14,stoneDetail,0,.15,.48,g);
+ buildings.set(k,g);save()
+}
 const marketRoof=mat(0xb54f3c),marketCanvas=mat(0xe7d6b0),marketStone=mat(0xc7b28b),marketWood=mat(0x76543a),marketProduce=[mat(0xc3412b),mat(0xe6b84f),mat(0x69a547)];
 function marketCells(k){const [x,z]=pos(k);return [key(x,z),key(x+1,z),key(x,z+1),key(x+1,z+1)]}
 function canMarket(k){const [x,z]=pos(k);return inside(x+1,z+1)&&marketCells(k).every(c=>owned.has(c)&&!occupied(c))}
-function addMarket(k){if(!canMarket(k))return false;const [x,z]=pos(k),g=new THREE.Group();g.position.set(x+.5,.165,z+.5);land.add(g);
-box(1.94,.09,1.94,marketStone,0,.04,0,g);
-box(1.06,.51,.68,plaster,0,.33,-.51,g);
-const l=box(.64,.1,.84,tileRed,-.24,.68,-.51,g);l.rotation.z=.48;
-const r=box(.64,.1,.84,tileRed,.24,.68,-.51,g);r.rotation.z=-.48;
-box(.19,.31,.04,darkTrim,0,.19,-.143,g);
-for(const x of [-.32,.32])window3(g,x,.34,-.145);
-for(let n=0;n<3;n++){const x=-.61+n*.61;box(.48,.11,.44,marketWood,x,.28,.53,g);box(.04,.48,.04,darkTrim,x-.19,.53,.53,g);box(.04,.48,.04,darkTrim,x+.19,.53,.53,g);box(.53,.06,.54,n===1?fabricBlue:marketRoof,x,.76,.53,g);
-for(let j=0;j<4;j++){const px=(j%2?1:-1)*.12,pz=(j>1?1:-1)*.10;box(.10,.10,.10,marketProduce[(n+j)%3],x+px,.39,.53+pz,g)}
-crate(g,x-.2,.17,.80);barrel(g,x+.22,.17,.80)}
-for(const [x,z] of [[-.76,-.78],[.76,-.78],[-.76,.10],[.76,.10]])barrel(g,x,.17,z);
-markets.set(k,g);save();return true}
+
+function addMarket(k){
+ if(!canMarket(k))return false;
+ const [x,z]=pos(k),g=new THREE.Group();g.position.set(x+.5,.165,z+.5);land.add(g);
+ box(1.96,.10,1.96,marketStone,0,.04,0,g);
+ box(1.83,.018,1.83,stoneDetail,0,.10,0,g);
+ // Permanent merchant hall behind the stalls
+ box(1.10,.52,.72,plaster,0,.38,-.52,g);
+ for(const xx of [-.53,.53])box(.06,.54,.065,timber,xx,.38,-.16,g);
+ pitchedRoof(g,1.35,.88,.65,tileRed);
+ gable(g,.56,.65,1.07,-.15,0xe5c39b);
+ door3(g,0,-.125,.20,.30);
+ for(const xx of [-.34,.34])window3(g,xx,.40,-.125);
+ // Three colorful stalls with timber posts, striped fabric roofs, and produce
+ const canopyColors=[marketRoof,fabricBlue,marketRoof];
+ for(let n=0;n<3;n++){
+  const xx=-.62+n*.62;
+  box(.49,.095,.42,marketWood,xx,.30,.49,g);
+  for(const off of [-.215,.215])box(.046,.51,.048,darkTrim,xx+off,.54,.49,g);
+  const awning=box(.56,.045,.55,canopyColors[n],xx,.80,.49,g);
+  for(let stripe=-2;stripe<=2;stripe++){
+   box(.085,.012,.565,stripe%2===0?fabricCream:canopyColors[n],xx+stripe*.10,.833,.49,g)
+  }
+  box(.49,.055,.07,timber,xx,.43,.685,g);
+  for(let j=0;j<5;j++){
+   const px=xx+(j%3-1)*.12,pz=.40+Math.floor(j/3)*.13;
+   smallBall(g,.059,marketProduce[(n+j)%3],px,.40,pz)
+  }
+  crate(g,xx-.18,.20,.80);barrel(g,xx+.19,.18,.82)
+ }
+ // Street details / welcome banner
+ for(const xx of [-.84,.84])box(.05,.64,.05,timber,xx,.40,-.83,g);
+ box(1.73,.035,.035,timber,0,.72,-.83,g);
+ const pennant=box(.32,.15,.025,fabricBlue,0,.62,-.83,g);
+ for(const xx of [-.72,.72])cylinder(g,.055,.065,.13,hayGold,xx,.18,.14,8);
+ crate(g,-.77,.21,-.04);barrel(g,.78,.19,-.04);
+ markets.set(k,g);save();return true
+}
 const pine=mat(0x397e44),pineLight=mat(0x4c9950),logWood=mat(0xad7744);
 let wood=0,woodElapsed=0;
-function addLumberjack(k){if(!owned.has(k)||occupied(k))return false;const [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.16,z);land.add(g);
-box(.75,.08,.76,stoneDetail,0,.04,0,g);
-box(.51,.41,.53,plaster,-.14,.27,-.1,g);
-const a=box(.38,.08,.65,tileRed,-.28,.56,-.1,g);a.rotation.z=.48;
-const b=box(.38,.08,.65,tileRed,0,.56,-.1,g);b.rotation.z=-.48;
-box(.14,.27,.035,darkTrim,-.13,.20,.18,g);
-for(let i=0;i<4;i++){const o=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.36,9),logWood);o.rotation.z=Math.PI/2;o.position.set(.13+i*.035,.11+i*.09,.30,g);o.position.z=.30;o.castShadow=true;g.add(o)}
-box(.12,.28,.16,logWood,.35,.17,-.11,g);box(.22,.04,.09,darkTrim,.35,.33,-.11,g);
-box(.075,.40,.075,trunk,.31,.31,-.32,g);cone(g,.28,.40,pineDeep,.31,.61,-.32);cone(g,.20,.30,pineLight,.31,.85,-.32);
-lumberjacks.set(k,g);save();return true}
+
+function addLumberjack(k){
+ if(!owned.has(k)||occupied(k))return false;
+ const [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.16,z);land.add(g);
+ box(.79,.09,.79,stoneDetail,0,.045,0,g);
+ box(.48,.44,.49,plaster,-.16,.31,-.12,g);
+ for(const xx of [-.40,.08])box(.045,.44,.045,darkTrim,xx,.31,.14,g);
+ const r1=box(.36,.085,.64,tileRed,-.28,.61,-.12,g);r1.rotation.z=.55;
+ const r2=box(.36,.085,.64,tileRed,-.04,.61,-.12,g);r2.rotation.z=-.55;
+ box(.14,.30,.035,marketWood,-.16,.25,.14,g);
+ box(.12,.15,.039,blueGlass,.055,.39,.142,g);
+ // Covered lumber pile: round log ends visibly face the player
+ for(let layer=0;layer<2;layer++)for(let n=0;n<3-layer;n++){
+  const xx=.13+n*.13+layer*.065, yy=.125+layer*.105;
+  const log=cylinder(g,.057,.057,.34,logWood,xx,yy,.33,9);
+  log.rotation.x=Math.PI/2;
+  cylinder(g,.052,.052,.014,hayGold,xx,yy,.51,9).rotation.x=Math.PI/2
+ }
+ // Chopping block and leaning axe
+ cylinder(g,.11,.12,.22,logWood,.33,.17,-.10,8);
+ const handle=box(.025,.29,.025,timber,.43,.29,-.06,g);handle.rotation.z=.34;
+ const blade=box(.11,.085,.026,stoneDetail,.48,.42,-.06,g);blade.rotation.z=.34;
+ pineTree(g,.31,-.34,.86);pineTree(g,-.42,-.37,.58);
+ crate(g,-.31,.18,.34);
+ lumberjacks.set(k,g);save();return true
+}
 const hay=mat(0xddba4c),straw=mat(0x9e8536),barnRed=mat(0xad5343),fieldEarth=mat(0x785637);
 let food=0,foodElapsed=0;
-function addFarm(k){if(!owned.has(k)||occupied(k))return false;const [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.16,z);land.add(g);
-box(.81,.09,.83,stoneDetail,0,.045,0,g);box(.66,.55,.65,barnRed,0,.34,-.03,g);roofPair(g,.46,.86,.76,tileRed);
-box(.23,.34,.045,darkTrim,0,.24,.317,g);
-box(.16,.17,.04,plaster,-.23,.44,.317,g);box(.12,.13,.045,blueGlass,-.23,.44,.34,g);
-box(.19,.19,.34,plaster,.35,.22,.15,g);box(.32,.05,.43,roofSide,.35,.38,.15,g);
-for(const x of [-.42,.42]){box(.038,.29,.038,marketWood,x,.19,.39,g);box(.038,.29,.038,marketWood,x,.19,-.4,g)}
-box(.83,.03,.03,marketWood,0,.28,.39,g);box(.83,.03,.03,marketWood,0,.28,-.4,g);
-box(.03,.03,.79,marketWood,-.42,.28,0,g);box(.03,.03,.79,marketWood,.42,.28,0,g);
-box(.22,.13,.17,hayGold,-.31,.14,.28,g);crate(g,.28,.17,.37);
-farms.set(k,g);save();return true}
+
+function addFarm(k){
+ if(!owned.has(k)||occupied(k))return false;
+ const [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.16,z);land.add(g);
+ box(.87,.09,.86,stoneDetail,0,.045,0,g);
+ box(.64,.56,.61,barnRed,-.055,.35,-.07,g);
+ for(const xx of [-.36,.25])box(.045,.58,.045,plaster,xx,.34,.245,g);
+ for(const yy of [.23,.44])box(.65,.025,.035,timber,-.055,yy,.253,g);
+ pitchedRoof(g,.82,.79,.64,roofSide);
+ gable(g,.322,.63,.89,.25,0xc67856);
+ // Double barn doors with cross bracing
+ for(const xx of [-.135,.075]){
+  box(.185,.32,.045,darkTrim,xx,.29,.266,g);
+  const brace=box(.025,.33,.052,timber,xx,.29,.297,g);brace.rotation.z=xx<0?-.45:.45
+ }
+ box(.14,.15,.045,plaster,-.055,.53,.265,g);
+ // Grain silo and animal pen
+ cylinder(g,.125,.14,.48,stoneDetail,.33,.30,-.17,10);
+ cone(g,.175,.19,tileRed,.33,.63,-.17,10);
+ for(const xx of [-.43,.43])for(const zz of [-.43,.43])post(g,xx,zz);
+ for(const zz of [-.43,.43])for(const yy of [.24,.34])box(.87,.022,.025,timber,0,yy,zz,g);
+ for(const xx of [-.43,.43])box(.025,.025,.86,timber,xx,.29,0,g);
+ // Loose hay, feed and storage
+ hayBale(g,-.29,.15,.37);hayBale(g,-.08,.15,.37);
+ crate(g,.30,.19,.34);
+ farms.set(k,g);save();return true
+}
 function nearFarm(k){const [x,z]=pos(k);return neighbors(x,z).some(([a,b])=>farms.has(key(a,b)))}
-function addField(k){if(!owned.has(k)||occupied(k)||!nearFarm(k))return false;const [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.16,z);land.add(g);
-box(.92,.045,.92,fieldEarth,0,.025,0,g);
-for(let a=-3;a<=3;a++)for(let b=-3;b<=3;b++){const xx=a*.119,zz=b*.117;
-box(.023,.21,.023,straw,xx,.15,zz,g);box(.062,.12,.057,hayGold,xx,.29,zz,g);
-if((a+b)%2===0)box(.037,.08,.034,hay,xx+.028,.28,zz+.01,g)}
-for(const q of [-.46,.46])box(.03,.04,.93,marketWood,q,.055,0,g);
-fields.set(k,g);save();return true}
+
+function addField(k){
+ if(!owned.has(k)||occupied(k)||!nearFarm(k))return false;
+ const [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.16,z);land.add(g);
+ box(.94,.06,.94,fieldEarth,0,.03,0,g);
+ // Furrows and fine soil texture (one small strip per growing row)
+ for(let row=-3;row<=3;row++)box(.81,.019,.045,dirtDark,0,.069,row*.125,g);
+ // One 3D wheat field with instanced geometry: much faster on iPhones than hundreds of separate meshes
+ const count=81,stalks=new THREE.InstancedMesh(new THREE.CylinderGeometry(.008,.014,.255,5),straw,count);
+ const heads=new THREE.InstancedMesh(new THREE.ConeGeometry(.045,.155,5),hayGold,count);
+ const leaves=new THREE.InstancedMesh(new THREE.BoxGeometry(.011,.095,.050),hay,count);
+ const dummy=new THREE.Object3D();
+ let idx=0;
+ for(let row=-4;row<=4;row++)for(let col=-4;col<=4;col++){
+  const shift=(row%2)*.036,xx=col*.094+shift,zz=row*.101;
+  const variety=1+((row*17+col*7+100)%5)*.045;
+  dummy.rotation.set(0,0,((row+col)%3-1)*.08);dummy.scale.set(1,variety,1);
+  dummy.position.set(xx,.205,zz);dummy.updateMatrix();stalks.setMatrixAt(idx,dummy.matrix);
+  dummy.rotation.set(0,0,0);dummy.scale.set(1,variety,1);
+  dummy.position.set(xx,.375+(variety-1)*.12,zz);dummy.updateMatrix();heads.setMatrixAt(idx,dummy.matrix);
+  dummy.rotation.set((row%2?1:-1)*.35,0,(col%2?1:-1)*.48);
+  dummy.scale.set(1,1,1);dummy.position.set(xx,.235,zz);dummy.updateMatrix();leaves.setMatrixAt(idx,dummy.matrix);
+  idx++
+ }
+ for(const mesh of [stalks,heads,leaves]){mesh.instanceMatrix.needsUpdate=true;mesh.castShadow=true;mesh.receiveShadow=false;g.add(mesh)}
+ // Timber edging, low enough to see the wheat
+ for(const side of [-.46,.46]){
+  box(.035,.045,.94,timber,side,.073,0,g);
+  box(.94,.04,.035,timber,0,.073,side,g)
+ }
+ fields.set(k,g);save();return true
+}
 function productionFields(){let count=0;for(const k of fields.keys())if(nearFarm(k))count++;return count}
 function refreshFood(){foodCount.textContent=food.toLocaleString('de-DE')}
 function refreshWood(){woodCount.textContent=wood.toLocaleString('de-DE')}
