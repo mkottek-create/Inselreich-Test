@@ -38,41 +38,66 @@ function refreshEdge(){for(const [k,obj] of tileModels){const [x,z]=pos(k);const
  for(const k of owned){const [x,z]=pos(k);for(const [a,b] of neighbors(x,z)){const nk=key(a,b);if(validFrontier(a,b)&&!tileModels.has(nk))tile(nk,false)}}}
 function expand(k){const [x,z]=pos(k);if(!validFrontier(x,z))return;owned.add(k);const model=tileModels.get(k);if(model){land.remove(model);const h=model.children.find(c=>c.userData?.key===k);if(h){const idx=tiles.indexOf(h);if(idx>=0)tiles.splice(idx,1)}tileModels.delete(k)}refreshEdge();save();status.textContent='🌱 Neues Land! Tippe auf das grüne Feld, um darauf zu bauen.'}
 function box(w,h,d,m,x,y,z,parent){const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh}
+const plaster=mat(0xeee0c4),darkTrim=mat(0x604734),tileRed=mat(0x954637),stoneDetail=mat(0xb4a68d),blueGlass=mat(0x8bb9c9),hayGold=mat(0xeacb69),pineDeep=mat(0x387a40),fabricBlue=mat(0x376e7c);
+function cone(parent,r,h,m,x,y,z){const o=new THREE.Mesh(new THREE.ConeGeometry(r,h,7),m);o.position.set(x,y,z);o.castShadow=true;parent.add(o);return o}
+function barrel(parent,x,y,z){const o=new THREE.Mesh(new THREE.CylinderGeometry(.058,.067,.13,9),marketWood);o.position.set(x,y,z);o.castShadow=true;parent.add(o);box(.14,.012,.14,darkTrim,x,y+.07,z,parent)}
+function window3(parent,x,y,z){box(.17,.19,.035,plaster,x,y,z,parent);box(.135,.145,.04,blueGlass,x,y,z+.023,parent);box(.015,.16,.04,plaster,x,y,z+.045,parent);box(.145,.014,.04,plaster,x,y,z+.045,parent)}
+function roofPair(parent,w,d,y,m){const a=box(w,.105,d,m,-w*.27,y,0,parent);a.rotation.z=.54;const b=box(w,.105,d,m,w*.27,y,0,parent);b.rotation.z=-.54}
+function crate(parent,x,y,z){box(.13,.13,.13,marketWood,x,y,z,parent);box(.13,.018,.13,stoneDetail,x,y+.07,z,parent)}
 function occupied(k){if(buildings.has(k)||lumberjacks.has(k)||farms.has(k)||fields.has(k))return true;for(const anchor of markets.keys()){const [x,z]=pos(anchor),[a,b]=pos(k);if(a>=x&&a<x+2&&b>=z&&b<z+2)return true}return false}
-function addHouse(k){if(occupied(k)||!owned.has(k))return;let [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.16,z);land.add(g);box(.67,.57,.68,wall,0,.29,0,g);box(.82,.1,.86,roofSide,0,.61,0,g);let left=new THREE.Mesh(new THREE.BoxGeometry(.48,.11,.95),roof);left.rotation.z=Math.PI/5;left.position.set(-.18,.81,0);left.castShadow=true;g.add(left);let right=new THREE.Mesh(new THREE.BoxGeometry(.48,.11,.95),roof);right.rotation.z=-Math.PI/5;right.position.set(.18,.81,0);right.castShadow=true;g.add(right);box(.18,.36,.04,door,0,.19,.365,g);box(.19,.19,.04,glass,.22,.40,.365,g);box(.19,.19,.04,glass,-.22,.40,-.365,g);box(.04,.18,.18,glass,.355,.36,0,g);box(.04,.18,.18,glass,-.355,.36,0,g);box(.12,.3,.16,trunk,.18,1.04,-.14,g);buildings.set(k,g);save()}
+function addHouse(k){if(occupied(k)||!owned.has(k))return;const [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.16,z);land.add(g);
+box(.77,.11,.8,stoneDetail,0,.06,0,g);box(.67,.57,.67,plaster,0,.36,0,g);roofPair(g,.47,.91,.79,tileRed);
+box(.1,.21,.12,stoneDetail,.19,1.02,-.15,g);box(.19,.33,.04,darkTrim,0,.23,.36,g);
+window3(g,-.22,.42,.355);window3(g,.22,.42,.355);
+box(.11,.16,.33,marketWood,.33,.25,-.04,g);box(.28,.05,.4,tileRed,.37,.46,-.04,g);
+box(.06,.04,.2,stoneDetail,-.12,.15,.45,g);box(.06,.04,.2,stoneDetail,0,.15,.45,g);
+buildings.set(k,g);save()}
 const marketRoof=mat(0xb54f3c),marketCanvas=mat(0xe7d6b0),marketStone=mat(0xc7b28b),marketWood=mat(0x76543a),marketProduce=[mat(0xc3412b),mat(0xe6b84f),mat(0x69a547)];
 function marketCells(k){const [x,z]=pos(k);return [key(x,z),key(x+1,z),key(x,z+1),key(x+1,z+1)]}
 function canMarket(k){const [x,z]=pos(k);return inside(x+1,z+1)&&marketCells(k).every(c=>owned.has(c)&&!occupied(c))}
 function addMarket(k){if(!canMarket(k))return false;const [x,z]=pos(k),g=new THREE.Group();g.position.set(x+.5,.165,z+.5);land.add(g);
-box(1.91,.10,1.91,marketStone,0,.02,0,g);
-box(1.52,.62,.69,marketCanvas,0,.40,-.48,g);
-box(1.67,.12,.92,marketRoof,0,.81,-.48,g);
-box(.34,.22,.18,marketWood,-.47,.39,.0,g);
-box(.34,.22,.18,marketWood,.47,.39,.0,g);
-for(let n=0;n<3;n++){const sx=-.67+n*.67;box(.51,.12,.40,marketWood,sx,.34,.56,g);box(.52,.08,.44,marketRoof,sx,.77,.56,g);for(const px of [-.17,.17])for(const pz of [-.11,.11])box(.105,.105,.11,marketProduce[(n+(px>0?1:0)+(pz>0?1:0))%3],sx+px,.48,.56+pz,g);for(const p of [-.2,.2])box(.045,.43,.045,marketWood,sx+p,.57,.56+p*.2,g)}
-for(const xx of [-.78,.78])for(const zz of [-.78,.78])box(.06,.65,.06,marketWood,xx,.39,zz,g);
+box(1.94,.09,1.94,marketStone,0,.04,0,g);
+box(1.06,.51,.68,plaster,0,.33,-.51,g);
+const l=box(.64,.1,.84,tileRed,-.24,.68,-.51,g);l.rotation.z=.48;
+const r=box(.64,.1,.84,tileRed,.24,.68,-.51,g);r.rotation.z=-.48;
+box(.19,.31,.04,darkTrim,0,.19,-.143,g);
+for(const x of [-.32,.32])window3(g,x,.34,-.145);
+for(let n=0;n<3;n++){const x=-.61+n*.61;box(.48,.11,.44,marketWood,x,.28,.53,g);box(.04,.48,.04,darkTrim,x-.19,.53,.53,g);box(.04,.48,.04,darkTrim,x+.19,.53,.53,g);box(.53,.06,.54,n===1?fabricBlue:marketRoof,x,.76,.53,g);
+for(let j=0;j<4;j++){const px=(j%2?1:-1)*.12,pz=(j>1?1:-1)*.10;box(.10,.10,.10,marketProduce[(n+j)%3],x+px,.39,.53+pz,g)}
+crate(g,x-.2,.17,.80);barrel(g,x+.22,.17,.80)}
+for(const [x,z] of [[-.76,-.78],[.76,-.78],[-.76,.10],[.76,.10]])barrel(g,x,.17,z);
 markets.set(k,g);save();return true}
 const pine=mat(0x397e44),pineLight=mat(0x4c9950),logWood=mat(0xad7744);
 let wood=0,woodElapsed=0;
 function addLumberjack(k){if(!owned.has(k)||occupied(k))return false;const [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.16,z);land.add(g);
-box(.54,.42,.5,marketWood,-.16,.23,-.15,g);box(.68,.12,.63,marketRoof,-.16,.5,-.15,g);box(.13,.25,.025,door,-.14,.17,.108,g);
-const tree=new THREE.Mesh(new THREE.ConeGeometry(.26,.57,7),pine);tree.position.set(.28,.69,-.24);tree.castShadow=true;g.add(tree);
-const tree2=new THREE.Mesh(new THREE.ConeGeometry(.19,.38,7),pineLight);tree2.position.set(.28,.94,-.24);tree2.castShadow=true;g.add(tree2);
-box(.10,.35,.10,trunk,.28,.34,-.24,g);
-for(let i=0;i<3;i++)box(.34,.13,.14,logWood,.15+i*.025,.14+i*.13,.3,g);
+box(.75,.08,.76,stoneDetail,0,.04,0,g);
+box(.51,.41,.53,plaster,-.14,.27,-.1,g);
+const a=box(.38,.08,.65,tileRed,-.28,.56,-.1,g);a.rotation.z=.48;
+const b=box(.38,.08,.65,tileRed,0,.56,-.1,g);b.rotation.z=-.48;
+box(.14,.27,.035,darkTrim,-.13,.20,.18,g);
+for(let i=0;i<4;i++){const o=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.36,9),logWood);o.rotation.z=Math.PI/2;o.position.set(.13+i*.035,.11+i*.09,.30,g);o.position.z=.30;o.castShadow=true;g.add(o)}
+box(.12,.28,.16,logWood,.35,.17,-.11,g);box(.22,.04,.09,darkTrim,.35,.33,-.11,g);
+box(.075,.40,.075,trunk,.31,.31,-.32,g);cone(g,.28,.40,pineDeep,.31,.61,-.32);cone(g,.20,.30,pineLight,.31,.85,-.32);
 lumberjacks.set(k,g);save();return true}
 const hay=mat(0xddba4c),straw=mat(0x9e8536),barnRed=mat(0xad5343),fieldEarth=mat(0x785637);
 let food=0,foodElapsed=0;
 function addFarm(k){if(!owned.has(k)||occupied(k))return false;const [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.16,z);land.add(g);
-box(.72,.53,.69,barnRed,0,.28,0,g);box(.86,.12,.83,roofSide,0,.61,0,g);
-const r1=box(.53,.09,.89,roof,-.18,.79,0,g);r1.rotation.z=.49;const r2=box(.53,.09,.89,roof,.18,.79,0,g);r2.rotation.z=-.49;
-box(.25,.32,.025,door,0,.18,.355,g);box(.18,.15,.025,hay,.26,.37,.355,g);
-box(.2,.18,.28,hay,-.32,.13,.40,g);box(.15,.2,.15,straw,.32,.13,.36,g);
+box(.81,.09,.83,stoneDetail,0,.045,0,g);box(.66,.55,.65,barnRed,0,.34,-.03,g);roofPair(g,.46,.86,.76,tileRed);
+box(.23,.34,.045,darkTrim,0,.24,.317,g);
+box(.16,.17,.04,plaster,-.23,.44,.317,g);box(.12,.13,.045,blueGlass,-.23,.44,.34,g);
+box(.19,.19,.34,plaster,.35,.22,.15,g);box(.32,.05,.43,roofSide,.35,.38,.15,g);
+for(const x of [-.42,.42]){box(.038,.29,.038,marketWood,x,.19,.39,g);box(.038,.29,.038,marketWood,x,.19,-.4,g)}
+box(.83,.03,.03,marketWood,0,.28,.39,g);box(.83,.03,.03,marketWood,0,.28,-.4,g);
+box(.03,.03,.79,marketWood,-.42,.28,0,g);box(.03,.03,.79,marketWood,.42,.28,0,g);
+box(.22,.13,.17,hayGold,-.31,.14,.28,g);crate(g,.28,.17,.37);
 farms.set(k,g);save();return true}
 function nearFarm(k){const [x,z]=pos(k);return neighbors(x,z).some(([a,b])=>farms.has(key(a,b)))}
 function addField(k){if(!owned.has(k)||occupied(k)||!nearFarm(k))return false;const [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.16,z);land.add(g);
-box(.89,.045,.89,fieldEarth,0,.025,0,g);
-for(let a=-3;a<=3;a++)for(let b=-3;b<=3;b++){const stem=box(.025,.23,.025,straw,a*.112,.16,b*.112,g);box(.075,.14,.064,hay,a*.112,.31,b*.112,g)}
+box(.92,.045,.92,fieldEarth,0,.025,0,g);
+for(let a=-3;a<=3;a++)for(let b=-3;b<=3;b++){const xx=a*.119,zz=b*.117;
+box(.023,.21,.023,straw,xx,.15,zz,g);box(.062,.12,.057,hayGold,xx,.29,zz,g);
+if((a+b)%2===0)box(.037,.08,.034,hay,xx+.028,.28,zz+.01,g)}
+for(const q of [-.46,.46])box(.03,.04,.93,marketWood,q,.055,0,g);
 fields.set(k,g);save();return true}
 function productionFields(){let count=0;for(const k of fields.keys())if(nearFarm(k))count++;return count}
 function refreshFood(){foodCount.textContent=food.toLocaleString('de-DE')}
