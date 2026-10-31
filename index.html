@@ -191,27 +191,81 @@ let wood=0,woodElapsed=0;
 
 function addLumberjack(k){
  if(!owned.has(k)||occupied(k))return false;
- const [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.16,z);land.add(g);
- box(.79,.09,.79,stoneDetail,0,.045,0,g);
- box(.48,.44,.49,plaster,-.16,.31,-.12,g);
- for(const xx of [-.40,.08])box(.045,.44,.045,darkTrim,xx,.31,.14,g);
- const r1=box(.36,.085,.64,tileRed,-.28,.61,-.12,g);r1.rotation.z=.55;
- const r2=box(.36,.085,.64,tileRed,-.04,.61,-.12,g);r2.rotation.z=-.55;
- box(.14,.30,.035,marketWood,-.16,.25,.14,g);
- box(.12,.15,.039,blueGlass,.055,.39,.142,g);
- // Covered lumber pile: round log ends visibly face the player
- for(let layer=0;layer<2;layer++)for(let n=0;n<3-layer;n++){
-  const xx=.13+n*.13+layer*.065, yy=.125+layer*.105;
-  const log=cylinder(g,.057,.057,.34,logWood,xx,yy,.33,9);
-  log.rotation.x=Math.PI/2;
-  cylinder(g,.052,.052,.014,hayGold,xx,yy,.51,9).rotation.x=Math.PI/2
+ const [x,z]=pos(k),g=new THREE.Group();
+ g.position.set(x,.16,z);land.add(g);
+ // Eigener kleiner Holzfällerhof mit deutlich erkennbarer Holzhütte.
+ const logEnd=mat(0xd6aa6b),bark=mat(0x765139),roofMoss=mat(0x657b4e),
+       plank=mat(0xb88b59),grassClump=mat(0x568a4c),iron=mat(0x777c78);
+ box(.86,.085,.86,stoneDetail,0,.042,0,g);
+ // Hütte aus warmem Holz und hellem Lehmfachwerk.
+ box(.52,.47,.49,plaster,-.19,.31,-.17,g);
+ box(.535,.075,.51,timber,-.19,.11,-.17,g);
+ for(const xx of [-.455,.075]){
+   box(.05,.48,.055,darkTrim,xx,.33,.082,g);
+   box(.05,.48,.055,darkTrim,xx,.33,-.423,g)
  }
- // Chopping block and leaning axe
- cylinder(g,.11,.12,.22,logWood,.33,.17,-.10,8);
- const handle=box(.025,.29,.025,timber,.43,.29,-.06,g);handle.rotation.z=.34;
- const blade=box(.11,.085,.026,stoneDetail,.48,.42,-.06,g);blade.rotation.z=.34;
- pineTree(g,.31,-.34,.86);pineTree(g,-.42,-.37,.58);
- crate(g,-.31,.18,.34);
+ box(.54,.035,.06,darkTrim,-.19,.53,.086,g);
+ box(.54,.035,.06,darkTrim,-.19,.27,.086,g);
+ for(const xx of [-.36,-.19,-.02])box(.026,.41,.023,plank,xx,.32,-.427,g);
+ // Richtiges Satteldach mit sichtbaren Ziegelreihen und Giebel.
+ const hutRoof=new THREE.Group();hutRoof.position.set(-.19,0,-.17);g.add(hutRoof);
+ pitchedRoof(hutRoof,.71,.65,.58,tileRed);
+ gable(hutRoof,.26,.54,.82,.253,0xe1be8c);
+ // Kleine Dachhaube, Schornstein und Dachkante.
+ box(.086,.18,.09,stoneDetail,-.31,.87,-.32,g);
+ box(.10,.025,.11,roofSide,-.31,.97,-.32,g);
+ box(.56,.029,.035,roofSide,-.19,.60,.116,g);
+ // Holzrahmentür, Beschläge und kleines Fenster.
+ box(.165,.32,.035,darkTrim,-.255,.30,.096,g);
+ box(.137,.286,.042,plank,-.255,.30,.115,g);
+ box(.020,.027,.017,hayGold,-.209,.31,.143,g);
+ box(.139,.148,.039,darkTrim,-.003,.422,.097,g);
+ box(.110,.115,.043,blueGlass,-.003,.422,.124,g);
+ box(.015,.122,.046,plaster,-.003,.422,.150,g);
+ box(.116,.015,.046,plaster,-.003,.422,.150,g);
+ box(.17,.03,.09,stoneDetail,-.255,.134,.16,g);
+ // Offenes Holzlager mit eigenem Pultdach und tragenden Pfosten.
+ for(const xx of [.105,.40]){
+   for(const zz of [.095,.405]){
+     box(.035,.42,.035,marketWood,xx,.305,zz,g)
+   }
+ }
+ const shelter=box(.46,.055,.49,roofMoss,.25,.552,.25,g);
+ shelter.rotation.z=-.10;
+ for(const t of [-.10,.06]){
+   const beam=box(.035,.028,.51,bark,.25+t,.583-t*.1,.25,g);
+   beam.rotation.z=-.10
+ }
+ // Stapel mit sichtbaren runden Hirnholzflächen unter dem Dach.
+ for(let layer=0;layer<3;layer++){
+   for(let n=0;n<3-layer;n++){
+     const px=.145+n*.105+layer*.051,py=.151+layer*.088,pz=.255;
+     const log=cylinder(g,.050,.051,.29,bark,px,py,pz,9);
+     log.rotation.x=Math.PI/2;
+     const endRing=cylinder(g,.048,.048,.012,logWood,px,py,pz+.153,9);
+     endRing.rotation.x=Math.PI/2;
+     const center=cylinder(g,.028,.029,.013,logEnd,px,py,pz+.16,9);
+     center.rotation.x=Math.PI/2
+   }
+ }
+ // Holzspalter: Hackblock, Axt mit grauer Eisenklinge und einzelne Scheite.
+ cylinder(g,.105,.122,.19,logWood,-.18,.18,.345,10);
+ cylinder(g,.103,.103,.024,logEnd,-.18,.286,.345,10);
+ const axeHandle=box(.022,.32,.024,marketWood,-.09,.39,.331,g);
+ axeHandle.rotation.z=.35;
+ const axeBlade=box(.125,.075,.025,iron,-.026,.53,.331,g);
+ axeBlade.rotation.z=.35;
+ for(let n=0;n<3;n++){
+   const chip=box(.09,.034,.045,plank,-.38+n*.065,.115,.38-n*.022,g);
+   chip.rotation.y=(n-1)*.38
+ }
+ // Zwei kleine Tannen hinter der Hütte und niedriger Bewuchs.
+ pineTree(g,.345,-.345,.61);
+ pineTree(g,-.405,-.345,.43);
+ for(const [gx,gz] of [[-.395,.29],[.05,.41],[.44,.11]]){
+   cone(g,.056,.13,grassClump,gx,.125,gz,5)
+ }
+ // Das vorhandene Produktions- und Speichersystem bleibt unverändert.
  lumberjacks.set(k,g);save();return true
 }
 const hay=mat(0xddba4c),straw=mat(0x9e8536),barnRed=mat(0xad5343),fieldEarth=mat(0x785637);
