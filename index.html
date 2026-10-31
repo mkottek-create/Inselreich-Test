@@ -1341,7 +1341,7 @@ function roadLeadsToDoor(x,z,dx,dz){
  if(dx!==0||dz!==-1)return false;
  const neighbor=at(key(x+dx,z+dz));if(!neighbor)return false;
  const [ax,az]=pos(neighbor.anchor);
- if(neighbor.type==='house'||neighbor.type==='farm'||neighbor.type==='lumber')return x===ax&&z===az+1;
+ if(neighbor.type==='house'||neighbor.type==='farm'||neighbor.type==='lumber'||neighbor.type==='quarry')return x===ax&&z===az+1;
  if(neighbor.type==='market')return (x===ax||x===ax+1)&&z===az+2;
  if(neighbor.type==='castle')return x===ax+1&&z===az+3;
  return false
@@ -1613,7 +1613,7 @@ food=Math.max(0,Math.floor(Number(data.food)||0));foodElapsed=Math.max(0,Math.mi
 stone=Math.max(0,Math.floor(Number(data.stone)||0));stoneElapsed=Math.max(0,Math.min(STONE_TICK_MS-1,Number(data.stoneElapsed)||0));const away=Math.max(0,Math.min(21600000,Date.now()-(Number(data.lastUpdate)||Date.now())));const total=woodElapsed+away;const activeLumber=activeLumberjackCount();if(activeLumber){wood+=Math.floor(total/15000)*activeLumber;woodElapsed=total%15000}else woodElapsed=0;
 const stoneTotal=stoneElapsed+away;
 const activeStone=activeQuarryCount();if(activeStone){stone+=Math.floor(stoneTotal/STONE_TICK_MS)*activeStone;stoneElapsed=stoneTotal%STONE_TICK_MS}else stoneElapsed=0;
-const foodTotal=foodElapsed+away;if(productionFields()){food+=Math.floor(foodTotal/12000)*productionFields();foodElapsed=foodTotal%12000}else foodElapsed=0;
+const foodTotal=foodElapsed+away;const deliveredFields=productionFields();if(deliveredFields){food+=Math.floor(foodTotal/12000)*deliveredFields;foodElapsed=foodTotal%12000}else foodElapsed=0;
  if(!rockSites.size)seedRockSites([...owned]);restored=true}}}catch(e){}
 if(!restored){for(let x=-1;x<=1;x++)for(let z=-1;z<=1;z++)owned.add(key(x,z));refreshEdge();
  try{const prev=JSON.parse(localStorage.getItem(OLD_KEY)||'null');if(Array.isArray(prev)){prev.forEach(i=>{if(Number.isInteger(i)&&i>=0&&i<9)addHouse(key(i%3-1,Math.floor(i/3)-1))})}else addHouse(key(0,0))}catch(e){addHouse(key(0,0))}}
@@ -2129,7 +2129,8 @@ const activeStone=activeQuarryCount();if(activeStone){
   refreshStone();save()
  }
 }else stoneElapsed=0;
-if(productionFields()){foodElapsed+=dt*1000;if(foodElapsed>=12000){const batches=Math.floor(foodElapsed/12000);foodElapsed%=12000;food+=batches*productionFields();refreshFood();save()}}if(buildings.size){
+const deliveredFields=productionFields();if(deliveredFields){foodElapsed+=dt*1000;if(foodElapsed>=12000){const batches=Math.floor(foodElapsed/12000);foodElapsed%=12000;food+=batches*deliveredFields;refreshFood();save()}}else foodElapsed=0;
+if(buildings.size){
  citizenElapsed+=dt*1000;
  if(citizenElapsed>=CITIZEN_TICK_MS){
   citizenElapsed-=CITIZEN_TICK_MS;citizenCycle()
