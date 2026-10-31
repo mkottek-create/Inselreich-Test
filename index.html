@@ -9,13 +9,13 @@
 #mapTools .mapHint{pointer-events:none;background:#fffae8dd;color:#29452d;border-radius:8px;padding:4px 7px;font-size:11px;font-weight:800}
 </style></head><body>
 <header><h1>🏝️ Inselreich 3D</h1><span class="tag">🌲 <strong id="woodCount">0</strong> · 🌾 <strong id="foodCount">0</strong></span></header>
-<div id="game"><div id="mapTools"><span class="mapHint">✨ NEU: Karte bewegen</span><button id="panMode">🖐 Karte verschieben</button><button id="centerCamera">⌖ Kartenmitte</button></div><div id="editMenu" role="dialog" aria-label="Gebäude bearbeiten"><strong id="editTitle">Gebäude</strong><p>Was möchtest du mit diesem Gebäude machen?</p><button id="move">↔ Verschieben</button><button id="demolish">🗑 Löschen</button><button id="editClose">✕ Abbrechen</button></div><div id="notice">🏠 Gebäude länger gedrückt halten: ↔ Verschieben oder 🗑 Löschen</div></div>
+<div id="game"><div id="mapTools"><span class="mapHint">✨ NEU: Karte bewegen</span><button id="panMode">🖐 Karte verschieben</button><button id="centerCamera">⌖ Kartenmitte</button><button id="overviewCamera">🔎 Weit raus</button></div><div id="editMenu" role="dialog" aria-label="Gebäude bearbeiten"><strong id="editTitle">Gebäude</strong><p>Was möchtest du mit diesem Gebäude machen?</p><button id="move">↔ Verschieben</button><button id="demolish">🗑 Löschen</button><button id="editClose">✕ Abbrechen</button></div><div id="notice">🏠 Gebäude länger gedrückt halten: ↔ Verschieben oder 🗑 Löschen</div></div>
 <footer><div class="buttons"><button id="view">👁️ Anschauen</button><button id="openBuild">🔨 Bauen</button></div>
 <button id="expandIsland" class="expansionButton">🌿 Insel erweitern</button>
 
 <div id="buildPanel" hidden><div class="categoryRow"><button data-cat="wohnen">🏠 Wohnen</button><button data-cat="land">🌾 Landwirtschaft</button><button data-cat="prod">🌲 Produktion</button><button data-cat="shop">🛒 Geschäfte</button><button data-cat="burg">🏰 Burgen</button></div><div class="itemRow"><button id="build">🏠 Haus</button><button id="farm">🚜 Bauernhof</button><button id="field">🌾 Weizenfeld</button><button id="lumber">🪓 Holzfäller</button><button id="market">🛒 Markt 2×2</button><button id="castle">🏰 Burg 3×3</button></div></div>
 <div id="placePanel" hidden><span id="placeLabel">Gebäude-Vorschau</span><button id="confirmPlace">✅ Bauen</button><button id="cancelPlace">✕ Abbrechen</button></div>
-<p>🔨 Bauen öffnet das Baumenü. Gebäude wählen, Bauplatz antippen und mit ✅ bestätigen. 🏰 Burg: 3×3 freie Felder erforderlich. Im Ansichtsmodus wird nichts versehentlich gebaut. Mit 🌿 Insel erweitern wächst deine Insel auf Knopfdruck gleich rundherum um einen ganzen Streifen – ohne einzelne Randfelder anzutippen. 🏠 Gebäude etwa eine halbe Sekunde gedrückt halten: Dann kannst du Verschieben oder Löschen wählen. Zum Erkunden auf „🖐 Karte verschieben“ tippen und die Karte mit einem Finger schieben; 🤏 Zoomen funktioniert gleichzeitig. Mit zwei Fingern kannst du die Karte auch direkt verschieben. Mit „⌖ Kartenmitte“ findest du zurück.</p><button id="reset" class="secondary resetButton">↺ Test zurücksetzen</button></footer>
+<p>🔨 Bauen öffnet das Baumenü. Gebäude wählen, Bauplatz antippen und mit ✅ bestätigen. 🏰 Burg: 3×3 freie Felder erforderlich. Im Ansichtsmodus wird nichts versehentlich gebaut. Mit 🌿 Insel erweitern wächst deine Insel auf Knopfdruck gleich rundherum um einen ganzen Streifen – ohne einzelne Randfelder anzutippen. 🏠 Gebäude etwa eine halbe Sekunde gedrückt halten: Dann kannst du Verschieben oder Löschen wählen. Zum Erkunden auf „🖐 Karte verschieben“ tippen und die Karte mit einem Finger schieben; 🤏 Zoomen funktioniert gleichzeitig. Mit zwei Fingern kannst du die Karte auch direkt verschieben. Mit „⌖ Kartenmitte“ findest du zurück. Mit „🔎 Weit raus“ bekommst du die Gesamtansicht deiner Insel.</p><button id="reset" class="secondary resetButton">↺ Test zurücksetzen</button></footer>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"}}</script>
 <script type="module">
 import * as THREE from 'three';
@@ -82,7 +82,7 @@ function expandIslandRing(){
  // Keep the expanded island readable on the iPhone without changing the user's camera angle.
  let extent=0;
  for(const k of owned){const [x,z]=pos(k);extent=Math.max(extent,Math.abs(x),Math.abs(z))}
- distance=Math.min(15,Math.max(distance,5.2+(extent+1)*1.05));
+ distance=Math.min(MAX_ZOOM_DISTANCE,Math.max(distance,5.2+(extent+1)*1.05));
  focus.x=0;focus.z=0;placeCamera();
  status.textContent='🌿 Insel erweitert: '+cells.length+' neue Felder! Du kannst jetzt direkt darauf bauen.'
 }
@@ -652,7 +652,7 @@ let restored=false;try{let data=JSON.parse(localStorage.getItem(KEY)||'null');if
 if(!restored){for(let x=-1;x<=1;x++)for(let z=-1;z<=1;z++)owned.add(key(x,z));refreshEdge();
  try{const prev=JSON.parse(localStorage.getItem(OLD_KEY)||'null');if(Array.isArray(prev)){prev.forEach(i=>{if(Number.isInteger(i)&&i>=0&&i<9)addHouse(key(i%3-1,Math.floor(i/3)-1))})}else addHouse(key(0,0))}catch(e){addHouse(key(0,0))}}
 refreshWood();refreshFood();save();
-let orbit=0.72,elevation=.84,distance=8,modeBuild=false,buildType='house',panMode=false;const focus=new THREE.Vector3(0,.2,0);
+const MAX_ZOOM_DISTANCE=38;let orbit=0.72,elevation=.84,distance=8,modeBuild=false,buildType='house',panMode=false;const focus=new THREE.Vector3(0,.2,0);
 function placeCamera(){camera.position.set(focus.x+Math.sin(orbit)*Math.cos(elevation)*distance,Math.sin(elevation)*distance+focus.y,focus.z+Math.cos(orbit)*Math.cos(elevation)*distance);camera.lookAt(focus)}
 function panCameraPixels(dx,dy){
  const worldPerPixel=2*distance*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))/Math.max(200,holder.clientHeight);
@@ -753,7 +753,7 @@ canvas.addEventListener('pointermove',e=>{
   const midX=(p[0].x+p[1].x)/2,midY=(p[0].y+p[1].y)/2;
   if(!pinch)pinch={d,distance,midX,midY};
   else{
-   distance=THREE.MathUtils.clamp(pinch.distance*pinch.d/d,3.5,15);
+   distance=THREE.MathUtils.clamp(pinch.distance*pinch.d/d,3.5,MAX_ZOOM_DISTANCE);
    const dx=midX-pinch.midX,dy=midY-pinch.midY;
    if(dx||dy)panCameraPixels(dx,dy);
    else placeCamera();
@@ -797,6 +797,19 @@ panButton.onclick=()=>{
 centerButton.onclick=()=>{
  focus.set(0,.2,0);placeCamera();
  status.textContent='⌖ Wieder in der Kartenmitte. Deine Zoomstufe bleibt erhalten.'
+};
+document.getElementById('overviewCamera').onclick=()=>{
+ // Frame the actual expanded footprint, including irregularly shaped islands.
+ let minX=LIMIT,maxX=-LIMIT,minZ=LIMIT,maxZ=-LIMIT;
+ for(const k of owned){const [x,z]=pos(k);minX=Math.min(minX,x);maxX=Math.max(maxX,x);minZ=Math.min(minZ,z);maxZ=Math.max(maxZ,z)}
+ focus.set((minX+maxX)/2,.2,(minZ+maxZ)/2);
+ const width=maxX-minX+1,depth=maxZ-minZ+1;
+ const aspect=Math.max(.42,holder.clientWidth/Math.max(1,holder.clientHeight));
+ const diagonal=Math.hypot(width,depth);
+ const needed=diagonal/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)))/aspect*.82;
+ distance=THREE.MathUtils.clamp(needed,9,MAX_ZOOM_DISTANCE);
+ placeCamera();
+ status.textContent='🔎 Gesamtansicht: Du siehst deine Insel von weiter weg. Mit zwei Fingern kannst du wieder heranzoomen.'
 };
 function viewMode(){moving=null;closeEdit();clearPreview();modeBuild=false;buildPanel.hidden=true;updateTools();status.textContent='👁️ Anschauen: Tippe auf 🌿 Insel erweitern, um rundherum neue Flächen zu bekommen.'}
 function chooseType(type){moving=null;closeEdit();clearPreview();buildType=type;modeBuild=true;buildPanel.hidden=true;updateTools();status.textContent='🔨 '+({house:'Haus',farm:'Bauernhof',field:'Weizenfeld',lumber:'Holzfäller',market:'Markt 2×2',castle:'Burg 3×3'}[type])+' gewählt: Tippe auf einen Bauplatz für die Vorschau.'}
