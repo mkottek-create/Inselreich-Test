@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Inselreich – Spielbare Testversion</title><style>
 *{box-sizing:border-box}body{margin:0;background:#deebca;font-family:-apple-system,system-ui,sans-serif;color:#263f2e}header{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;background:#f3f8e9}h1{margin:0;font-size:22px}.tag{font-size:12px;background:#e0edd0;padding:8px;border-radius:999px;font-weight:700}#game{height:72dvh;min-height:390px;position:relative;touch-action:none;background:#c5dbae}canvas{display:block;width:100%;height:100%;touch-action:none}#notice{position:absolute;bottom:12px;left:12px;right:12px;background:#fffffff0;border-radius:12px;padding:12px;font-size:13px;text-align:center;pointer-events:none}footer{padding:14px;display:flex;flex-direction:column;gap:9px}.buttons{display:flex;flex-wrap:wrap;gap:9px}.buttons button{min-width:40%;flex:1}button{border:0;border-radius:12px;background:#416d3e;color:white;padding:14px 12px;font-weight:700;flex:1;font-size:14px}button.secondary{background:#fff;color:#31552e}p{font-size:13px;color:#4f6a4c;margin:0;line-height:1.5}
-#buildPanel{background:#f4f8ec;padding:9px;border-radius:13px}#buildPanel[hidden],#placePanel[hidden]{display:none!important}.categoryRow,.itemRow,#placePanel{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px}.categoryRow button,.itemRow button{padding:11px 5px;font-size:12px;flex:1;min-width:42%}.categoryRow button.active{background:#31562d}.itemRow button[hidden]{display:none}#placePanel{align-items:center;background:#eff5dd;padding:9px;border-radius:12px}#placePanel span{flex:1;font-size:13px;font-weight:700}#placePanel button{padding:11px;flex:0 0 auto;font-size:12px}#cancelPlace{background:#7b8e70}.resetButton{width:100%;margin-top:10px}.expansionButton{width:100%;flex:none;background:#537c42;border:2px solid #385b36;box-shadow:0 3px 9px #213c2633;font-size:15px;padding:15px 12px}.expansionButton:disabled{background:#a9b7a1;color:#f4f5ef;border-color:#a9b7a1;box-shadow:none;opacity:.78}
+#buildPanel{background:#f4f8ec;padding:9px;border-radius:13px}#buildPanel[hidden],#buildUndo[hidden]{display:none!important}.categoryRow,.itemRow,#placePanel{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px}.categoryRow button,.itemRow button{padding:11px 5px;font-size:12px;flex:1;min-width:42%}.categoryRow button.active{background:#31562d}.itemRow button[hidden]{display:none}#placePanel{align-items:center;background:#eff5dd;padding:9px;border-radius:12px}#placePanel span{flex:1;font-size:13px;font-weight:700}#placePanel button{padding:11px;flex:0 0 auto;font-size:12px}#cancelPlace{background:#7b8e70}.resetButton{width:100%;margin-top:10px}.expansionButton{width:100%;flex:none;background:#537c42;border:2px solid #385b36;box-shadow:0 3px 9px #213c2633;font-size:15px;padding:15px 12px}.expansionButton:disabled{background:#a9b7a1;color:#f4f5ef;border-color:#a9b7a1;box-shadow:none;opacity:.78}
 #buildingInfo{position:absolute;z-index:16;bottom:12px;left:10px;right:10px;padding:14px;background:#fffcf2;border:2px solid #6e915f;border-radius:16px;box-shadow:0 12px 36px #19342186;display:flex;flex-direction:column;gap:10px;max-height:min(72%,365px);overflow-y:auto}
 #buildingInfo[hidden]{display:none!important}
 .infoHeading{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -14,6 +14,9 @@
 .infoStats strong{font-size:16px;color:#2b4b32}
 #infoDetails{font-size:13px;line-height:1.45;color:#37543a}
 #infoEdit{flex:none;width:100%;background:#517b4c;font-size:13px;padding:11px}
+#buildUndo{position:absolute;z-index:18;left:10px;right:10px;bottom:70px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fffcf0;border:2px solid #6a955b;border-radius:14px;box-shadow:0 6px 24px #16352077;padding:10px 11px}
+#buildUndo span{font-size:13px;font-weight:700;line-height:1.3}
+#buildUndo button{flex:0 0 auto;min-width:105px;padding:10px 11px;font-size:13px}
 #editMenu{position:absolute;z-index:15;bottom:12px;left:12px;right:12px;padding:15px;background:#fffef5;border:2px solid #638c59;border-radius:18px;display:none;box-shadow:0 12px 36px #1c362d90;flex-wrap:wrap;gap:9px;align-items:stretch}#editMenu.show{display:flex}#editMenu strong{width:100%;font-size:17px}#editMenu p{width:100%;font-size:12px;color:#456044;margin:0 0 3px}#editMenu button{padding:13px;font-size:14px;min-width:36%}#demolish{background:#b34e44}#editClose{background:#829079}canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 #mapTools{position:absolute;top:12px;right:10px;z-index:7;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none}
 #mapTools button{pointer-events:auto;flex:none;min-width:0;max-width:152px;padding:10px 12px;font-size:12px;background:#fffef4;color:#29442c;border:2px solid #74956e;box-shadow:0 3px 11px #21372135}
@@ -31,7 +34,7 @@
 </style></head><body>
 <header><h1>🏝️ Inselreich 3D</h1><span class="tag">🌲 <strong id="woodCount">0</strong> · 🌾 <strong id="foodCount">0</strong></span></header>
 <div id="cityPulse"><span>👥 <strong id="peopleCount">0</strong> Einwohner</span><span>😊 <strong id="happyCount">0</strong>% zufrieden</span><span>🏡 Dorfzeit</span></div>
-<div id="game"><div id="mapTools"><span class="mapHint">☝️ Frei schieben · ✌️ Drehen & Zoom</span><button id="centerCamera">⌖ Kartenmitte</button><button id="overviewCamera">🔎 Weit raus</button></div><div id="buildingInfo" role="dialog" aria-label="Gebäudeinformationen" hidden>
+<div id="game"><div id="buildUndo" hidden role="status" aria-live="polite"><span id="buildUndoText">🏠 Gebäude gebaut!</span><button id="undoLastBuild" type="button">↶ Rückgängig</button></div><div id="mapTools"><span class="mapHint">☝️ Frei schieben · ✌️ Drehen & Zoom</span><button id="centerCamera">⌖ Kartenmitte</button><button id="overviewCamera">🔎 Weit raus</button></div><div id="buildingInfo" role="dialog" aria-label="Gebäudeinformationen" hidden>
   <div class="infoHeading"><strong id="infoTitle">🏠 Gebäude</strong><button id="infoClose" aria-label="Gebäudeinformationen schließen">✕</button></div>
   <p id="infoSubtitle">Gebäudeübersicht</p>
   <div class="infoStats"><div><span id="infoKey1"></span><strong id="infoValue1"></strong></div><div><span id="infoKey2"></span><strong id="infoValue2"></strong></div></div>
@@ -52,8 +55,7 @@
 </section>
 
 <div id="buildPanel" hidden><div class="categoryRow"><button data-cat="wohnen">🏠 Wohnen</button><button data-cat="land">🌾 Landwirtschaft</button><button data-cat="prod">🌲 Produktion</button><button data-cat="shop">🛒 Geschäfte</button><button data-cat="burg">🏰 Burgen</button><button data-cat="wege">🛤️ Straßen</button></div><div class="itemRow"><button id="build">🏠 Haus</button><button id="farm">🚜 Bauernhof</button><button id="field">🌾 Weizenfeld</button><button id="lumber">🪓 Holzfäller</button><button id="market">🛒 Markt 2×2</button><button id="castle">🏰 Burg 3×3</button><button id="road">🪨 Steinweg verlegen</button><button id="roadErase">🧹 Straße entfernen</button></div></div>
-<div id="placePanel" hidden><span id="placeLabel">Gebäude-Vorschau</span><button id="confirmPlace">✅ Bauen</button><button id="cancelPlace">✕ Abbrechen</button></div>
-<p>🔨 Bauen öffnet das Baumenü. Gebäude wählen, Bauplatz antippen und mit ✅ bestätigen. 🏰 Burg: 3×3 freie Felder erforderlich. Im Ansichtsmodus wird nichts versehentlich gebaut. Mit 🌿 Insel erweitern wächst deine Insel auf Knopfdruck gleich rundherum um einen ganzen Streifen – ohne einzelne Randfelder anzutippen. 🏠 Gebäude kurz antippen zeigt seine Infos (Bewohner, Produktion und Zustand). Etwa eine halbe Sekunde gedrückt halten öffnet Verschieben oder Löschen. Kartensteuerung: ☝️ Mit einem Finger die Karte ohne Anschlag frei verschieben; mit „⌖ Kartenmitte“ jederzeit zurück. ✌️ Mit zwei Fingern drehen (die Finger gegeneinander verdrehen), durch Auseinanderziehen zoomen und gemeinsam verschieben. Mit „⌖ Kartenmitte“ findest du zurück. Mit „🔎 Weit raus“ bekommst du die Gesamtansicht deiner Insel. 👥 Häuser bekommen Bewohner: Nahrung lässt neue Bewohner einziehen, Straßen verbessern ihre Zufriedenheit. Deine Einwohner und Fortschritte werden gespeichert. 🛤️ Straßen: Im Baumenü auf „Straßen“ gehen, „Steinweg verlegen“ wählen und auf freie Felder tippen oder mit einem Finger darüberstreichen. Kurven, Kreuzungen und Zugänge zu Gebäuden entstehen automatisch. Mit „Straße entfernen“ kannst du Wege wieder abtragen.</p><button id="reset" class="secondary resetButton">↺ Test zurücksetzen</button></footer>
+<p>🔨 Bauen öffnet das Baumenü. Gebäude wählen und auf ein freies Feld tippen – es wird sofort gebaut! Falls du dich vertippst, kannst du die letzte Platzierung 10 Sekunden lang mit ↶ Rückgängig rückgängig machen. 🏰 Burg: 3×3 freie Felder erforderlich. Im Ansichtsmodus wird nichts versehentlich gebaut. Mit 🌿 Insel erweitern wächst deine Insel auf Knopfdruck gleich rundherum um einen ganzen Streifen – ohne einzelne Randfelder anzutippen. 🏠 Gebäude kurz antippen zeigt seine Infos (Bewohner, Produktion und Zustand). Etwa eine halbe Sekunde gedrückt halten öffnet Verschieben oder Löschen. Kartensteuerung: ☝️ Mit einem Finger die Karte ohne Anschlag frei verschieben; mit „⌖ Kartenmitte“ jederzeit zurück. ✌️ Mit zwei Fingern drehen (die Finger gegeneinander verdrehen), durch Auseinanderziehen zoomen und gemeinsam verschieben. Mit „⌖ Kartenmitte“ findest du zurück. Mit „🔎 Weit raus“ bekommst du die Gesamtansicht deiner Insel. 👥 Häuser bekommen Bewohner: Nahrung lässt neue Bewohner einziehen, Straßen verbessern ihre Zufriedenheit. Deine Einwohner und Fortschritte werden gespeichert. 🛤️ Straßen: Im Baumenü auf „Straßen“ gehen, „Steinweg verlegen“ wählen und auf freie Felder tippen oder mit einem Finger darüberstreichen. Kurven, Kreuzungen und Zugänge zu Gebäuden entstehen automatisch. Mit „Straße entfernen“ kannst du Wege wieder abtragen.</p><button id="reset" class="secondary resetButton">↺ Test zurücksetzen</button></footer>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"}}</script>
 <script type="module">
 import * as THREE from 'three';
@@ -1090,27 +1092,60 @@ function panCameraPixels(dx,dy){
 }
 function resize(){const w=holder.clientWidth,h=holder.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}new ResizeObserver(resize).observe(holder);resize();
 const points=new Map();let down=null,pinch=null,ignoreClick=false,holdTimer=null,selected=null,moving=null,roadStrokeDirty=false;
-const canvas=renderer.domElement,editMenu=document.getElementById('editMenu'),buildPanel=document.getElementById('buildPanel'),placePanel=document.getElementById('placePanel'),centerButton=document.getElementById('centerCamera');let pending=null;
-const ghost=new THREE.Group();scene.add(ghost);
-const ghostGreen=new THREE.MeshBasicMaterial({color:0x4ee16c,transparent:true,opacity:.48,depthWrite:false,side:THREE.DoubleSide});
-const ghostRed=new THREE.MeshBasicMaterial({color:0xe65753,transparent:true,opacity:.48,depthWrite:false,side:THREE.DoubleSide});
-function canPlace(type,k){if(!owned.has(k))return false;if(type==='road')return !occupied(k);if(type==='roadErase')return roads.has(k);if(type==='market')return canMarket(k);if(type==='castle')return canCastle(k);if(occupied(k))return false;if(type==='field')return nearFarm(k);return true}
-function preview(k){
- pending={key:k,type:buildType};ghost.clear();
- const ok=canPlace(buildType,k),mat=ok?ghostGreen:ghostRed;
- const [x,z]=pos(k),castle=buildType==='castle',market=buildType==='market',ofs=castle?1:market?.5:0;
- const width=castle?2.87:market?1.88:.82;
- const base=new THREE.Mesh(new THREE.BoxGeometry(width,.06,width),mat);
- base.position.set(x+ofs,.23,z+ofs);ghost.add(base);
- const shape=new THREE.Mesh(new THREE.BoxGeometry(castle?2.35:market?1.35:.65,castle?1.28:buildType==='field'?.15:.65,castle?2.35:market?1.3:.65),mat);
- shape.position.set(x+ofs,castle?.90:buildType==='field'?.34:.60,z+ofs);ghost.add(shape);
- document.getElementById('placeLabel').textContent=ok?'✅ Platz frei – hier bauen?':castle?'❌ Burg braucht 3×3 freie Felder':'❌ Platz nicht geeignet';
- document.getElementById('confirmPlace').disabled=!ok;placePanel.hidden=false;
- status.textContent=ok?'Durchsichtige Vorschau: ✅ bestätigen oder ✕ abbrechen.':castle?'🏰 Für diese Burg brauchst du 3×3 freie Felder.':'Dieser Bauplatz ist nicht geeignet.'
+const canvas=renderer.domElement,editMenu=document.getElementById('editMenu'),buildPanel=document.getElementById('buildPanel'),centerButton=document.getElementById('centerCamera');
+let lastBuildUndo=null,buildUndoTimer=null;
+function hideBuildUndo(){
+ if(buildUndoTimer!==null){clearTimeout(buildUndoTimer);buildUndoTimer=null}
+ lastBuildUndo=null;
+ document.getElementById('buildUndo').hidden=true
 }
-function clearPreview(){pending=null;ghost.clear();placePanel.hidden=true}
-function confirmPlacement(){if(!pending)return;const {key:k,type}=pending;if(!canPlace(type,k))return;let ok=type==='castle'?addCastle(k):type==='market'?addMarket(k):type==='lumber'?addLumberjack(k):type==='farm'?addFarm(k):type==='field'?addField(k):(addHouse(k),true);if(ok){clearPreview();viewMode();status.textContent='✅ Gebäude gebaut! Du bist wieder im Ansichtsmodus.'}}
-document.getElementById('confirmPlace').onclick=confirmPlacement;document.getElementById('cancelPlace').onclick=()=>{clearPreview();status.textContent='Vorschau abgebrochen. Wähle einen anderen Bauplatz.'};
+function showBuildUndo(type,k,group){
+ hideBuildUndo();
+ lastBuildUndo={type,k,group};
+ const names={house:'🏠 Haus',lumber:'🪓 Holzfäller',farm:'🚜 Bauernhof',field:'🌾 Weizenfeld',market:'🛒 Markt',castle:'🏰 Burg'};
+ document.getElementById('buildUndoText').textContent='✅ '+(names[type]||'Gebäude')+' gebaut!';
+ document.getElementById('buildUndo').hidden=false;
+ buildUndoTimer=setTimeout(hideBuildUndo,10000)
+}
+document.getElementById('undoLastBuild').onclick=()=>{
+ const entry=lastBuildUndo;
+ if(!entry)return;
+ hideBuildUndo();
+ const map=mapOf(entry.type);
+ if(map.get(entry.k)!==entry.group){
+  status.textContent='Dieses Gebäude wurde bereits verändert und kann nicht mehr rückgängig gemacht werden.';return
+ }
+ land.remove(entry.group);
+ map.delete(entry.k);
+ if(entry.type==='house')citizens.delete(entry.k);
+ save();
+ status.textContent='↶ Gebäudeplatzierung rückgängig gemacht.'
+};
+function canPlace(type,k){if(!owned.has(k))return false;if(type==='road')return !occupied(k);if(type==='roadErase')return roads.has(k);if(type==='market')return canMarket(k);if(type==='castle')return canCastle(k);if(occupied(k))return false;if(type==='field')return nearFarm(k);return true}
+function clearPreview(){} // No second confirmation: one tap builds immediately.
+function placeBuildingNow(k){
+ const type=buildType;
+ if(!canPlace(type,k)){
+  status.textContent=type==='castle'?'🏰 Die Burg braucht 3×3 freie Felder.'
+   :type==='market'?'🛒 Der Markt braucht 2×2 freie Felder.'
+   :type==='field'&&!nearFarm(k)?'🌾 Das Weizenfeld muss neben einem Bauernhof liegen.'
+   :roads.has(k)?'🪨 Hier liegt eine Straße. Entferne sie zuerst.'
+   :'❌ Dieser Platz ist bereits belegt oder nicht zum Bauen geeignet.';
+  return false
+ }
+ const ok=type==='castle'?addCastle(k)
+  :type==='market'?addMarket(k)
+  :type==='lumber'?addLumberjack(k)
+  :type==='farm'?addFarm(k)
+  :type==='field'?addField(k)
+  :type==='house'?(addHouse(k),buildings.has(k)):false;
+ if(!ok)return false;
+ const group=mapOf(type).get(k);
+ viewMode();
+ status.textContent='✅ Gebäude sofort gebaut! Falsch platziert? Tippe auf ↶ Rückgängig.';
+ if(group)showBuildUndo(type,k,group);
+ return true
+}
 function coords(e){let r=canvas.getBoundingClientRect();return {x:(e.clientX-r.left)/r.width*2-1,y:-(e.clientY-r.top)/r.height*2+1}}
 function hit(e){const p=coords(e),ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2(p.x,p.y),camera);
 const plane=new THREE.Plane(new THREE.Vector3(0,1,0),-.15),point=new THREE.Vector3();
@@ -1316,7 +1351,7 @@ canvas.addEventListener('pointerup',e=>{
   else if(!modeBuild&&touchedBuilding){showBuildingInfo(touchedBuilding)}
   else if(i!==undefined){
    if(!owned.has(i)){status.textContent='🌿 Neues Land bekommst du mit dem Knopf „Insel erweitern“ unter der Karte.'}
-   else if(modeBuild){preview(i)}
+   else if(modeBuild){placeBuildingNow(i)}
    else closeBuildingInfo()
   }else{closeBuildingInfo()}
  }
@@ -1355,7 +1390,7 @@ function chooseType(type){
  if(type==='road'||type==='roadErase')status.textContent=type==='road'
   ?'🪨 Straßenmodus: Auf freie Felder tippen oder mit dem Finger einen ganzen Weg ziehen. Die Kamera bleibt dabei still.'
   :'🧹 Straßen entfernen: Auf einen Weg tippen oder darüberziehen. Mit 👁️ Anschauen beenden.';
- else status.textContent='🔨 '+({house:'Haus',farm:'Bauernhof',field:'Weizenfeld',lumber:'Holzfäller',market:'Markt 2×2',castle:'Burg 3×3'}[type])+' gewählt: Tippe auf einen Bauplatz für die Vorschau.'
+ else status.textContent='🔨 '+({house:'Haus',farm:'Bauernhof',field:'Weizenfeld',lumber:'Holzfäller',market:'Markt 2×2',castle:'Burg 3×3'}[type])+' gewählt: Tippe auf ein freies Feld – das Gebäude wird sofort gebaut.'
 }
 const typeButtons={house:buildButton,farm:farmButton,field:fieldButton,lumber:lumberButton,market:marketButton,castle:document.getElementById('castle'),road:document.getElementById('road'),roadErase:document.getElementById('roadErase')};for(const [name,btn] of Object.entries(typeButtons))btn.onclick=()=>chooseType(name);
 const categoryTypes={wohnen:['house'],land:['farm','field'],prod:['lumber'],shop:['market'],burg:['castle'],wege:['road','roadErase']};
