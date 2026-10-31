@@ -433,6 +433,53 @@ function addCastle(k){
   smallBall(g,.055,flowerRed,xx+.05,.45,-.43)
  }
  embellishCastle(g);
+ // The entire old fortress remains intact, but is placed on a smaller central island
+ // so its water moat stays INSIDE the original 3x3 construction footprint.
+ const fortress=new THREE.Group();fortress.name='Burganlage';
+ while(g.children.length)fortress.add(g.children[0]);
+ fortress.scale.set(.72,1,.72);
+ g.add(fortress);
+ // Stone basin underneath the moat. Total width is 2.98 (< 3 tiles).
+ const moatBed=mat(0x476b68),
+       moatWater=new THREE.MeshStandardMaterial({color:0x409dba,roughness:.22,metalness:.14,transparent:true,opacity:.92,side:THREE.DoubleSide}),
+       moatSparkle=new THREE.MeshBasicMaterial({color:0xd3f0e7,transparent:true,opacity:.58,depthWrite:false,side:THREE.DoubleSide}),
+       bridgeOak=mat(0x916338),bridgeDark=mat(0x603e26),bridgeRope=mat(0xd6b57e);
+ box(2.97,.075,2.97,moatBed,0,.037,0,g);
+ // Continuous water ring: two full side channels and front/back connectors.
+ for(const side of [-1,1]){
+   box(.405,.033,2.90,moatWater,side*1.274,.104,0,g);
+   box(2.16,.033,.405,moatWater,0,.104,side*1.274,g);
+   // The raised stone edge makes the channel read as a real, deep moat.
+   box(.050,.095,2.94,castleDark,side*1.467,.15,0,g);
+   box(.035,.075,2.94,castleLight,side*1.088,.153,0,g);
+   box(2.94,.095,.050,castleDark,0,.15,side*1.467,g);
+   box(2.16,.075,.035,castleLight,0,.153,side*1.088,g);
+ }
+ // Bright water reflections, deliberately lightweight on the iPhone.
+ for(const [rx,rz] of [[-1.27,-.77],[1.27,-.48],[-1.27,.43],[1.27,.83],[-.71,-1.27],[.73,-1.27],[-.75,1.27],[.82,1.27]]){
+   const ripple=new THREE.Mesh(new THREE.RingGeometry(.048,.063,12),moatSparkle);
+   ripple.rotation.x=-Math.PI/2;ripple.position.set(rx,.125,rz);g.add(ripple)
+ }
+ // Drawbridge across the southern/front water channel, exactly aligned with the gate.
+ // Wooden sleepers span from the castle's entrance to the outer shore.
+ box(.60,.085,.62,bridgeDark,0,.214,1.192,g);
+ for(let plank=0;plank<8;plank++){
+   const z=.945+plank*.075;
+   box(.565,.035,.071,plank%3===0?bridgeOak:timber,0,.263,z,g);
+   for(const edgeX of [-.235,.235])box(.024,.017,.066,bridgeDark,edgeX,.291,z,g)
+ }
+ // Low handrails with posts and taut ropes on both sides.
+ for(const edgeX of [-.315,.315]){
+   for(const z of [.97,1.20,1.425]){
+     box(.058,.33,.058,bridgeDark,edgeX,.38,z,g);
+     smallBall(g,.048,castleLight,edgeX,.57,z)
+   }
+   box(.025,.025,.53,bridgeRope,edgeX,.51,1.198,g);
+   box(.024,.025,.53,bridgeOak,edgeX,.405,1.198,g)
+ }
+ // Stone access steps from the outside shore; all geometry stays inside 3x3.
+ box(.67,.035,.14,castleLight,0,.184,1.426,g);
+ box(.59,.025,.11,castleDark,0,.206,.93,g);
  castles.set(k,g);save();return true
 }
 
