@@ -72,7 +72,7 @@ const tiles=[],tileModels=new Map(),buildings=new Map(),markets=new Map(),castle
 const citizens=new Map();let citizenElapsed=0,infoSelection=null,starterWoodGranted=false;
 const HOME_CAPACITY=6,CITIZEN_TICK_MS=30000,START_WOOD=10;
 const WOOD_BUILD_COST={house:5,farm:8,field:3,lumber:6,market:14,castle:30};
-const LIMIT=5,KEY='inselreich-pages-test-01',OLD_KEY='inselreich-3d-test-01';
+const LIMIT=8,KEY='inselreich-pages-test-01',OLD_KEY='inselreich-3d-test-01';
 const key=(x,z)=>x+','+z;
 const pos=k=>k.split(',').map(Number);
 const inside=(x,z)=>Math.abs(x)<=LIMIT&&Math.abs(z)<=LIMIT;
