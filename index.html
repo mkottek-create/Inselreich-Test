@@ -108,6 +108,8 @@ renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 // Rebuild after actual world edits, not every time the user rotates the camera.
 renderer.shadowMap.autoUpdate=false;
 renderer.shadowMap.needsUpdate=true;
+// Prevent stutters from refreshing static shadows on timer/resource saves.
+let worldShadowsDirty=true;
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=1.20;
@@ -422,7 +424,7 @@ function updateCoastline(){
 function refreshEdge(){for(const [k,obj] of tileModels){const [x,z]=pos(k);const unlocked=owned.has(k);if(!unlocked&&!validFrontier(x,z)){land.remove(obj);tileModels.delete(k);const h=obj.children.find(c=>c.userData?.key===k);if(h){const idx=tiles.indexOf(h);if(idx>=0)tiles.splice(idx,1)}}}
  for(const k of owned){if(!tileModels.has(k))tile(k,true)}
  for(const k of owned){const [x,z]=pos(k);for(const [a,b] of neighbors(x,z)){const nk=key(a,b);if(validFrontier(a,b)&&!tileModels.has(nk))tile(nk,false)}}
- updateCoastline()
+ updateCoastline();worldShadowsDirty=true
 }
 // Add an entire new ring in one action instead of unlocking edge tiles individually.
 // Existing owned tiles are kept; old saved islands, including irregular shapes, are supported.
@@ -800,7 +802,7 @@ function addHouse(k){
  groundedEntrance(g,0,.47,.31,.162,stoneDetail);
  embellishHouse(g);
  finishBuilding('house',g,k);
- buildings.set(k,g);if(!citizens.has(k))citizens.set(k,2);save()
+ worldShadowsDirty=true;buildings.set(k,g);if(!citizens.has(k))citizens.set(k,2);save()
 }
 const marketRoof=mat(0xb54f3c),marketCanvas=mat(0xe7d6b0),marketStone=mat(0xc7b28b),marketWood=mat(0x76543a),marketProduce=[mat(0xc3412b),mat(0xe6b84f),mat(0x69a547)];
 function marketCells(k){const [x,z]=pos(k);return [key(x,z),key(x+1,z),key(x,z+1),key(x+1,z+1)]}
@@ -846,7 +848,7 @@ function addMarket(k){
  groundedEntrance(g,0,.085,.31,.172,marketStone);
  embellishMarket(g);
  finishBuilding('market',g,k);
- markets.set(k,g);save();return true
+ worldShadowsDirty=true;markets.set(k,g);save();return true
 }
 
 const castleStone=mat(0xa7a99b),castleLight=mat(0xc8c3b1),castleDark=mat(0x73786f),
@@ -980,7 +982,7 @@ function addCastle(k){
   box(.052,.055,.09,bridgeDark,xx,.004,1.33,g)
  }
  finishBuilding('castle',g,k);
- castles.set(k,g);save();return true
+ worldShadowsDirty=true;castles.set(k,g);save();return true
 }
 
 const pine=mat(0x397e44),pineLight=mat(0x4c9950),logWood=mat(0xad7744);
@@ -1068,7 +1070,7 @@ function addLumberjack(k){
  // Das vorhandene Produktions- und Speichersystem bleibt unverändert.
  embellishLumber(g);
  finishBuilding('lumber',g,k);
- lumberjacks.set(k,g);save();return true
+ worldShadowsDirty=true;lumberjacks.set(k,g);save();return true
 }
 const hay=mat(0xddba4c),straw=mat(0x9e8536),barnRed=mat(0xad5343),fieldEarth=mat(0x785637);
 
@@ -1152,7 +1154,7 @@ function addQuarry(k,preferredDeposit=null){
   fragment.rotation.y=i*.57;portal.add(fragment)
  }
  finishBuilding('quarry',g,k);
- quarries.set(k,g);quarryDeposits.set(k,deposit);
+ worldShadowsDirty=true;quarries.set(k,g);quarryDeposits.set(k,deposit);
  orientQuarryPortal(g,k,deposit);
  save();return true
 }
@@ -1225,7 +1227,7 @@ function addFarm(k){
  groundedEntrance(g,-.095,.46,.31,.194,farmGravel);
  embellishFarm(g);
  finishBuilding('farm',g,k);
- farms.set(k,g);save();return true
+ worldShadowsDirty=true;farms.set(k,g);save();return true
 }
 function nearFarm(k){const [x,z]=pos(k);return neighbors(x,z).some(([a,b])=>farms.has(key(a,b)))}
 
@@ -1282,7 +1284,7 @@ function addField(k){
  ears.instanceColor.needsUpdate=true;
  embellishField(g);
  finishBuilding('field',g,k);
- fields.set(k,g);save();return true
+ worldShadowsDirty=true;fields.set(k,g);save();return true
 }
 function productionFields(){let count=0;for(const k of fields.keys())if(nearFarm(k))count++;return count}
 function refreshFood(){foodCount.textContent=food.toLocaleString('de-DE')}
@@ -1394,11 +1396,11 @@ function drawRoad(k,mask){
   if(cobbles.instanceColor)cobbles.instanceColor.needsUpdate=true;
   cobbles.castShadow=false;cobbles.receiveShadow=false;model.add(cobbles)
  }
- model.userData.road=true;roadModels.set(k,model);land.add(model)
+ model.userData.road=true;roadModels.set(k,model);land.add(model);worldShadowsDirty=true
 }
 function refreshRoadNetworks(){
  for(const [k,model] of roadModels)if(!roads.has(k)){
-  land.remove(model);roadModels.delete(k)
+  land.remove(model);roadModels.delete(k);worldShadowsDirty=true
  }
  for(const k of roads){
   // Remove stale data if a tile is no longer owned.
@@ -1488,7 +1490,7 @@ function save(){
  if(gesturePointerCount>0){pendingGestureSave=true;return}
  refreshRoadNetworks();syncGroundDetailsVisibility();
  updateCitizenUI();refreshBuildingInfo();refreshBuildCostLabels();
- renderer.shadowMap.needsUpdate=true;
+ if(worldShadowsDirty){renderer.shadowMap.needsUpdate=true;worldShadowsDirty=false}
  try{localStorage.setItem(KEY,JSON.stringify({land:[...owned],houses:[...buildings.keys()],markets:[...markets.keys()],castles:[...castles.keys()],lumberjacks:[...lumberjacks.keys()],farms:[...farms.keys()],fields:[...fields.keys()],quarries:[...quarries.keys()],quarryDeposits:[...quarryDeposits],roads:[...roads],rockSites:[...rockSites],citizens:[...citizens],citizenElapsed,food,foodElapsed,wood,woodElapsed,stone,stoneElapsed,starterWoodGranted,lastUpdate:Date.now()}))}catch(e){}}
 let restored=false;try{let data=JSON.parse(localStorage.getItem(KEY)||'null');if(data&&Array.isArray(data.land)&&Array.isArray(data.houses)){for(const k of data.land){const [x,z]=pos(k);if(inside(x,z))owned.add(k)}if(owned.size){
 if(Array.isArray(data.rockSites))for(const k of data.rockSites)if(typeof k==='string'&&owned.has(k))rockSites.add(k);
@@ -1590,6 +1592,7 @@ document.getElementById('undoLastBuild').onclick=()=>{
  map.delete(entry.k);
  if(entry.type==='house')citizens.delete(entry.k);
  if(entry.type==='quarry')quarryDeposits.delete(entry.k);
+ worldShadowsDirty=true;
  wood+=entry.woodCost||0;stone+=entry.stoneCost||0;
  refreshWood();refreshStone();save();
  status.textContent='↶ Bau rückgängig gemacht. Holz und Stein wurden zurückerstattet.'
@@ -1785,9 +1788,9 @@ if(from.type==='quarry'){
  quarryDeposits.set(to,quarryTarget);
  orientQuarryPortal(g,to,quarryTarget)
 }
-const [x,z]=pos(to);const by={house:.025,market:.025,lumber:.035,quarry:.03,farm:.015,castle:.16,field:.16};g.position.set(x+(from.type==='castle'?1:from.type==='market'?.5:0),by[from.type]??.16,z+(from.type==='castle'?1:from.type==='market'?.5:0));save();status.textContent='✅ Gebäude verschoben! Zum Bearbeiten wieder länger gedrückt halten.';return true}
+const [x,z]=pos(to);const by={house:.025,market:.025,lumber:.035,quarry:.03,farm:.015,castle:.16,field:.16};g.position.set(x+(from.type==='castle'?1:from.type==='market'?.5:0),by[from.type]??.16,z+(from.type==='castle'?1:from.type==='market'?.5:0));worldShadowsDirty=true;save();status.textContent='✅ Gebäude verschoben! Zum Bearbeiten wieder länger gedrückt halten.';return true}
 document.getElementById('move').onclick=()=>{if(!selected)return;moving=selected;closeEdit();modeBuild=false;buildPanel.hidden=true;updateTools();status.textContent='↔ Verschieben: Tippe auf ein FREIES grünes Feld. Markt braucht 2×2, Burg braucht 3×3 freie Felder.'};
-document.getElementById('demolish').onclick=()=>{if(!selected)return;const t=selected;if(confirm('Dieses Gebäude wirklich löschen?')){const m=mapOf(t.type),g=m.get(t.anchor);if(g){land.remove(g);m.delete(t.anchor);if(t.type==='house')citizens.delete(t.anchor);if(t.type==='quarry')quarryDeposits.delete(t.anchor);save();status.textContent='🗑 Gebäude gelöscht. Der Bauplatz ist wieder frei.'}}closeEdit()};
+document.getElementById('demolish').onclick=()=>{if(!selected)return;const t=selected;if(confirm('Dieses Gebäude wirklich löschen?')){const m=mapOf(t.type),g=m.get(t.anchor);if(g){land.remove(g);m.delete(t.anchor);if(t.type==='house')citizens.delete(t.anchor);if(t.type==='quarry')quarryDeposits.delete(t.anchor);worldShadowsDirty=true;save();status.textContent='🗑 Gebäude gelöscht. Der Bauplatz ist wieder frei.'}}closeEdit()};
 document.getElementById('editClose').onclick=closeEdit;
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 
@@ -1837,7 +1840,10 @@ canvas.addEventListener('pointerdown',e=>{
  cancelHold();
  if(points.size>=2){
   // Apply the last single-finger movement before switching gesture modes.
-  if(down&&down.moved)applyGestureMotion();
+  if(down&&down.moved){
+   const oldFinger=points.get(down.id);
+   if(oldFinger)panCameraPixels(oldFinger.x-down.lastX,oldFinger.y-down.lastY)
+  }
   pinch=twoFingerSnapshot();
   down=null;ignoreClick=true
  }else{
