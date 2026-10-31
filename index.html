@@ -1199,10 +1199,15 @@ function citizenCycle(){
  refreshFood();save()
 }
 
-function save(){refreshRoadNetworks();syncGroundDetailsVisibility();updateCitizenUI();refreshBuildingInfo();refreshBuildCostLabels();try{localStorage.setItem(KEY,JSON.stringify({land:[...owned],houses:[...buildings.keys()],markets:[...markets.keys()],castles:[...castles.keys()],lumberjacks:[...lumberjacks.keys()],farms:[...farms.keys()],fields:[...fields.keys()],roads:[...roads],rockSites:[...rockSites],citizens:[...citizens],citizenElapsed,food,foodElapsed,wood,woodElapsed,starterWoodGranted,lastUpdate:Date.now()}))}catch(e){}}
+function save(){refreshRoadNetworks();syncGroundDetailsVisibility();updateCitizenUI();refreshBuildingInfo();refreshBuildCostLabels();try{localStorage.setItem(KEY,JSON.stringify({land:[...owned],houses:[...buildings.keys()],markets:[...markets.keys()],castles:[...castles.keys()],lumberjacks:[...lumberjacks.keys()],farms:[...farms.keys()],fields:[...fields.keys()],quarries:[...quarries.keys()],quarryDeposits:[...quarryDeposits],roads:[...roads],rockSites:[...rockSites],citizens:[...citizens],citizenElapsed,food,foodElapsed,wood,woodElapsed,stone,stoneElapsed,starterWoodGranted,lastUpdate:Date.now()}))}catch(e){}}
 let restored=false;try{let data=JSON.parse(localStorage.getItem(KEY)||'null');if(data&&Array.isArray(data.land)&&Array.isArray(data.houses)){for(const k of data.land){const [x,z]=pos(k);if(inside(x,z))owned.add(k)}if(owned.size){
 if(Array.isArray(data.rockSites))for(const k of data.rockSites)if(typeof k==='string'&&owned.has(k))rockSites.add(k);
-refreshEdge();data.houses.forEach(k=>{if(owned.has(k))addHouse(k)});if(Array.isArray(data.markets))data.markets.forEach(k=>{if(typeof k==="string")addMarket(k)});if(Array.isArray(data.castles))data.castles.forEach(k=>{if(typeof k==='string')addCastle(k)});if(Array.isArray(data.lumberjacks))data.lumberjacks.forEach(k=>{if(typeof k==="string")addLumberjack(k)});if(Array.isArray(data.farms))data.farms.forEach(k=>{if(typeof k==='string')addFarm(k)});if(Array.isArray(data.fields))data.fields.forEach(k=>{if(typeof k==='string')addField(k)});if(Array.isArray(data.roads))data.roads.forEach(k=>{if(typeof k==='string'&&owned.has(k)&&!occupied(k))roads.add(k)});refreshRoadNetworks();
+refreshEdge();data.houses.forEach(k=>{if(owned.has(k))addHouse(k)});if(Array.isArray(data.markets))data.markets.forEach(k=>{if(typeof k==="string")addMarket(k)});if(Array.isArray(data.castles))data.castles.forEach(k=>{if(typeof k==='string')addCastle(k)});if(Array.isArray(data.lumberjacks))data.lumberjacks.forEach(k=>{if(typeof k==="string")addLumberjack(k)});if(Array.isArray(data.farms))data.farms.forEach(k=>{if(typeof k==='string')addFarm(k)});if(Array.isArray(data.fields))data.fields.forEach(k=>{if(typeof k==='string')addField(k)});
+if(Array.isArray(data.quarries)){
+ const savedClaims=new Map(Array.isArray(data.quarryDeposits)?data.quarryDeposits:[]);
+ data.quarries.forEach(k=>{if(typeof k==='string')addQuarry(k,savedClaims.get(k)||null)})
+}
+if(Array.isArray(data.roads))data.roads.forEach(k=>{if(typeof k==='string'&&owned.has(k)&&!occupied(k))roads.add(k)});refreshRoadNetworks();
 if(Array.isArray(data.citizens))for(const entry of data.citizens){
  if(Array.isArray(entry)&&entry.length===2&&buildings.has(entry[0])){
   const value=Number(entry[1]);
@@ -1211,7 +1216,11 @@ if(Array.isArray(data.citizens))for(const entry of data.citizens){
 }
 citizenElapsed=Math.max(0,Math.min(CITIZEN_TICK_MS-1,Number(data.citizenElapsed)||0));
 starterWoodGranted=data.starterWoodGranted===true;
-food=Math.max(0,Math.floor(Number(data.food)||0));foodElapsed=Math.max(0,Math.min(9999,Number(data.foodElapsed)||0));wood=Math.max(0,Math.floor(Number(data.wood)||0));woodElapsed=Math.max(0,Math.min(9999,Number(data.woodElapsed)||0));const away=Math.max(0,Math.min(21600000,Date.now()-(Number(data.lastUpdate)||Date.now())));const total=woodElapsed+away;if(lumberjacks.size){wood+=Math.floor(total/15000)*lumberjacks.size;woodElapsed=total%15000}else woodElapsed=0;const foodTotal=foodElapsed+away;if(productionFields()){food+=Math.floor(foodTotal/12000)*productionFields();foodElapsed=foodTotal%12000}else foodElapsed=0;
+food=Math.max(0,Math.floor(Number(data.food)||0));foodElapsed=Math.max(0,Math.min(9999,Number(data.foodElapsed)||0));wood=Math.max(0,Math.floor(Number(data.wood)||0));woodElapsed=Math.max(0,Math.min(9999,Number(data.woodElapsed)||0));
+stone=Math.max(0,Math.floor(Number(data.stone)||0));stoneElapsed=Math.max(0,Math.min(STONE_TICK_MS-1,Number(data.stoneElapsed)||0));const away=Math.max(0,Math.min(21600000,Date.now()-(Number(data.lastUpdate)||Date.now())));const total=woodElapsed+away;if(lumberjacks.size){wood+=Math.floor(total/15000)*lumberjacks.size;woodElapsed=total%15000}else woodElapsed=0;
+const stoneTotal=stoneElapsed+away;
+if(quarries.size){stone+=Math.floor(stoneTotal/STONE_TICK_MS)*quarries.size;stoneElapsed=stoneTotal%STONE_TICK_MS}else stoneElapsed=0;
+const foodTotal=foodElapsed+away;if(productionFields()){food+=Math.floor(foodTotal/12000)*productionFields();foodElapsed=foodTotal%12000}else foodElapsed=0;
  if(!rockSites.size)seedRockSites([...owned]);restored=true}}}catch(e){}
 if(!restored){for(let x=-1;x<=1;x++)for(let z=-1;z<=1;z++)owned.add(key(x,z));refreshEdge();
  try{const prev=JSON.parse(localStorage.getItem(OLD_KEY)||'null');if(Array.isArray(prev)){prev.forEach(i=>{if(Number.isInteger(i)&&i>=0&&i<9)addHouse(key(i%3-1,Math.floor(i/3)-1))})}else addHouse(key(0,0))}catch(e){addHouse(key(0,0))}}
@@ -1221,7 +1230,7 @@ if(!restored){for(let x=-1;x<=1;x++)for(let z=-1;z<=1;z++)owned.add(key(x,z));re
   if(!restored||(wood===0&&lumberjacks.size===0))wood+=START_WOOD;
   starterWoodGranted=true
  }
-refreshWood();refreshFood();save();
+refreshWood();refreshFood();refreshStone();save();
 const MAX_ZOOM_DISTANCE=38;let orbit=0.72,elevation=.84,distance=8,modeBuild=false,buildType='house';const focus=new THREE.Vector3(0,.2,0);
 function placeCamera(){camera.position.set(focus.x+Math.sin(orbit)*Math.cos(elevation)*distance,Math.sin(elevation)*distance+focus.y,focus.z+Math.cos(orbit)*Math.cos(elevation)*distance);camera.lookAt(focus)}
 function panCameraPixels(dx,dy){
@@ -1323,7 +1332,7 @@ function buildingAtFinger(e){
  const p=coords(e),ray=new THREE.Raycaster();
  ray.setFromCamera(new THREE.Vector2(p.x,p.y),camera);
  const roots=new Map();
- for(const [type,items] of [['house',buildings],['farm',farms],['field',fields],['lumber',lumberjacks],['market',markets],['castle',castles]]){
+ for(const [type,items] of [['house',buildings],['farm',farms],['field',fields],['lumber',lumberjacks],['quarry',quarries],['market',markets],['castle',castles]]){
    for(const [anchor,group] of items)roots.set(group,{type,anchor})
  }
  if(!roots.size)return null;
@@ -1338,19 +1347,19 @@ function buildingAtFinger(e){
  }
  return null
 }
-function at(k){if(buildings.has(k))return {type:'house',anchor:k};if(lumberjacks.has(k))return {type:'lumber',anchor:k};if(farms.has(k))return {type:'farm',anchor:k};if(fields.has(k))return {type:'field',anchor:k};const [a,b]=pos(k);for(const m of markets.keys()){const [x,z]=pos(m);if(a>=x&&a<x+2&&b>=z&&b<z+2)return {type:'market',anchor:m}}for(const m of castles.keys()){const [x,z]=pos(m);if(a>=x&&a<x+3&&b>=z&&b<z+3)return {type:'castle',anchor:m}}return null}
+function at(k){if(buildings.has(k))return {type:'house',anchor:k};if(lumberjacks.has(k))return {type:'lumber',anchor:k};if(quarries.has(k))return {type:'quarry',anchor:k};if(farms.has(k))return {type:'farm',anchor:k};if(fields.has(k))return {type:'field',anchor:k};const [a,b]=pos(k);for(const m of markets.keys()){const [x,z]=pos(m);if(a>=x&&a<x+2&&b>=z&&b<z+2)return {type:'market',anchor:m}}for(const m of castles.keys()){const [x,z]=pos(m);if(a>=x&&a<x+3&&b>=z&&b<z+3)return {type:'castle',anchor:m}}return null}
 
 /* Short tap shows the ACTUAL data for the mesh that was touched.
    We keep the old 560ms hold-to-edit action, with no new save keys. */
 const buildingNames={
  house:'🏠 Wohnhaus',farm:'🚜 Bauernhof',field:'🌾 Weizenfeld',
- lumber:'🪓 Holzfäller',market:'🛒 Marktplatz',castle:'🏰 Burg'
+ lumber:'🪓 Holzfäller',quarry:'⛏️ Steinbruch',market:'🛒 Marktplatz',castle:'🏰 Burg'
 };
 function buildingInfoData(info){
  if(!info||!mapOf(info.type).has(info.anchor))return null;
  const k=info.anchor,[x,z]=pos(k);
  const result={title:buildingNames[info.type]||'Gebäude',
-               subtitle:'Dorfzeit · '+({house:'1×1 Feld',farm:'1×1 Feld',field:'1×1 Feld',lumber:'1×1 Feld',market:'2×2 Felder',castle:'3×3 Felder'}[info.type]||'Gebäude'),
+               subtitle:'Dorfzeit · '+({house:'1×1 Feld',farm:'1×1 Feld',field:'1×1 Feld',lumber:'1×1 Feld',quarry:'1×1 Feld',market:'2×2 Felder',castle:'3×3 Felder'}[info.type]||'Gebäude'),
                firstLabel:'Zustand',first:'In Betrieb',secondLabel:'Aufgabe',second:'Stadtentwicklung',details:''};
  if(info.type==='house'){
   const inhabitants=citizens.get(k)??2;
@@ -1373,6 +1382,11 @@ function buildingInfoData(info){
   result.firstLabel='Produktion';result.first='+1 Holz / 15 Sek.';
   result.secondLabel='Holzlager';result.second=wood.toLocaleString('de-DE');
   result.details='🌲 Der Holzfäller produziert laufend Holz für dein Inselreich.';
+ }else if(info.type==='quarry'){
+  const deposit=quarryDeposits.get(k);
+  result.firstLabel='Produktion';result.first='+1 Stein / 15 Sek.';
+  result.secondLabel='Steinlager';result.second=stone.toLocaleString('de-DE');
+  result.details=deposit?'🏔️ Aktiv an einem Steinvorkommen. Baut Stein für Märkte und Burgen ab.':'⚠️ Kein angeschlossener Berg.';
  }else if(info.type==='farm'){
   const adjacent=neighbors(x,z).filter(([a,b])=>fields.has(key(a,b))).length;
   const active=neighbors(x,z).filter(([a,b])=>fields.has(key(a,b))&&nearFarm(key(a,b))).length;
@@ -1425,17 +1439,24 @@ document.getElementById('infoEdit').onclick=()=>{
 
 function cancelHold(){if(holdTimer!==null){clearTimeout(holdTimer);holdTimer=null}}
 function closeEdit(){editMenu.classList.remove('show');selected=null}
-function showEdit(info){closeBuildingInfo();moving=null;selected=info;clearPreview();editMenu.classList.add('show');document.getElementById('editTitle').textContent=(info.type==='castle'?'🏰 Burg':info.type==='market'?'🛒 Markt':info.type==='lumber'?'🪓 Holzfäller':info.type==='farm'?'🚜 Bauernhof':info.type==='field'?'🌾 Weizenfeld':'🏠 Haus')+' bearbeiten';status.textContent='🏠 Gebäude ausgewählt – Verschieben oder Löschen?';if(navigator.vibrate)navigator.vibrate(35)}
-function mapOf(type){return type==='house'?buildings:type==='market'?markets:type==='castle'?castles:type==='lumber'?lumberjacks:type==='farm'?farms:fields}
-function relocate(from,to){const targetCells=from.type==='castle'?castleCells(to):from.type==='market'?marketCells(to):[to];if(!targetCells.every(k=>owned.has(k)&&!roads.has(k)&&(!at(k)||(at(k).type===from.type&&at(k).anchor===from.anchor)))){status.textContent=from.type==='castle'?'❌ Burg braucht 3×3 freie Felder.':from.type==='market'?'❌ Der Markt braucht vier freie Felder (2×2).':'❌ Bitte einen freien Bauplatz wählen.';return false}
+function showEdit(info){closeBuildingInfo();moving=null;selected=info;clearPreview();editMenu.classList.add('show');document.getElementById('editTitle').textContent=(info.type==='castle'?'🏰 Burg':info.type==='market'?'🛒 Markt':info.type==='lumber'?'🪓 Holzfäller':info.type==='quarry'?'⛏️ Steinbruch':info.type==='farm'?'🚜 Bauernhof':info.type==='field'?'🌾 Weizenfeld':'🏠 Haus')+' bearbeiten';status.textContent='🏠 Gebäude ausgewählt – Verschieben oder Löschen?';if(navigator.vibrate)navigator.vibrate(35)}
+function mapOf(type){return type==='house'?buildings:type==='market'?markets:type==='castle'?castles:type==='lumber'?lumberjacks:type==='quarry'?quarries:type==='farm'?farms:fields}
+function relocate(from,to){const targetCells=from.type==='castle'?castleCells(to):from.type==='market'?marketCells(to):[to];if(!targetCells.every(k=>owned.has(k)&&!rockSites.has(k)&&!roads.has(k)&&(!at(k)||(at(k).type===from.type&&at(k).anchor===from.anchor)))){status.textContent=from.type==='castle'?'❌ Burg braucht 3×3 freie Felder.':from.type==='market'?'❌ Der Markt braucht vier freie Felder (2×2).':'❌ Bitte einen freien Bauplatz wählen.';return false}
+if(from.type==='quarry'&&!quarryDepositFor(to,from.anchor)){status.textContent='🏔️ Steinbruch kann nur direkt neben einem freien Berg stehen.';return false}
 if(from.type==='field'){const [x,z]=pos(to);const touches=neighbors(x,z).some(([a,b])=>farms.has(key(a,b))||(from.type==='farm'&&from.anchor===key(a,b)));if(!touches){status.textContent='🌾 Das Weizenfeld muss neben einem Bauernhof liegen.';return false}}const map=mapOf(from.type),g=map.get(from.anchor);if(!g)return false;map.delete(from.anchor);map.set(to,g);
 if(from.type==='house'){
  const count=citizens.get(from.anchor)??2;
  citizens.delete(from.anchor);citizens.set(to,count)
 }
-const [x,z]=pos(to);const by={house:.025,market:.025,lumber:.035,farm:.015,castle:.16,field:.16};g.position.set(x+(from.type==='castle'?1:from.type==='market'?.5:0),by[from.type]??.16,z+(from.type==='castle'?1:from.type==='market'?.5:0));save();status.textContent='✅ Gebäude verschoben! Zum Bearbeiten wieder länger gedrückt halten.';return true}
+if(from.type==='quarry'){
+ quarryDeposits.delete(from.anchor);
+ const deposit=quarryDepositFor(to,from.anchor);
+ quarryDeposits.set(to,deposit);
+ orientQuarryPortal(g,to,deposit)
+}
+const [x,z]=pos(to);const by={house:.025,market:.025,lumber:.035,quarry:.03,farm:.015,castle:.16,field:.16};g.position.set(x+(from.type==='castle'?1:from.type==='market'?.5:0),by[from.type]??.16,z+(from.type==='castle'?1:from.type==='market'?.5:0));save();status.textContent='✅ Gebäude verschoben! Zum Bearbeiten wieder länger gedrückt halten.';return true}
 document.getElementById('move').onclick=()=>{if(!selected)return;moving=selected;closeEdit();modeBuild=false;buildPanel.hidden=true;updateTools();status.textContent='↔ Verschieben: Tippe auf ein FREIES grünes Feld. Markt braucht 2×2, Burg braucht 3×3 freie Felder.'};
-document.getElementById('demolish').onclick=()=>{if(!selected)return;const t=selected;if(confirm('Dieses Gebäude wirklich löschen?')){const m=mapOf(t.type),g=m.get(t.anchor);if(g){land.remove(g);m.delete(t.anchor);if(t.type==='house')citizens.delete(t.anchor);save();status.textContent='🗑 Gebäude gelöscht. Der Bauplatz ist wieder frei.'}}closeEdit()};
+document.getElementById('demolish').onclick=()=>{if(!selected)return;const t=selected;if(confirm('Dieses Gebäude wirklich löschen?')){const m=mapOf(t.type),g=m.get(t.anchor);if(g){land.remove(g);m.delete(t.anchor);if(t.type==='house')citizens.delete(t.anchor);if(t.type==='quarry')quarryDeposits.delete(t.anchor);save();status.textContent='🗑 Gebäude gelöscht. Der Bauplatz ist wieder frei.'}}closeEdit()};
 document.getElementById('editClose').onclick=closeEdit;
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 
@@ -1564,8 +1585,16 @@ function category(cat){for(const [name,btn] of Object.entries(typeButtons))btn.h
 for(const btn of document.querySelectorAll('[data-cat]'))btn.onclick=()=>category(btn.dataset.cat);
 viewButton.onclick=viewMode;openBuildButton.onclick=()=>{closeBuildingInfo();modeBuild=false;moving=null;closeEdit();clearPreview();buildPanel.hidden=!buildPanel.hidden;updateTools();status.textContent=buildPanel.hidden?'👁️ Ansichtsmodus':'🔨 Wähle eine Kategorie und dann dein Gebäude.'};
 category('wohnen');updateTools();updateExpansionButton();
-document.getElementById('reset').onclick=()=>{hideBuildUndo();closeBuildingInfo();clearPreview();cancelHold();moving=null;closeEdit();if(!confirm('3D-Test zurücksetzen? Das alte Inselreich bleibt erhalten.'))return;for(const g of buildings.values())land.remove(g);buildings.clear();for(const g of markets.values())land.remove(g);markets.clear();for(const g of castles.values())land.remove(g);castles.clear();for(const g of lumberjacks.values())land.remove(g);lumberjacks.clear();for(const g of farms.values())land.remove(g);farms.clear();for(const g of fields.values())land.remove(g);fields.clear();for(const model of roadModels.values())land.remove(model);roadModels.clear();roads.clear();rockSites.clear();rockModels.clear();quarries.clear();quarryDeposits.clear();roadStrokeDirty=false;citizens.clear();citizenElapsed=0;food=0;foodElapsed=0;refreshFood();wood=START_WOOD;woodElapsed=0;starterWoodGranted=true;refreshWood();owned.clear();for(const obj of tileModels.values())land.remove(obj);tileModels.clear();tiles.length=0;for(let x=-1;x<=1;x++)for(let z=-1;z<=1;z++)owned.add(key(x,z));refreshEdge();addHouse(key(0,0));updateExpansionButton();status.textContent='🌱 3D-Test zurückgesetzt.'};
-let lastFrame=performance.now(),autosave=0;function animate(now){requestAnimationFrame(animate);const dt=Math.min(1,(now-lastFrame)/1000||0);lastFrame=now;if(lumberjacks.size){woodElapsed+=dt*1000;if(woodElapsed>=15000){const batches=Math.floor(woodElapsed/15000);woodElapsed%=15000;wood+=batches*lumberjacks.size;refreshWood();save()}}if(productionFields()){foodElapsed+=dt*1000;if(foodElapsed>=12000){const batches=Math.floor(foodElapsed/12000);foodElapsed%=12000;food+=batches*productionFields();refreshFood();save()}}if(buildings.size){
+document.getElementById('reset').onclick=()=>{hideBuildUndo();closeBuildingInfo();clearPreview();cancelHold();moving=null;closeEdit();if(!confirm('3D-Test zurücksetzen? Das alte Inselreich bleibt erhalten.'))return;for(const g of buildings.values())land.remove(g);buildings.clear();for(const g of markets.values())land.remove(g);markets.clear();for(const g of castles.values())land.remove(g);castles.clear();for(const g of lumberjacks.values())land.remove(g);lumberjacks.clear();for(const g of farms.values())land.remove(g);farms.clear();for(const g of fields.values())land.remove(g);fields.clear();for(const g of quarries.values())land.remove(g);quarries.clear();quarryDeposits.clear();for(const model of roadModels.values())land.remove(model);roadModels.clear();roads.clear();rockSites.clear();rockModels.clear();quarries.clear();quarryDeposits.clear();roadStrokeDirty=false;citizens.clear();citizenElapsed=0;food=0;foodElapsed=0;refreshFood();stone=0;stoneElapsed=0;refreshStone();wood=START_WOOD;woodElapsed=0;starterWoodGranted=true;refreshWood();owned.clear();for(const obj of tileModels.values())land.remove(obj);tileModels.clear();tiles.length=0;for(let x=-1;x<=1;x++)for(let z=-1;z<=1;z++)owned.add(key(x,z));refreshEdge();addHouse(key(0,0));updateExpansionButton();status.textContent='🌱 3D-Test zurückgesetzt.'};
+let lastFrame=performance.now(),autosave=0;function animate(now){requestAnimationFrame(animate);const dt=Math.min(1,(now-lastFrame)/1000||0);lastFrame=now;if(lumberjacks.size){woodElapsed+=dt*1000;if(woodElapsed>=15000){const batches=Math.floor(woodElapsed/15000);woodElapsed%=15000;wood+=batches*lumberjacks.size;refreshWood();save()}}if(quarries.size){
+ stoneElapsed+=dt*1000;
+ if(stoneElapsed>=STONE_TICK_MS){
+  const batches=Math.floor(stoneElapsed/STONE_TICK_MS);
+  stoneElapsed%=STONE_TICK_MS;stone+=batches*quarries.size;
+  refreshStone();save()
+ }
+}else stoneElapsed=0;
+if(productionFields()){foodElapsed+=dt*1000;if(foodElapsed>=12000){const batches=Math.floor(foodElapsed/12000);foodElapsed%=12000;food+=batches*productionFields();refreshFood();save()}}if(buildings.size){
  citizenElapsed+=dt*1000;
  if(citizenElapsed>=CITIZEN_TICK_MS){
   citizenElapsed-=CITIZEN_TICK_MS;citizenCycle()
