@@ -309,7 +309,8 @@ groundRect(14.26,8.34,0,4.15,concrete,.060);
 const foyerMap=tileHall.clone();foyerMap.needsUpdate=true;foyerMap.repeat.set(14.08/.85,8.14/.85);
 const foyerFloor=new THREE.Mesh(new THREE.PlaneGeometry(14.08,8.14),
  new THREE.MeshStandardMaterial({map:foyerMap,roughness:1,side:THREE.DoubleSide}));
-foyerFloor.rotation.x=-Math.PI/2;foyerFloor.position.set(0,.151,4.15);foyerFloor.receiveShadow=true;group.add(foyerFloor);
+// Lower than the colored zone floors to avoid z-fighting on iPhone Safari.
+foyerFloor.rotation.x=-Math.PI/2;foyerFloor.position.set(0,.141,4.15);foyerFloor.receiveShadow=true;group.add(foyerFloor);
 // Low front walls are intentionally interrupted by a generous glass entrance.
 wallX(-7.04,-1.48,8.26,.83);wallX(1.48,7.04,8.26,.83);
 // Side windows with a genuine opening in the wall geometry.
@@ -606,7 +607,7 @@ function inspectRoom(px,py){
 // New first-view angle highlights the desk rather than looking through the divider.
 // A slightly wider first-view frame includes the new treatment room at the rear.
 const focus=new THREE.Vector3(0,.1,-1.65);
-let orbit=-.32,elevation=1.19,distance=35.5;
+let orbit=-.32,elevation=1.19,distance=39.5;
 const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 // View version bump applies the better entrance/reception angle once; no town data is reset.
 const storedKey='klinik-am-park-kamera-v4'; // Preserve the earlier v3 view as a backup.
@@ -614,7 +615,7 @@ try{
  const saved=JSON.parse(localStorage.getItem(storedKey)||'null');
  if(saved&&Number.isFinite(saved.orbit)&&Number.isFinite(saved.elevation)&&Number.isFinite(saved.distance)&&
   Array.isArray(saved.focus)&&saved.focus.length===2&&saved.focus.every(Number.isFinite)){
-  orbit=saved.orbit;elevation=clamp(saved.elevation,.55,1.28);distance=clamp(saved.distance,8,35);
+  orbit=saved.orbit;elevation=clamp(saved.elevation,.50,1.43);distance=clamp(saved.distance,7,42);
   focus.x=clamp(saved.focus[0],-24,24);focus.z=clamp(saved.focus[1],-24,24)
  }
 }catch(e){}
@@ -1244,7 +1245,7 @@ function adjustZoom(ratio,px,py){
 document.getElementById('camZoomIn').onclick=()=>adjustZoom(.84);
 document.getElementById('camZoomOut').onclick=()=>adjustZoom(1.19);
 document.getElementById('camReset').onclick=()=>{
- focus.set(0,.1,-1.65);orbit=-.32;elevation=1.19;distance=35.5;
+ focus.set(0,.1,-1.65);orbit=-.32;elevation=1.19;distance=39.5;
  placeCamera();storeCamera();
  document.getElementById('status').textContent='🎯 Kamera wieder auf die Übersicht ausgerichtet.'
 };
