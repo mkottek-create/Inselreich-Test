@@ -774,6 +774,214 @@ function roomPointerEnd(px,py,state){
  saveFloorplan();
  if(state.id==='reception')storeReception()
 }
+
+/* Free-form hospital architecture: 1m grid segments plus draggable floor
+   rectangles. Doors/windows swap a user-built wall segment. Persistence is
+   independent from the camera, furniture and movable room modules. */
+const constructionKey='klinik-am-park-bauteile-v1';
+const constructionLayer=new THREE.Group();constructionLayer.name='Freier-Grundriss';scene.add(constructionLayer);
+const constructionPreview=new THREE.Group();scene.add(constructionPreview);
+const constructionParts=new Map(),constructionFloors=[],constructionUndoStack=[];
+const previewMaterial=new THREE.MeshBasicMaterial({color:0x00b5cc,transparent:true,opacity:.37,depthWrite:false,side:THREE.DoubleSide});
+const customFloorMaterial=new THREE.MeshStandardMaterial({color:0xddece6,roughness:1,side:THREE.DoubleSide});
+const partKey=(dir,x,z)=>dir+':'+x.toFixed(1)+':'+z.toFixed(1);
+const buildInside=(x,z)=>Number.isFinite(x)&&Number.isFinite(z)&&Math.abs(x)<=15.5&&z>=-15.5&&z<=15.5;
+function clearConstructionPreview(){
+ for(const object of constructionPreview.children.slice()){
+  constructionPreview.remove(object);
+  object.geometry?.dispose?.()
+ }
+}
+function constructionPiece(p){
+ const root=new THREE.Group();root.name='gebaut-'+p.kind;root.position.set(p.x,0,p.z);
+ const w=p.dir==='x'?1.02:.15,d=p.dir==='z'?1.02:.15;
+ if(p.kind==='wall'){
+  box(w,1.45,d,0,.895,0,wallWhite,root);
+  box(p.dir==='x'?1.02:.21,.06,p.dir==='z'?1.02:.21,0,1.65,0,wallTrim,root,false)
+ }else if(p.kind==='door'){
+  for(const sign of [-1,1])
+   box(p.dir==='x'?.11:.15,1.49,p.dir==='z'?.11:.15,
+    p.dir==='x'?sign*.47:0,.915,p.dir==='z'?sign*.47:0,deepTeal,root);
+  box(p.dir==='x'?1.03:.18,.24,p.dir==='z'?1.03:.18,0,1.55,0,wallWhite,root);
+  box(p.dir==='x'?.72:.045,1.2,p.dir==='z'?.72:.045,0,.77,0,glass,root,false);
+  box(p.dir==='x'?.065:.09,.1,p.dir==='z'?.09:.065,
+   p.dir==='x'?.22:0,.89,p.dir==='z'?.22:0,gold,root,false)
+ }else if(p.kind==='window'){
+  box(w,.59,d,0,.465,0,wallWhite,root);
+  box(w,.2,d,0,1.55,0,wallWhite,root);
+  for(const y of [.79,1.4])
+   box(p.dir==='x'?1.03:.21,.085,p.dir==='z'?1.03:.21,0,y,0,deepTeal,root,false);
+  box(p.dir==='x'?.88:.04,.52,p.dir==='z'?.88:.04,0,1.1,0,glass,root,false);
+  box(p.dir==='x'?.06:.09,.58,p.dir==='z'?.06:.09,0,1.1,0,deepTeal,root,false)
+ }
+ constructionLayer.add(root);return root
+}
+function deleteConstructionObject(root){
+ if(!root)return;
+ constructionLayer.remove(root);
+ root.traverse(object=>object.geometry?.dispose?.())
+}
+function setConstructionPart(p){
+ if(!p||!['x','z'].includes(p.dir)||!['wall','door','window'].includes(p.kind)||
+  !buildInside(p.x,p.z))return false;
+ const key=partKey(p.dir,p.x,p.z),before=constructionParts.get(key);
+ if(before?.kind===p.kind)return false;
+ if(!before&&constructionParts.size>=300)return false;
+ if(before)deleteConstructionObject(before.root);
+ const data={dir:p.dir,x:p.x,z:p.z,kind:p.kind};
+ data.root=constructionPiece(data);constructionParts.set(key,data);
+ renderer.shadowMap.needsUpdate=true;
+ return true
+}
+function setConstructionFloor(p){
+ if(!p||![p.x,p.z,p.w,p.d].every(Number.isFinite)||p.w<1||p.d<1||
+  p.w>12||p.d>12||constructionFloors.length>=50||
+  !buildInside(p.x-p.w/2,p.z-p.d/2)||!buildInside(p.x+p.w/2,p.z+p.d/2))return false;
+ const root=new THREE.Mesh(new THREE.PlaneGeometry(p.w,p.d),customFloorMaterial);
+ root.rotation.x=-Math.PI/2;root.position.set(p.x,.18,p.z);root.receiveShadow=true;
+ constructionLayer.add(root);constructionFloors.push({x:p.x,z:p.z,w:p.w,d:p.d,root});
+ return true
+}
+function deleteConstructionFloor(p){
+ const index=constructionFloors.indexOf(p);
+ if(index<0)return;
+ constructionLayer.remove(p.root);p.root.geometry.dispose();
+ constructionFloors.splice(index,1)
+}
+function constructionSnapshot(){
+ return {parts:Array.from(constructionParts.values(),p=>({dir:p.dir,x:p.x,z:p.z,kind:p.kind})),
+ floors:constructionFloors.map(p=>({x:p.x,z:p.z,w:p.w,d:p.d}))}
+}
+function rememberConstruction(){
+ constructionUndoStack.push(constructionSnapshot());
+ if(constructionUndoStack.length>12)constructionUndoStack.shift()
+}
+function reconstructConstruction(snapshot){
+ for(const p of constructionParts.values())deleteConstructionObject(p.root);
+ constructionParts.clear();
+ for(const floor of constructionFloors.slice())deleteConstructionFloor(floor);
+ for(const p of (snapshot.parts||[]).slice(0,300))setConstructionPart(p);
+ for(const p of (snapshot.floors||[]).slice(0,50))setConstructionFloor(p);
+ renderer.shadowMap.needsUpdate=true
+}
+function saveConstruction(){
+ try{localStorage.setItem(constructionKey,JSON.stringify(constructionSnapshot()))}catch(e){}
+}
+function restoreConstruction(){
+ try{
+  const saved=JSON.parse(localStorage.getItem(constructionKey)||'null');
+  if(saved&&Array.isArray(saved.parts)&&Array.isArray(saved.floors))reconstructConstruction(saved)
+ }catch(e){console.warn('Freier Grundriss konnte nicht geladen werden',e)}
+}
+function findBuiltSegment(hit){
+ let closest=null,distance=.46;
+ for(const p of constructionParts.values()){
+  const dx=Math.abs(hit.x-p.x),dz=Math.abs(hit.z-p.z);
+  const delta=p.dir==='x'?Math.max(0,dx-.50)+dz:Math.max(0,dz-.50)+dx;
+  if(delta<distance){closest=p;distance=delta}
+ }
+ return closest
+}
+function findBuiltFloor(hit){
+ for(let i=constructionFloors.length-1;i>=0;i--){
+  const p=constructionFloors[i];
+  if(Math.abs(hit.x-p.x)<p.w/2&&Math.abs(hit.z-p.z)<p.d/2)return p
+ }
+ return null
+}
+const buildSnap=hit=>({x:Math.round(hit.x),z:Math.round(hit.z)});
+function buildShape(a,b,tool){
+ if(tool==='floor'){
+  const dx=clamp(b.x-a.x,-11,11),dz=clamp(b.z-a.z,-11,11);
+  return {x:Math.min(a.x,a.x+dx)+(Math.abs(dx)+1)/2,z:Math.min(a.z,a.z+dz)+(Math.abs(dz)+1)/2,
+   w:Math.abs(dx)+1,d:Math.abs(dz)+1}
+ }
+ const dx=clamp(b.x-a.x,-12,12),dz=clamp(b.z-a.z,-12,12);
+ const dir=Math.abs(dx)===Math.abs(dz)?document.getElementById('constructionFacing').value:
+  Math.abs(dx)>Math.abs(dz)?'x':'z';
+ const movement=dir==='x'?dx:dz;
+ const steps=Math.max(1,Math.abs(movement)),sign=movement<0?-1:1;
+ const result=[];
+ for(let i=0;i<steps;i++){
+  const x=dir==='x'?a.x+sign*(i+.5):a.x,z=dir==='z'?a.z+sign*(i+.5):a.z;
+  if(buildInside(x,z))result.push({dir,x,z})
+ }
+ return result
+}
+function drawConstructionPreview(state){
+ clearConstructionPreview();
+ if(state.tool!=='wall'&&state.tool!=='floor')return;
+ if(state.tool==='floor'){
+  const p=buildShape(state.a,state.b,'floor');
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(p.w,p.d),previewMaterial);
+  mesh.rotation.x=-Math.PI/2;mesh.position.set(p.x,.22,p.z);constructionPreview.add(mesh)
+ }else for(const p of buildShape(state.a,state.b,'wall')){
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(p.dir==='x'?1:.12,1.4,p.dir==='z'?1:.12),previewMaterial);
+  mesh.position.set(p.x,.88,p.z);constructionPreview.add(mesh)
+ }
+}
+function constructionPointerStart(px,py){
+ if(!editingFloorplan||buildCategory!=='construction')return null;
+ const hit=groundHit(px,py);if(!hit)return null;
+ const a=buildSnap(hit),tool=document.getElementById('constructionTool').value;
+ const state={mode:'construction',tool,a,b:a,startX:px,startY:py};
+ drawConstructionPreview(state);return state
+}
+function constructionPointerMove(px,py,state){
+ if(state.mode!=='construction')return;
+ const hit=groundHit(px,py);if(!hit)return;
+ const b=buildSnap(hit);
+ if(b.x===state.b.x&&b.z===state.b.z)return;
+ state.b=b;drawConstructionPreview(state)
+}
+function constructionPointerEnd(px,py,state){
+ clearConstructionPreview();
+ const hit=groundHit(px,py);
+ if(!hit)return;
+ const tool=state.tool;
+ if(tool==='wall'){
+  const parts=buildShape(state.a,state.b,'wall');
+  if(!parts.length){roomHint.textContent='🚧 Außerhalb der Baufläche.';return}
+  rememberConstruction();
+  let made=0;
+  for(const p of parts)if(setConstructionPart({...p,kind:'wall'}))made++;
+  if(!made)constructionUndoStack.pop();
+  roomHint.textContent=made?'🧱 '+made+' Wandstück(e) gebaut.':'Diese Wände stehen bereits.'
+ }else if(tool==='floor'){
+  const area=buildShape(state.a,state.b,'floor');
+  rememberConstruction();
+  if(setConstructionFloor(area))roomHint.textContent='🟩 Boden '+area.w+' × '+area.d+' gebaut.';
+  else{constructionUndoStack.pop();roomHint.textContent='🚫 Hier passt diese Bodenfläche nicht.'}
+ }else if(tool==='erase'){
+  const segment=findBuiltSegment(hit),floor=segment?null:findBuiltFloor(hit);
+  if(segment){
+   rememberConstruction();deleteConstructionObject(segment.root);
+   constructionParts.delete(partKey(segment.dir,segment.x,segment.z));
+   roomHint.textContent='🧽 Wandbauteil entfernt.'
+  }else if(floor){
+   rememberConstruction();deleteConstructionFloor(floor);roomHint.textContent='🧽 Bodenfläche entfernt.'
+  }else roomHint.textContent='Hier steht kein selbst gebautes Bauteil.'
+ }else if(tool==='door'||tool==='window'){
+  const old=findBuiltSegment(hit);
+  const dir=document.getElementById('constructionFacing').value;
+  const snapped=buildSnap(hit);
+  const at=old||{dir,x:dir==='x'?snapped.x+.5:snapped.x,z:dir==='z'?snapped.z+.5:snapped.z};
+  rememberConstruction();
+  if(setConstructionPart({...at,kind:tool}))
+   roomHint.textContent=tool==='door'?'🚪 Tür eingesetzt.':'🪟 Fenster eingesetzt.';
+  else{constructionUndoStack.pop();roomHint.textContent='🚫 Hier kann kein Bauteil gesetzt werden.'}
+ }
+ renderer.shadowMap.needsUpdate=true;saveConstruction()
+}
+document.getElementById('constructionUndo').onclick=()=>{
+ if(!editingFloorplan||buildCategory!=='construction')return;
+ const previous=constructionUndoStack.pop();
+ if(!previous){roomHint.textContent='↶ Noch nichts rückgängig zu machen.';return}
+ reconstructConstruction(previous);saveConstruction();
+ roomHint.textContent='↶ Letzten Bauschritt zurückgenommen.'
+};
+restoreConstruction();
+
 applyFloorplanFromStorage();
 // Restore the saved GLOBAL position only after the floorplan has restored the
 // reception room's new bounds. Otherwise old bounds would clamp the desk.
