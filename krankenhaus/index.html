@@ -20,7 +20,7 @@ main{max-width:1100px;margin:auto}
 #topLegend{position:absolute;left:12px;top:12px;z-index:2;background:#fffcf5ef;border:1px solid #ffffffaa;padding:10px 12px;border-radius:14px;box-shadow:0 4px 18px #40727723;pointer-events:none;max-width:min(58vw,245px)}
 #topLegend strong{font-size:12px;color:#30615c;display:block}
 #topLegend small{font-size:11px;color:#607e7d;line-height:1.5;display:block;margin-top:4px}
-#gestureHint{position:absolute;bottom:13px;left:50%;transform:translateX(-50%);z-index:2;background:#173e46df;color:#fff;border-radius:999px;padding:10px 14px;font-size:11px;font-weight:750;text-align:center;white-space:nowrap;pointer-events:none;max-width:95%}
+#gestureHint{position:absolute;bottom:13px;left:50%;transform:translateX(-50%);z-index:2;background:#173e46df;color:#fff;border-radius:999px;padding:10px 14px;font-size:11px;font-weight:750;text-align:center;white-space:normal;pointer-events:none;max-width:95%}
 #roomInfo{position:absolute;top:12px;right:12px;z-index:2;padding:9px 11px;border-radius:12px;max-width:min(42vw,210px);background:#fffcf2ed;box-shadow:0 4px 14px #1e4d4c19;border:1px solid #fff;pointer-events:none}
 #roomInfo strong{display:block;font-size:12px}
 #roomInfo span{display:block;color:#657e80;font-size:11px;line-height:1.35;margin-top:4px}
@@ -541,7 +541,7 @@ canvas.addEventListener('touchcancel',endTouch,{passive:false});
 let pointer=null;
 canvas.addEventListener('pointerdown',e=>{
  if(e.pointerType==='touch')return;
- pointer=startDeskDrag(e.clientX,e.clientY)||
+ pointer=(e.button===0?startDeskDrag(e.clientX,e.clientY):null)||
  {id:e.pointerId,x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,
           moved:false,rotate:e.button===2};
  pointer.id=e.pointerId;
