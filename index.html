@@ -1382,20 +1382,21 @@ function millHasActiveField(farm){
  const [x,z]=pos(farm);
  return neighbors(x,z).some(([a,b])=>fields.has(key(a,b))&&hasDeliveryRoute('farm',farm))
 }
-function activeMillCount(){
- const servedFarms=new Set();
+function activeMillKeys(){
+ const servedFarms=new Set(),earningMills=new Set();
  for(const mill of mills.keys()){
   if(!hasDeliveryRoute('mill',mill))continue;
   const [x,z]=pos(mill);
   for(const [a,b] of neighbors(x,z)){
    const farm=key(a,b);
    if(farms.has(farm)&&!servedFarms.has(farm)&&millHasActiveField(farm)){
-    servedFarms.add(farm);break
+    servedFarms.add(farm);earningMills.add(mill);break
    }
   }
  }
- return servedFarms.size
+ return earningMills
 }
+function activeMillCount(){return activeMillKeys().size}
 function refreshFood(){foodCount.textContent=food.toLocaleString('de-DE')}
 function refreshWood(){woodCount.textContent=wood.toLocaleString('de-DE');refreshBuildCostLabels()}
 function refreshStone(){stoneCount.textContent=stone.toLocaleString('de-DE');refreshBuildCostLabels()}
@@ -1936,8 +1937,7 @@ function buildingInfoData(info){
   result.secondLabel='Aktive Felder';result.second=active.toString();
   result.details=active>0?'✅ Mit Weizenfeldern wird Nahrung produziert (+1 je aktivem Feld alle 12 Sek.).':'🌾 Setze ein Weizenfeld direkt neben die Getreidefarm, um Nahrung zu produzieren.';
  }else if(info.type==='mill'){
-  const near=nearMillFarm(k),active=hasDeliveryRoute('mill',k)&&
-   neighbors(x,z).some(([a,b])=>farms.has(key(a,b))&&millHasActiveField(key(a,b)));
+  const near=nearMillFarm(k),active=activeMillKeys().has(k);
   result.firstLabel='Mühlenbetrieb';result.first=active?'Flügel in Betrieb':'Wartet auf Getreide';
   result.secondLabel='Nahrungsbonus';result.second=active?'+1 / 12 Sek.':'Noch keiner';
   result.details=near?'🌾 Verarbeitet Getreide der benachbarten Farm. Mit angebundenem Weizenfeld und Straßenweg zum Markt gibt es +1 Nahrung alle 12 Sekunden (ein Bonus pro Farm).':'⚠️ Eine Getreidefarm direkt neben der Mühle wird benötigt.';
