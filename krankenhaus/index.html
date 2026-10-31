@@ -1460,7 +1460,7 @@ document.getElementById('camReset').onclick=()=>{
 };
 // A mobile-friendly way to reveal the two furnished exam rooms behind the foyer.
 document.getElementById('viewTreatments').onclick=()=>{
- hideRoomInfo();setCameraMode('pan');
+ hideRoomInfo();setCameraMode(furnitureEditor.editing?'build':'pan');
  focus.set(0,.1,-2.13);orbit=-.32;elevation=1.12;distance=19.8;
  placeCamera();storeCamera();
  document.getElementById('status').textContent='🩺 Behandlungsraum 1 links · Behandlungsraum 2 rechts. Beide sind eingerichtet.'
