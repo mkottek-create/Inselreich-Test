@@ -489,13 +489,12 @@ box(.26,.30,.026,5.84,.76,2.06,screenMat);
 cylinder(.065,.078,.13,5.84,1.07,1.87,glass,12);
 box(.96,.67,.09,5.52,1.19,.32,black);
 box(.85,.56,.10,5.52,1.20,.39,screenMat);
-// Static decorative people along the hall hint at the later patient simulation.
+takeDecorIntoRoom('waiting',waitingDecorStart);
+// Static people remain in the central corridor when room modules are moved.
 visitor(.24,2.40,mat(0xb0d1e7),.71,.3);
 visitor(-.28,-2.67,mat(0xeca8a2),.65,Math.PI);
 visitor(.28,-6.64,mat(0x77b8ac),.69,0);
-// The room labels belong to the room meshes, which remain independently movable.
 roomLabel('EINGANG',0,2.46,5.24,1.85);
-takeDecorIntoRoom('waiting',waitingDecorStart);
 // Outdoor detail to suggest future expansion, without prematurely adding new departments.
 for(const [x,z] of [[-8,-2],[-8,2],[8,-2],[8,3],[-7,-5.8],[7.4,-5.9]]){
  cylinder(.085,.11,.8,x,.33,z,soil);
@@ -569,12 +568,17 @@ function pan(dx,dy){
    desk; the other ground still pans. Two fingers retain free zoom and orbit.
    All layout data use a separate save key, never the Inselreich save. */
 const receptionStorageKey='klinik-am-park-anmeldung-v1';
-const deskLimits={minX:-4.60,maxX:-.65,minZ:-1.10,maxZ:2.0};
+const deskLimits={minX:-4.98,maxX:-3.12,minZ:1.02,maxZ:2.06};
 function syncDeskLimits(){
  const rec=roomSpecs.find(r=>r.id==='reception');
- const dx=rec.x-initialRooms[0].x,dz=rec.z-initialRooms[0].z;
- deskLimits.minX=-4.60+dx;deskLimits.maxX=-.65+dx;
- deskLimits.minZ=-1.10+dz;deskLimits.maxZ=2.0+dz
+ // Keep the entire L-shaped reception counter, overhead sign and queue marks
+ // within the smaller room. These bounds travel with the movable room.
+ deskLimits.minX=rec.x-rec.w/2+1.75;
+ deskLimits.maxX=rec.x+rec.w/2-1.75;
+ deskLimits.minZ=rec.z-rec.d/2+.86;
+ deskLimits.maxZ=rec.z+rec.d/2-1.74;
+ if(deskLimits.maxX<deskLimits.minX)deskLimits.maxX=deskLimits.minX;
+ if(deskLimits.maxZ<deskLimits.minZ)deskLimits.maxZ=deskLimits.minZ
 }
 let restoredDeskWorldPosition=null;
 let editingReception=false;
@@ -678,6 +682,8 @@ function validRoomSpot(id,x,z){
  if(!r||!Number.isFinite(x)||!Number.isFinite(z))return false;
  const halfW=r.w/2,halfD=r.d/2;
  if(x-halfW<-15.5||x+halfW>15.5||z-halfD<-14.5||z+halfD>15.5)return false;
+ // Protect the continuous main hallway so new rooms never obstruct the way.
+ if(Math.abs(x)<halfW+1.33&&z+halfD>-11.70&&z-halfD<4.52)return false;
  for(const other of roomSpecs){
   if(other.id===id)continue;
   if(Math.abs(x-other.x)<(r.w+other.w)/2+.15 &&
@@ -705,38 +711,57 @@ function moveRoomTo(id,x,z,force=false,relocateContents=true){
 function saveFloorplan(){
  try{
   localStorage.setItem(floorplanKey,JSON.stringify(roomSpecs.map(r=>({
-   id:r.id,name:r.name,kind:r.kind,x:r.x,z:r.z,w:r.w,d:r.d,doorOffset:r.doorOffset||0
+   id:r.id,name:r.name,kind:r.kind,x:r.x,z:r.z,w:r.w,d:r.d,
+   doorSide:r.doorSide||'front',doorOffset:r.doorOffset||0
   }))))
  }catch(e){}
 }
 function applyFloorplanFromStorage(){
  try{
-  const raw=JSON.parse(localStorage.getItem(floorplanKey)||'null');
-  if(!Array.isArray(raw))return;
-  // Restoring positions must NOT translate the reception desk again; its old
-  // position is already saved separately under the original reception key.
-  for(const data of raw){
-   if(!data||typeof data.id!=='string'||typeof data.x!=='number'||typeof data.z!=='number')continue;
-   const id=data.id;
-   if(initialRooms.some(r=>r.id===id)){
-    moveRoomTo(id,data.x,data.z,true,false)
+  const saved=JSON.parse(localStorage.getItem(floorplanKey)||'null');
+  const hasNewLayout=Array.isArray(saved);
+  // Older edits remain untouched in their v1 key. On a fresh v2 visit,
+  // carry over user-created rooms (not the old three-room template).
+  const previous=hasNewLayout?null:JSON.parse(localStorage.getItem(legacyFloorplanKey)||'null');
+  const raw=hasNewLayout?saved:Array.isArray(previous)
+   ?previous.filter(r=>r&&typeof r.id==='string'&&/^extra-[0-9]+$/.test(r.id)):[];
+  if(hasNewLayout){
+   // V2 saved initial room locations are authoritative; don't reset them.
+   for(const data of raw){
+    if(!data||typeof data.id!=='string'||!Number.isFinite(data.x)||!Number.isFinite(data.z))continue;
+    if(initialRooms.some(r=>r.id===data.id))moveRoomTo(data.id,data.x,data.z,true,false)
    }
   }
   let added=0;
   for(const data of raw){
    if(!data||typeof data.id!=='string'||initialRooms.some(r=>r.id===data.id))continue;
-   if(added>=32||!/^extra-[0-9]+$/.test(data.id)||
+   if(added>=28||!/^extra-[0-9]+$/.test(data.id)||
     !['treatment','lab','patient','empty'].includes(data.kind)||typeof data.name!=='string'||data.name.length>48||
     !Number.isFinite(data.x)||!Number.isFinite(data.z)||!Number.isFinite(data.w)||!Number.isFinite(data.d)||
     data.w<2.9||data.w>5.1||data.d<2.9||data.d>4.1||roomSpecs.some(r=>r.id===data.id))continue;
-   const r={id:data.id,kind:data.kind,name:data.name,x:data.x,z:data.z,w:data.w,d:data.d,doorOffset:0};
+   const r={id:data.id,kind:data.kind,name:data.name,x:data.x,z:data.z,w:data.w,d:data.d,
+    doorSide:'front',doorOffset:0};
    roomSpecs.push(r);
+   if(!validRoomSpot(r.id,r.x,r.z)&&!hasNewLayout){
+    // Find the nearest free plot rather than dropping an existing user room.
+    const oldX=r.x,oldZ=r.z;
+    let found=false;
+    for(let radius=0;radius<=22&&!found;radius++){
+     for(let xi=-radius;xi<=radius&&!found;xi++)for(let zi=-radius;zi<=radius;zi++){
+      if(Math.max(Math.abs(xi),Math.abs(zi))!==radius)continue;
+      const nx=snapRoom(oldX+xi),nz=snapRoom(oldZ+zi);
+      if(validRoomSpot(r.id,nx,nz)){r.x=nx;r.z=nz;found=true;break}
+     }
+    }
+   }
    if(validRoomSpot(r.id,r.x,r.z)){
     makeRoomShell(r);added++;
-    const n=Number(r.id.slice(6));nextRoomId=Math.max(nextRoomId,n)
+    nextRoomId=Math.max(nextRoomId,Number(r.id.slice(6)))
    }else roomSpecs.pop()
   }
-  extraRoomNumber=2+added
+  extraRoomNumber=3+added;
+  // V2 receives its own complete copy; the legacy v1 save is never changed.
+  if(!hasNewLayout&&added)saveFloorplan()
  }catch(e){console.warn('Grundriss konnte nicht geladen werden',e)}
  syncDeskLimits()
 }
@@ -800,7 +825,7 @@ document.getElementById('roomAdd').onclick=()=>{
  const titles={treatment:'🩺 Behandlungsraum',lab:'🔬 Labor',patient:'🛏️ Patientenzimmer',empty:'🏠 Freier Raum'};
  const num=extraRoomNumber;
  const id='extra-'+(++nextRoomId);
- const r={id,kind,name:(titles[kind]||titles.treatment)+' '+num,x:0,z:0,w,d,doorOffset:0};
+ const r={id,kind,name:(titles[kind]||titles.treatment)+' '+num,x:0,z:0,w,d,doorSide:'front',doorOffset:0};
  roomSpecs.push(r);
  let where=null;
  // Deterministic free-site discovery. Search close to the existing hospital.
