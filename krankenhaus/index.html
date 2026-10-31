@@ -173,6 +173,21 @@ const tileBase=tileTexture('#f2ecdc','#dfd8c9',true);
 const tileWaiting=tileTexture('#d7e8e9','#c1dadd',false);
 const tileEntry=tileTexture('#eae1d2','#c9c4ba',true);
 const tileTreatment=tileTexture('#dce8e3','#c3d7d1',false);
+const tileDiagnostic=tileTexture('#e9dff3','#d9c8e9',false);
+const tileStaff=tileTexture('#f2e6d3','#e5d2b7',false);
+const tileToilet=tileTexture('#d9edf5','#b5d9e8',false);
+function corridorTexture(){
+ const canvas=document.createElement('canvas');canvas.width=canvas.height=128;
+ const context=canvas.getContext('2d');
+ for(let x=0;x<2;x++)for(let z=0;z<2;z++){
+  context.fillStyle=(x+z)%2?'#dee9df':'#f1f5ee';
+  context.fillRect(x*64,z*64,64,64);
+  context.strokeStyle='#bbcfc4';context.lineWidth=2;context.strokeRect(x*64,z*64,64,64)
+ }
+ const t=new THREE.CanvasTexture(canvas);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=THREE.SRGBColorSpace;
+ return t
+}
+const tileHall=corridorTexture();
 function tiled(w,d,x,z,base){
  const t=base.clone();t.needsUpdate=true;t.repeat.set(w/.75,d/.75);
  const o=new THREE.Mesh(new THREE.PlaneGeometry(w,d),new THREE.MeshStandardMaterial({map:t,roughness:1}));
@@ -257,46 +272,103 @@ for(const x of [-4.9,-3.7,4.5,5.5]){
  }
 }
 lightPost(-1.6,7.1);lightPost(1.6,7.1);
-// Rooms are now standalone, movable modules, no longer fused by shared walls.
-const floorplanKey='klinik-am-park-grundriss-v1';
+// Original isometric hospital layout: seven open-top rooms flank a continuous
+// checker-tiled central hallway. Previous user-made floorplans stay in v1;
+// the new Theme-Hospital-inspired template gets its own save key.
+const legacyFloorplanKey='klinik-am-park-grundriss-v1';
+const floorplanKey='klinik-am-park-grundriss-v2';
+const originalInitialRoomIds=['reception','waiting','treatment'];
 const initialRooms=[
- {id:'reception',name:'🧑‍💻 Anmeldung',kind:'reception',x:-2.65,z:.47,w:7.7,d:7.7,doorOffset:2.45},
- {id:'waiting',name:'🪑 Wartezimmer',kind:'waiting',x:3.75,z:.47,w:5.3,d:7.7,doorOffset:-.25},
- {id:'treatment',name:'🩺 Behandlungsraum 1',kind:'treatment',x:4,z:-5.00,w:3.8,d:3.2,doorOffset:-.2}
+ {id:'reception',name:'🧑‍💻 Anmeldung',kind:'reception',x:-4.05,z:2.00,w:5.30,d:3.65,doorSide:'right',doorOffset:-.05},
+ {id:'waiting',name:'🪑 Wartezimmer',kind:'waiting',x:4.05,z:2.00,w:5.30,d:3.65,doorSide:'left',doorOffset:-.05},
+ {id:'treatment',name:'🩺 Behandlungsraum 1',kind:'treatment',x:-4.05,z:-2.13,w:5.30,d:3.58,doorSide:'right',doorOffset:0},
+ {id:'treatment2',name:'🩺 Behandlungsraum 2',kind:'treatment',x:4.05,z:-2.13,w:5.30,d:3.58,doorSide:'left',doorOffset:0},
+ {id:'diagnostic',name:'🔬 Diagnoseraum',kind:'diagnostic',x:-4.05,z:-6.13,w:5.30,d:3.58,doorSide:'right',doorOffset:0},
+ {id:'staff',name:'☕ Personalraum',kind:'staff',x:4.05,z:-6.13,w:5.30,d:3.58,doorSide:'left',doorOffset:0},
+ {id:'toilet',name:'🚻 Toilette',kind:'toilet',x:-4.05,z:-10.01,w:5.30,d:3.12,doorSide:'right',doorOffset:0}
 ];
 const roomSpecs=initialRooms.map(r=>({...r}));
 const roomGroups=new Map();
-const roomColors={reception:tileBase,waiting:tileWaiting,treatment:tileTreatment,lab:tileWaiting,patient:tileTreatment,empty:tileBase};
-let extraRoomNumber=2;
+const roomColors={reception:tileBase,waiting:tileWaiting,treatment:tileTreatment,
+ diagnostic:tileDiagnostic,staff:tileStaff,toilet:tileToilet,
+ lab:tileDiagnostic,patient:tileTreatment,empty:tileBase};
+const trimTint={reception:mat(0x4bab91),waiting:mat(0x57adbc),treatment:mat(0x64bba1),
+ diagnostic:mat(0xa28ec3),staff:mat(0xd4a86e),toilet:mat(0x69b4d5)};
+const brickLower=mat(0xc0957c);
+let extraRoomNumber=3;
 let nextRoomId=0;
+// The corridor is the navigable spine: every starting room has a doorway onto it.
+groundRect(14.18,16.05,0,-3.84,mat(0xd3d3c6),.055);
+groundRect(2.78,15.70,0,-3.80,mat(0xf6f5e8),.09);
+const corridorMap=tileHall.clone();corridorMap.needsUpdate=true;corridorMap.repeat.set(2.78/.85,15.70/.85);
+const hall=new THREE.Mesh(new THREE.PlaneGeometry(2.78,15.70),
+ new THREE.MeshStandardMaterial({map:corridorMap,roughness:1,side:THREE.DoubleSide}));
+hall.rotation.x=-Math.PI/2;hall.position.set(0,.152,-3.80);hall.receiveShadow=true;group.add(hall);
+for(const x of [-1.35,1.35])box(.085,.015,15.68,x,.186,-3.80,tealLight,group,false);
+for(const z of [3.5,-.4,-4.45,-8.4])box(2.42,.014,.065,0,.193,z,mat(0x70b8a5),group,false);
+
 function makeRoomShell(r){
  const begin=group.children.length;
  const left=r.x-r.w/2,right=r.x+r.w/2,back=r.z-r.d/2,front=r.z+r.d/2;
- groundRect(r.w+.23,r.d+.23,r.x,r.z,concrete,.06);
- tiled(r.w-.14,r.d-.14,r.x,r.z,roomColors[r.kind]||tileTreatment);
- wallX(left,right,back,1.38);
- wallZ(left,back,front,1.06);
- wallZ(right,back,front,1.06);
- // Wide open doorway at the front of every room.
- const door=clampRoomDoor(left,right,r.x+(r.doorOffset||0));
- if(door-.66>left+.09)wallX(left,door-.64,front,.85);
- if(door+.66<right-.09)wallX(door+.64,right,front,.85);
- for(const px of [door-.63,door+.63])box(.073,1.35,.13,px,.84,front,teal);
- box(1.34,.11,.22,door,1.56,front,teal);
- const sign=new THREE.Mesh(new THREE.PlaneGeometry(Math.min(r.w-1.2,2.3),.33),
-  new THREE.MeshBasicMaterial({map:labelTexture(r.name.replace(/^\S+\s/,''),'#165b61','#ffffff',36),transparent:true,side:THREE.DoubleSide,depthWrite:false}));
- sign.position.set(r.x,1.85,back+.38);
- group.add(sign);
- const root=new THREE.Group();
- root.name='room-'+r.id;
- for(const part of group.children.slice(begin)){
-  group.remove(part);
-  part.position.x-=r.x;part.position.z-=r.z;
-  root.add(part)
+ const accent=trimTint[r.kind]||tealLight;
+ groundRect(r.w+.14,r.d+.14,r.x,r.z,concrete,.064);
+ tiled(r.w-.13,r.d-.13,r.x,r.z,roomColors[r.kind]||tileTreatment);
+ // Colored room edging, masonry bases and roof-free cutaway walls.
+ for(const x of [left+.13,right-.13])box(.09,.016,r.d-.26,x,.185,r.z,accent,group,false);
+ for(const z of [back+.13,front-.13])box(r.w-.26,.016,.09,r.x,.185,z,accent,group,false);
+ function wallHorizontal(x1,x2,z,h){
+  if(x2-x1<.10)return;
+  wallX(x1,x2,z,h,wallWhite);
+  box(x2-x1,.30,.19,(x1+x2)/2,.32,z,brickLower,group,false);
+  box(x2-x1,.055,.225,(x1+x2)/2,.51,z,accent,group,false)
  }
- root.position.set(r.x,0,r.z);
- group.add(root);
- roomGroups.set(r.id,root);
+ function wallVertical(x,z1,z2,h){
+  if(z2-z1<.10)return;
+  wallZ(x,z1,z2,h,wallWhite);
+  box(.19,.30,z2-z1,x,.32,(z1+z2)/2,brickLower,group,false);
+  box(.225,.055,z2-z1,x,.51,(z1+z2)/2,accent,group,false)
+ }
+ wallHorizontal(left,right,back,1.24);
+ const side=r.doorSide||'front';
+ const off=r.doorOffset||0;
+ function framedDoorOnSide(x){
+  const middle=Math.min(front-.77,Math.max(back+.77,r.z+off));
+  wallVertical(x,back,middle-.62,.91);
+  wallVertical(x,middle+.62,front,.91);
+  const frame=trimTint[r.kind]||tealLight;
+  for(const z of [middle-.63,middle+.63])box(.20,1.43,.09,x,.885,z,frame);
+  box(.21,.13,1.41,x,1.62,middle,frame);
+  const leaf=box(.035,1.20,.90,x+(side==='right'?-.26:.26),.78,middle-.14,glass,group,false);
+  leaf.rotation.y=(side==='right'?-.25:.25);
+  box(.075,.10,.065,x+(side==='right'?-.26:.26),.92,middle+.19,gold,group,false);
+  // Bright arrow tile leads from the hallway through the opening.
+  box(.29,.012,1.06,x+(side==='right'?.19:-.19),.193,middle,accent,group,false)
+ }
+ if(side==='left')framedDoorOnSide(left);
+ else wallVertical(left,back,front,1.12);
+ if(side==='right')framedDoorOnSide(right);
+ else wallVertical(right,back,front,1.12);
+ if(side==='front'){
+  const door=clampRoomDoor(left,right,r.x+off);
+  wallHorizontal(left,door-.65,front,.72);
+  wallHorizontal(door+.65,right,front,.72);
+  for(const x of [door-.64,door+.64])box(.09,1.30,.14,x,.825,front,accent);
+  box(1.37,.12,.18,door,1.53,front,accent)
+ }else wallHorizontal(left,right,front,.68);
+ // Window strip on outward wall: gives every room recognizable cutaway windows.
+ const windowX=side==='right'?left:right;
+ box(.19,.12,Math.min(r.d-.9,1.30),windowX,1.00,r.z+.15,deepTeal,group,false);
+ box(.21,.42,Math.min(r.d-.95,1.18),windowX,1.17,r.z+.15,glass,group,false);
+ // Department signage hangs over back wall in the 3D world.
+ const sign=new THREE.Mesh(new THREE.PlaneGeometry(Math.min(r.w-1.0,2.72),.40),
+  new THREE.MeshBasicMaterial({map:labelTexture(r.name.replace(/^\S+\s/,''),'#174e56','#fffef2',42),
+   transparent:true,side:THREE.DoubleSide,depthWrite:false}));
+ sign.position.set(r.x,1.62,back+.32);group.add(sign);
+ const root=new THREE.Group();root.name='room-'+r.id;
+ for(const part of group.children.slice(begin)){
+  group.remove(part);part.position.x-=r.x;part.position.z-=r.z;root.add(part)
+ }
+ root.position.set(r.x,0,r.z);group.add(root);roomGroups.set(r.id,root);
  return root
 }
 function clampRoomDoor(left,right,x){return Math.min(right-.76,Math.max(left+.76,x))}
