@@ -311,18 +311,32 @@ function timberX(parent,x,y,z,w,h){
  const b=box(.028,h+.025,.035,oakAccent,x+w*.22,y,z,parent);
  b.rotation.z=-.45
 }
-function garden(parent,x,z){
- cylinder(parent,.066,.073,.08,timber,x,.19,z,8);
- smallBall(parent,.083,greenSoft,x,.28,z);
- smallBall(parent,.036,flowerRed,x+.033,.34,z+.015);
- smallBall(parent,.025,flowerBlue,x-.037,.32,z-.028)
+function garden(parent,x,z,baseY=0){
+ // Flower planters actually sit on the ground or their paved building courtyard.
+ cylinder(parent,.066,.073,.08,timber,x,baseY+.04,z,8);
+ smallBall(parent,.083,greenSoft,x,baseY+.13,z);
+ smallBall(parent,.036,flowerRed,x+.033,baseY+.19,z+.015);
+ smallBall(parent,.025,flowerBlue,x-.037,baseY+.17,z-.028)
 }
-function track(parent,x,z,w=.23,d=.24){
+function track(parent,x,z,w=.23,d=.24,height=.016){
+ // Paving stones lie on the soil, not 15 cm above it.
  for(let i=0;i<3;i++){
-  const p=box(w*.94,.02,d*.22,i===1?pebbleDark:pebbleLight,x,.155,z+(i-1)*d*.31,parent);
+  const p=box(w*.94,.017,d*.22,i===1?pebbleDark:pebbleLight,x,height,z+(i-1)*d*.31,parent);
   p.castShadow=false
  }
 }
+// Solid earth/stone supports underneath a doorstep; every stair starts at local ground height.
+// All distances stay within the original building tile.
+function groundedEntrance(parent,x,frontZ,width,finishHeight,material=stoneDetail){
+ const depths=[.075,.080,.090],levels=[.055,Math.max(.09,finishHeight*.68),finishHeight];
+ for(let i=0;i<3;i++){
+  const top=levels[i],z=frontZ-i*.061;
+  box(width-i*.025,top,depths[i],material,x,top/2+.002,z,parent)
+ }
+ // Soft earthen approach, flush with the meadow surface.
+ track(parent,x,Math.min(.45,frontZ+.025),width*.92,.13,.013)
+}
+
 function woodshedDecor(parent){
  // Lighter end-grain on log storage, so round logs remain recognizable at close zoom.
  for(const i of [0,1,2])for(const j of [0,1]){
@@ -334,8 +348,8 @@ function embellishHouse(g){
  roofDetails(g,0,0,.91,.84,.70);
  timberX(g,-.31,.42,.357,.17,.29);
  timberX(g,.32,.42,.357,.17,.29);
- track(g,0,.52,.22,.24);
- garden(g,.31,.43);
+ track(g,0,.45,.22,.11,.014);
+ garden(g,.31,.43,.015);
  // Wooden side trellis and roof ornament
  for(let i=0;i<3;i++)box(.024,.25,.03,timber,.36,.26,-.16+i*.13,g);
  box(.22,.025,.035,oakAccent,0,.66,.355,g)
@@ -344,8 +358,8 @@ function embellishFarm(g){
  roofDetails(g,-.095,-.10,.88,.78,.685);
  faceBricks(g,.02,.261,.38,2,.38);
  for(const xx of [-.37,.25])box(.045,.18,.045,oakAccent,xx,.50,.270,g);
- garden(g,-.39,.18);
- track(g,0,.43,.25,.21);
+ garden(g,-.39,.18,.075);
+ track(g,0,.42,.25,.13,.014);
  // A small wooden watering trough and more square hay bundles.
  box(.24,.06,.09,timber,.29,.17,.38,g);
  for(const xx of [-.17,-.04])box(.14,.09,.13,hayGold,xx,.17,-.36,g)
@@ -357,7 +371,7 @@ function embellishLumber(g){
  // Front timber slats and chopping-area chips.
  for(let i=0;i<3;i++)box(.027,.31,.024,timber,-.43+i*.045,.29,-.42,g);
  box(.26,.03,.12,pebbleDark,-.25,.14,.40,g);
- garden(g,.0,.39)
+ garden(g,.0,.39,.08)
 }
 function embellishMarket(g){
  roofDetails(g,0,-.52,1.35,.88,.65);
@@ -367,8 +381,8 @@ function embellishMarket(g){
   for(const dx of [-.09,.09])smallBall(g,.027,marketProduce[xx===0?1:2],xx+dx,.485,.76)
  }
  for(let z=-1;z<=1;z++)for(const xx of [-.45,.45])
-  track(g,xx,z*.25,.20,.18);
- garden(g,-.82,.28);garden(g,.82,.28);
+  track(g,xx,z*.25,.20,.18,.119);
+ garden(g,-.82,.28,.116);garden(g,.82,.28,.116);
  box(.035,.20,.035,timber,0,.86,.47,g)
 }
 function embellishCastle(g){
@@ -387,9 +401,9 @@ function embellishCastle(g){
   box(.064,.19,.06,castleOak,xx,.86,1.44,g);
   cone(g,.07,.18,lampGold,xx,.99,1.45,6);
  }
- for(const xx of [-.68,.68])garden(g,xx,.76);
+ for(const xx of [-.68,.68])garden(g,xx,.76,.148);
  // Short stairway to the keep and an ornamental watch platform.
- track(g,0,.50,.31,.25);
+ track(g,0,.50,.31,.25,.158);
  box(.35,.055,.24,castleDark,.69,.44,-.16,g);
  box(.26,.035,.15,castleLight,.69,.49,-.16,g)
 }
@@ -431,6 +445,7 @@ function addHouse(k){
  smallBall(g,.08,leafDark,-.30,.245,.40);
  for(const off of [-.04,.04])smallBall(g,.035,flowerRed,-.30+off,.29,.42);
  box(.27,.035,.14,stoneDetail,0,.15,.48,g);
+ groundedEntrance(g,0,.47,.31,.162,stoneDetail);
  embellishHouse(g);
  buildings.set(k,g);save()
 }
@@ -474,6 +489,8 @@ function addMarket(k){
  const pennant=box(.32,.15,.025,fabricBlue,0,.62,-.83,g);
  for(const xx of [-.72,.72])cylinder(g,.055,.065,.13,hayGold,xx,.18,.14,8);
  crate(g,-.77,.21,-.04);barrel(g,.78,.19,-.04);
+ // Shop door meets the paved courtyard instead of hovering over the plaza.
+ groundedEntrance(g,0,.085,.31,.172,marketStone);
  embellishMarket(g);
  markets.set(k,g);save();return true
 }
@@ -594,9 +611,19 @@ function addCastle(k){
    box(.025,.025,.53,bridgeRope,edgeX,.51,1.198,g);
    box(.024,.025,.53,bridgeOak,edgeX,.405,1.198,g)
  }
- // Stone access steps from the outside shore; all geometry stays inside 3x3.
- box(.67,.035,.14,castleLight,0,.184,1.426,g);
- box(.59,.025,.11,castleDark,0,.206,.93,g);
+ // Real stone bridge abutments rest on the moat bed at BOTH ends of the bridge.
+ // They support the elevated wood deck and connect it to the castle threshold.
+ box(.68,.245,.29,castleStone,0,.123,.955,g);
+ box(.74,.245,.19,castleStone,0,.123,1.404,g);
+ box(.68,.043,.18,castleLight,0,.265,1.405,g);
+ box(.62,.055,.19,castleLight,0,.190,1.465,g);
+ box(.64,.040,.18,castlePath,0,.175,.815,g);
+ box(.62,.080,.18,castleLight,0,.210,.895,g);
+ // Visible supporting timber braces under the bridge, without hiding the water.
+ for(const xx of [-.235,.235]){
+  box(.052,.17,.09,bridgeDark,xx,.16,1.05,g);
+  box(.052,.17,.09,bridgeDark,xx,.16,1.33,g)
+ }
  castles.set(k,g);save();return true
 }
 
@@ -679,6 +706,8 @@ function addLumberjack(k){
  for(const [gx,gz] of [[-.395,.29],[.05,.41],[.44,.11]]){
    cone(g,.056,.13,grassClump,gx,.125,gz,5)
  }
+ // Robust wooden threshold and two grounded access steps at the door.
+ groundedEntrance(g,-.255,.235,.255,.158,stoneDetail);
  // Das vorhandene Produktions- und Speichersystem bleibt unverändert.
  embellishLumber(g);
  lumberjacks.set(k,g);save();return true
@@ -749,6 +778,8 @@ function addFarm(k){
  box(.25,.025,.115,feedGreen,.22,.205,-.08,g);
  const tool=box(.023,.36,.024,timber,-.385,.36,-.19,g);tool.rotation.z=.18;
  box(.16,.045,.035,stoneDetail,-.356,.53,-.19,g);
+ // The barn's double doors are raised; a low, solid three-step entry connects them.
+ groundedEntrance(g,-.095,.46,.31,.194,farmGravel);
  embellishFarm(g);
  farms.set(k,g);save();return true
 }
