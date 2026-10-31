@@ -214,27 +214,66 @@ let food=0,foodElapsed=0;
 function addFarm(k){
  if(!owned.has(k)||occupied(k))return false;
  const [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.16,z);land.add(g);
- box(.87,.09,.86,stoneDetail,0,.045,0,g);
- box(.64,.56,.61,barnRed,-.055,.35,-.07,g);
- for(const xx of [-.36,.25])box(.045,.58,.045,plaster,xx,.34,.245,g);
- for(const yy of [.23,.44])box(.65,.025,.035,timber,-.055,yy,.253,g);
- pitchedRoof(g,.82,.79,.64,roofSide);
- gable(g,.322,.63,.89,.25,0xc67856);
- // Double barn doors with cross bracing
- for(const xx of [-.135,.075]){
-  box(.185,.32,.045,darkTrim,xx,.29,.266,g);
-  const brace=box(.025,.33,.052,timber,xx,.29,.297,g);brace.rotation.z=xx<0?-.45:.45
+ // A compact but clearly readable farmyard on a single island tile.
+ const barnBoards=mat(0xb85d43),barnBeams=mat(0x64432f),warmPlaster=mat(0xeed5aa),
+       barnRoof=mat(0x98513b),roofEdge=mat(0x6e382b),farmGravel=mat(0xbaa888),
+       grainBrown=mat(0x8b6540),feedGreen=mat(0x6d9552);
+ box(.90,.065,.90,farmGravel,0,.032,0,g);
+ box(.77,.023,.65,stoneDetail,-.07,.074,-.095,g);
+ // Red timber-framed barn, in front of a separate little grain silo.
+ box(.69,.60,.65,barnBoards,-.095,.38,-.10,g);
+ for(const xx of [-.44,.25]){
+   box(.045,.63,.05,barnBeams,xx,.39,.238,g);
+   box(.045,.63,.05,barnBeams,xx,.39,-.432,g)
  }
- box(.14,.15,.045,plaster,-.055,.53,.265,g);
- // Grain silo and animal pen
- cylinder(g,.125,.14,.48,stoneDetail,.33,.30,-.17,10);
- cone(g,.175,.19,tileRed,.33,.63,-.17,10);
- for(const xx of [-.43,.43])for(const zz of [-.43,.43])post(g,xx,zz);
- for(const zz of [-.43,.43])for(const yy of [.24,.34])box(.87,.022,.025,timber,0,yy,zz,g);
- for(const xx of [-.43,.43])box(.025,.025,.86,timber,xx,.29,0,g);
- // Loose hay, feed and storage
- hayBale(g,-.29,.15,.37);hayBale(g,-.08,.15,.37);
- crate(g,.30,.19,.34);
+ for(const yy of [.20,.61]){
+   box(.70,.037,.065,barnBeams,-.095,yy,.242,g)
+ }
+ const barnTop=new THREE.Group();barnTop.position.set(-.095,0,-.10);g.add(barnTop);
+ pitchedRoof(barnTop,.88,.78,.685,barnRoof);
+ gable(barnTop,.35,.675,1.015,.333,0xe3b67c);
+ // Roof edge and dark ridge make the roof silhouette visible on a phone.
+ box(.89,.025,.045,roofEdge,-.095,.725,.29,g);
+ // Large double barn door with diagonal timber bracing and brass hardware.
+ for(const i of [-1,1]){
+   const cx=-.095+i*.115;
+   box(.219,.365,.036,barnBeams,cx,.365,.256,g);
+   box(.19,.341,.041,grainBrown,cx,.367,.284,g);
+   const diag=box(.023,.39,.046,warmPlaster,cx,.365,.314,g);
+   diag.rotation.z=i*.48;
+   box(.018,.36,.052,barnBeams,cx,.366,.314,g);
+   box(.024,.027,.028,hayGold,cx-i*.055,.35,.348,g)
+ }
+ // Small attic ventilation window above the two doors.
+ cylinder(g,.077,.077,.028,roofEdge,-.095,.74,.34,10).rotation.x=Math.PI/2;
+ cylinder(g,.052,.052,.033,barnBeams,-.095,.74,.363,10).rotation.x=Math.PI/2;
+ box(.014,.095,.03,warmPlaster,-.095,.74,.382,g);
+ // Silo with a conical roof and a tiny storage shed.
+ cylinder(g,.13,.145,.46,stoneDetail,.34,.305,-.285,10);
+ for(let i=0;i<3;i++)cylinder(g,.142,.142,.014,barnBeams,.34,.17+i*.155,-.285,10);
+ cone(g,.178,.19,roofEdge,.34,.64,-.285,10);
+ box(.23,.30,.29,warmPlaster,.35,.22,.13,g);
+ const shedRoof=box(.315,.055,.35,barnRoof,.345,.403,.12,g);
+ shedRoof.rotation.z=-.12;
+ box(.115,.21,.024,barnBeams,.35,.22,.283,g);
+ // Rustic fence: low side rails, with a clear entry in front of the barn.
+ for(const zz of [-.44,.44])for(const xx of [-.445,.445])post(g,xx,zz);
+ for(const zz of [-.44,.44]){
+   for(const yy of [.245,.335]){
+     box(.34,.022,.028,timber,-.275,yy,zz,g);
+     box(.22,.022,.028,timber,.34,yy,zz,g)
+   }
+ }
+ for(const xx of [-.445,.445])for(const yy of [.245,.335])
+   box(.029,.023,.85,timber,xx,yy,0,g);
+ // Hay bales, sacks, feeding trough, and farm tools.
+ hayBale(g,-.315,.16,.357);hayBale(g,-.315,.30,.357);
+ hayBale(g,-.12,.16,.382);
+ crate(g,.285,.19,.36);
+ box(.27,.10,.13,grainBrown,.22,.15,-.08,g);
+ box(.25,.025,.115,feedGreen,.22,.205,-.08,g);
+ const tool=box(.023,.36,.024,timber,-.385,.36,-.19,g);tool.rotation.z=.18;
+ box(.16,.045,.035,stoneDetail,-.356,.53,-.19,g);
  farms.set(k,g);save();return true
 }
 function nearFarm(k){const [x,z]=pos(k);return neighbors(x,z).some(([a,b])=>farms.has(key(a,b)))}
@@ -242,32 +281,54 @@ function nearFarm(k){const [x,z]=pos(k);return neighbors(x,z).some(([a,b])=>farm
 function addField(k){
  if(!owned.has(k)||occupied(k)||!nearFarm(k))return false;
  const [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.16,z);land.add(g);
- box(.94,.06,.94,fieldEarth,0,.03,0,g);
- // Furrows and fine soil texture (one small strip per growing row)
- for(let row=-3;row<=3;row++)box(.81,.019,.045,dirtDark,0,.069,row*.125,g);
- // One 3D wheat field with instanced geometry: much faster on iPhones than hundreds of separate meshes
- const count=81,stalks=new THREE.InstancedMesh(new THREE.CylinderGeometry(.008,.014,.255,5),straw,count);
- const heads=new THREE.InstancedMesh(new THREE.ConeGeometry(.045,.155,5),hayGold,count);
- const leaves=new THREE.InstancedMesh(new THREE.BoxGeometry(.011,.095,.050),hay,count);
- const dummy=new THREE.Object3D();
- let idx=0;
- for(let row=-4;row<=4;row++)for(let col=-4;col<=4;col++){
-  const shift=(row%2)*.036,xx=col*.094+shift,zz=row*.101;
-  const variety=1+((row*17+col*7+100)%5)*.045;
-  dummy.rotation.set(0,0,((row+col)%3-1)*.08);dummy.scale.set(1,variety,1);
-  dummy.position.set(xx,.205,zz);dummy.updateMatrix();stalks.setMatrixAt(idx,dummy.matrix);
-  dummy.rotation.set(0,0,0);dummy.scale.set(1,variety,1);
-  dummy.position.set(xx,.375+(variety-1)*.12,zz);dummy.updateMatrix();heads.setMatrixAt(idx,dummy.matrix);
-  dummy.rotation.set((row%2?1:-1)*.35,0,(col%2?1:-1)*.48);
-  dummy.scale.set(1,1,1);dummy.position.set(xx,.235,zz);dummy.updateMatrix();leaves.setMatrixAt(idx,dummy.matrix);
-  idx++
+ // Fertile brown soil with visible dark furrows and a low wooden edging.
+ const earth=mat(0x86623d),furrow=mat(0x674b31),
+       stemsMat=mat(0xa18b46),earsMat=mat(0xf1d575),earsShade=mat(0xd4a847),
+       bladeMat=mat(0xb9a550);
+ box(.945,.063,.945,earth,0,.031,0,g);
+ for(let row=-4;row<=4;row++)
+   box(.85,.012,.044,furrow,0,.068,row*.098,g);
+ for(const edge of [-.462,.462]){
+   box(.028,.050,.94,timber,edge,.083,0,g);
+   box(.94,.047,.028,timber,0,.082,edge,g)
  }
- for(const mesh of [stalks,heads,leaves]){mesh.instanceMatrix.needsUpdate=true;mesh.castShadow=true;mesh.receiveShadow=false;g.add(mesh)}
- // Timber edging, low enough to see the wheat
- for(const side of [-.46,.46]){
-  box(.035,.045,.94,timber,side,.073,0,g);
-  box(.94,.04,.035,timber,0,.073,side,g)
+ for(const xx of [-.462,.462])for(const zz of [-.462,.462])
+   box(.045,.13,.045,timber,xx,.115,zz,g);
+ // Dense wheat rows made with instancing, so iPhones render the field smoothly.
+ const count=99,stemGeo=new THREE.CylinderGeometry(.007,.012,.25,5),
+       earGeo=new THREE.ConeGeometry(.040,.16,6),
+       glumeGeo=new THREE.ConeGeometry(.028,.115,5),
+       leafGeo=new THREE.BoxGeometry(.010,.093,.052);
+ const stems=new THREE.InstancedMesh(stemGeo,stemsMat,count),
+       ears=new THREE.InstancedMesh(earGeo,earsMat,count),
+       tips=new THREE.InstancedMesh(glumeGeo,earsShade,count),
+       leaves=new THREE.InstancedMesh(leafGeo,bladeMat,count);
+ const dummy=new THREE.Object3D(),color=new THREE.Color();
+ let id=0;
+ for(let row=-4;row<=4;row++)for(let col=-5;col<=5;col++){
+   const xx=col*.078+(row%2)*.023,zz=row*.098;
+   const variance=((row*29+col*17+217)%7)/30,lean=((row+col+30)%5-2)*.045;
+   const stalkSize=1+variance;
+   dummy.rotation.set(0,0,lean);dummy.scale.set(1,stalkSize,1);
+   dummy.position.set(xx,.197,zz);dummy.updateMatrix();
+   stems.setMatrixAt(id,dummy.matrix);
+   dummy.rotation.set(0,0,lean);dummy.scale.set(1,1+variance*.7,1);
+   dummy.position.set(xx+lean*.10,.355+variance*.07,zz);dummy.updateMatrix();
+   ears.setMatrixAt(id,dummy.matrix);
+   dummy.scale.set(.94,1,1);dummy.position.set(xx+lean*.12,.445+variance*.07,zz);
+   dummy.updateMatrix();tips.setMatrixAt(id,dummy.matrix);
+   dummy.rotation.set((row%2?1:-1)*.33,0,(col%2?1:-1)*.48);
+   dummy.scale.set(1,1,1);dummy.position.set(xx,.225,zz);
+   dummy.updateMatrix();leaves.setMatrixAt(id,dummy.matrix);
+   const tone=((row*11+col*23+400)%5)/5;
+   color.setHSL(.116+tone*.013,.72,.63+tone*.085);
+   ears.setColorAt(id,color);
+   id++
  }
+ for(const plant of [stems,ears,tips,leaves]){
+   plant.instanceMatrix.needsUpdate=true;plant.castShadow=false;plant.receiveShadow=false;g.add(plant)
+ }
+ ears.instanceColor.needsUpdate=true;
  fields.set(k,g);save();return true
 }
 function productionFields(){let count=0;for(const k of fields.keys())if(nearFarm(k))count++;return count}
