@@ -101,7 +101,7 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
  <div class="builderRow" data-room-controls><button id="roomAdd" type="button">➕ Raum bauen</button>
  <button id="roomDelete" type="button" hidden>🗑 Raum entfernen</button>
  <button id="roomFinish" type="button">✓ Fertig</button></div>
- <div id="constructionControls" class="builderRow" hidden><select id="constructionTool" aria-label="Bauteil"><option value="wall">🧱 Wand ziehen</option><option value="door">🚪 Tür einsetzen</option><option value="window">🪟 Fenster einsetzen</option><option value="floor">🟩 Boden ziehen</option><option value="erase">🧽 Bauteil entfernen</option></select><select id="constructionFacing" aria-label="Richtung"><option value="x">↔ Waagerecht</option><option value="z">↕ Senkrecht</option></select><button id="constructionUndo" type="button">↶ Rückgängig</button><button id="constructionDone" type="button">✓ Fertig</button></div>
+ <div id="constructionControls" class="builderRow" hidden><select id="constructionTool" aria-label="Bauteil"><option value="wall">🧱 Wand ziehen</option><option value="door">🚪 Tür einsetzen</option><option value="window">🪟 Fenster einsetzen</option><option value="floor">🟩 Boden ziehen</option><option value="erase">🧽 Bauteil entfernen</option></select><select id="constructionFacing" aria-label="Richtung"><option value="x">↔ Waagerecht</option><option value="z">↕ Senkrecht</option></select><button id="constructionUndo" type="button">↶ Rückgängig</button><button id="importOldConstruction" type="button" hidden>📦 Frühere Bauteile</button><button id="constructionDone" type="button">✓ Fertig</button></div>
  <p id="builderHint" class="builderHint">Raum antippen und ziehen, oder einen Raum auswählen und an einen freien Platz tippen. Zwei Finger: Zoomen und Drehen.</p>
 </div>
 <section>
@@ -788,6 +788,10 @@ function showBuilder(){
  roomDelete.hidden=!editingFloorplan||!selectedRoomId||initialRooms.some(r=>r.id===selectedRoomId);
  for(const element of document.querySelectorAll('[data-room-controls]'))element.hidden=!editingFloorplan||buildCategory!=='rooms';
  document.getElementById('constructionControls').hidden=!editingFloorplan||buildCategory!=='construction';
+ const importPrevious=document.getElementById('importOldConstruction');
+ const legacyBuild=localStorage.getItem('klinik-am-park-bauteile-v1');
+ importPrevious.hidden=!editingFloorplan||buildCategory!=='construction'||!legacyBuild||
+  !!localStorage.getItem('klinik-am-park-bauteile-v2');
  gestureHint.textContent=editingFloorplan
   ?(buildCategory==='construction'?'☝️ Bauen · ✌️ Zoomen & Drehen':'☝️ Raum antippen & ziehen · ✌️ Zoomen & Drehen')
   :editingReception?'☝️ Anmeldung verschieben · ✌️ Zoom & Drehen':'☝️ Verschieben · ✌️ Zoomen & Drehen'
@@ -913,7 +917,8 @@ function roomPointerEnd(px,py,state){
 /* Free-form hospital architecture: 1m grid segments plus draggable floor
    rectangles. Doors/windows swap a user-built wall segment. Persistence is
    independent from the camera, furniture and movable room modules. */
-const constructionKey='klinik-am-park-bauteile-v1';
+const legacyConstructionKey='klinik-am-park-bauteile-v1';
+const constructionKey='klinik-am-park-bauteile-v2';
 const constructionLayer=new THREE.Group();constructionLayer.name='Freier-Grundriss';scene.add(constructionLayer);
 const constructionPreview=new THREE.Group();scene.add(constructionPreview);
 const constructionParts=new Map(),constructionFloors=[],constructionUndoStack=[];
@@ -1116,6 +1121,18 @@ document.getElementById('constructionUndo').onclick=()=>{
  roomHint.textContent='↶ Letzten Bauschritt zurückgenommen.'
 };
 restoreConstruction();
+document.getElementById('importOldConstruction').onclick=()=>{
+ if(!editingFloorplan||buildCategory!=='construction')return;
+ try{
+  const legacy=JSON.parse(localStorage.getItem(legacyConstructionKey)||'null');
+  if(!legacy||!Array.isArray(legacy.parts)||!Array.isArray(legacy.floors))return;
+  rememberConstruction();
+  reconstructConstruction(legacy);
+  saveConstruction();
+  roomHint.textContent='📦 Frühere Wände und Böden übernommen. Du kannst sie entfernen oder rückgängig machen.';
+  showBuilder()
+ }catch(e){roomHint.textContent='Die früheren Bauteile konnten nicht übernommen werden.'}
+};
 
 applyFloorplanFromStorage();
 // Restore the saved GLOBAL position only after the floorplan has restored the
