@@ -46,12 +46,12 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
  <div id="roomInfo" hidden role="status" aria-live="polite"><strong id="roomTitle"></strong><span id="roomDescription"></span></div>
  <div id="gestureHint">☝️ Verschieben &nbsp;·&nbsp; ✌️ Zoomen & Drehen</div>
 </div>
-<div id="status">✨ Der Anfang unseres Krankenhauses – 3 Bereiche sind fertig.</div>
+<div id="status">✨ Empfang verbessert: Den Anmeldungstresen siehst du jetzt gleich hinter dem Eingang.</div>
 <section>
  <h2>Das ist bereits gebaut</h2>
  <div class="rooms">
   <div class="room"><span class="symbol">🚪</span><strong>Eingang</strong><p>Vorne mittig, mit Glastür und Eingangsweg.</p></div>
-  <div class="room"><span class="symbol">🧑‍💻</span><strong>Empfang</strong><p>Direkt dahinter, mit Anmeldung und Tresen.</p></div>
+  <div class="room"><span class="symbol">🧑‍💻</span><strong>Empfang</strong><p>Direkt dahinter: gut sichtbarer Tresen, zwei PCs und Anmeldungsschild.</p></div>
   <div class="room"><span class="symbol">🪑</span><strong>Wartezimmer</strong><p>Rechts daneben, mit Sitzplätzen und Einrichtung.</p></div>
  </div>
  <p class="note">Du kannst die Ansicht schon frei verschieben, heranzoomen und drehen – ganz ohne Kameraknöpfe. Tippe auf einen Bereich, um ihn zu erkunden. Weitere Abteilungen kommen später dazu. Dieses Spiel ist unabhängig von Inselreich.</p>
@@ -205,7 +205,7 @@ lightPost(-1.6,7.1);lightPost(1.6,7.1);
 wallX(-6.55,6.55,-3.35,1.85);
 wallZ(-6.55,-3.35,4.35,1.32);
 wallZ(6.55,-3.35,4.35,1.15);
-wallX(-6.55,-1.12,4.35,.77);
+wallX(-6.55,-1.12,4.35,.35);
 wallX(1.18,6.55,4.35,.77);
 // Reception and waiting room divide, with a broad accessible opening.
 wallZ(1.35,-3.3,.10,1.33);
@@ -226,25 +226,61 @@ canopy.material=mat(0x82c5c7,.33,.15);
 for(const x of [-1.55,1.55])box(.10,.15,1.14,x,2.18,4.75,teal);
 // Entrance label above the door, visible from the front.
 plane(1.52,.32,0,1.81,4.50,new THREE.MeshBasicMaterial({map:labelTexture('EINGANG'),transparent:true,depthWrite:false}),0);
-// Reception counter: L-shaped, warm oak with stone desk face, monitors and paperwork.
-box(3.22,.62,.66,-2.35,.55,.93,oak);
-box(3.28,.09,.77,-2.35,.92,.93,white);
-box(.60,.62,1.38,-3.63,.55,.40,oak);
-box(.66,.09,1.45,-3.63,.92,.40,white);
-box(3.16,.11,.08,-2.35,.46,1.30,teal);
-for(const x of [-3.0,-1.9]){
- box(.45,.32,.05,x,1.16,.56,black);
- box(.39,.25,.056,x,1.18,.599,screenMat);
- box(.04,.17,.04,x,.99,.57,wallTrim);
- box(.29,.027,.18,x,.94,.45,white)
+// RECEPTION 2.0: bring registration into the direct line of sight from the entrance.
+// A pale-blue zone, tall contrast-rich front and floating sign distinguish it from
+// the waiting area, even when viewed on a small iPhone display.
+const receptionFloor=mat(0xe6f3f0);
+box(4.35,.021,3.34,-1.65,.166,1.28,receptionFloor,group,false);
+for(const x of [-3.73,.43]){
+ box(.055,.035,3.40,x,.194,1.28,tealLight,group,false)
 }
-box(.31,.025,.22,-.9,.978,.92,white);box(.28,.035,.02,-.9,.989,1.03,gold);
-cylinder(.13,.13,.045,-.58,1.01,.98,teal);
-for(const x of [-2.95,-1.76])lobbyChair(x,-.22,Math.PI,chairTeal);
-// Receptionist as a simple stylized decorative figure behind the counter.
-visitor(-2.43,-.25,mat(0x77b8ad),.62,Math.PI);
-plant(-4.97,2.85,.8);
-plant(.60,-2.65,.72);
+box(4.28,.038,.052,-1.65,.194,2.94,tealLight,group,false);
+// Entrance-facing L-shaped desk, placed immediately behind the glass doors.
+const deskFront=mat(0x197982),deskPanel=mat(0x2d9295),trimBrass=mat(0xe5bd75,.56,.22),
+      creamCounter=mat(0xf9f4e8,.33);
+box(3.35,.72,.72,-1.40,.60,2.02,deskFront);
+box(3.48,.12,.87,-1.40,1.01,2.02,creamCounter);
+box(.62,.71,1.22,-2.80,.60,1.65,deskFront);
+box(.73,.12,1.35,-2.80,1.01,1.65,creamCounter);
+// Wide illuminated teal panels face the player, divided by oak and brass trim.
+for(const x of [-2.47,-1.48,-.49]){
+ box(.91,.43,.025,x,.59,2.392,deskPanel);
+ box(.85,.034,.035,x,.84,2.408,trimBrass,group,false)
+}
+for(const x of [-3.03,-1.96,-.99,.16])
+ box(.050,.55,.035,x,.60,2.414,oakDark,group,false);
+box(3.38,.06,.08,-1.40,.34,2.43,trimBrass,group,false);
+// Distinct registration insignia on the middle front panel.
+box(.57,.27,.045,-1.42,.64,2.438,white,group,false);
+box(.12,.22,.06,-1.42,.64,2.477,teal);
+box(.23,.08,.065,-1.42,.64,2.479,teal);
+// Double monitors, keyboard trays, paperwork and visitor bell.
+for(const x of [-2.08,-.97]){
+ box(.49,.34,.055,x,1.27,1.69,black);
+ box(.41,.26,.058,x,1.28,1.729,screenMat);
+ box(.055,.16,.055,x,1.08,1.70,wallTrim);
+ box(.31,.025,.19,x,1.082,1.48,white)
+}
+box(.38,.025,.23,-.12,1.09,2.05,white);
+for(let i=0;i<3;i++)
+ box(.30,.013,.022,-.15,1.108,1.98+(i-1)*.055,tealLight,group,false);
+cylinder(.10,.10,.06,-.05,1.12,2.26,trimBrass,16);
+sphere(.07,-.05,1.18,2.26,trimBrass);
+// Overhead registration board (not a huge roof), visible from all camera angles.
+for(const x of [-2.94,.14])box(.055,.78,.055,x,1.52,2.00,oakDark);
+box(3.26,.50,.12,-1.40,1.98,2.03,deepTeal);
+box(3.11,.38,.015,-1.40,1.99,2.114,white,group,false);
+plane(2.82,.33,-1.40,2.005,2.132,
+ new THREE.MeshBasicMaterial({map:labelTexture('ANMELDUNG'),transparent:true,depthWrite:false}),0);
+for(const x of [-2.91,.11])box(.052,.55,.14,x,1.96,2.06,trimBrass);
+// Front queue markers, small and unobtrusive.
+for(const z of [3.12,3.70])
+ box(.48,.014,.035,-1.40,.184,z,tealLight,group,false);
+// Two visitor chairs behind the desk and one visible receptionist.
+for(const x of [-2.12,-.72])lobbyChair(x,.75,Math.PI,chairTeal);
+visitor(-1.53,.88,mat(0x78bcb3),.78,Math.PI);
+plant(-4.97,2.85,.80);
+plant(.63,-2.65,.72);
 // Waiting room: two neat bench rows, reading corner, water dispenser and TV.
 for(const [x,z,angle] of [[2.38,-1.42,0],[3.32,-1.42,0],[4.26,-1.42,0],
                            [2.38,1.34,Math.PI],[3.32,1.34,Math.PI],[4.26,1.34,Math.PI]])
@@ -265,7 +301,7 @@ box(.96,.70,.09,5.28,1.38,-3.20,black);box(.84,.57,.096,5.28,1.40,-3.13,screenMa
 cylinder(.24,.24,.08,-1.4,1.35,-3.24,white,20);
 for(const [xx,zz] of [[-5.4,-1.9],[-4.9,-2.52],[1.9,-2.55],[5.9,3.7]])
  box(.19,.03,.16,xx,.205,zz,mat(0xbad2cf),group,false);
-roomLabel('ANMELDUNG',-2.80,2.22,-2.45,2.50);
+roomLabel('ANMELDUNG',-1.40,2.48,1.25,2.58);
 roomLabel('WARTEZIMMER',3.65,2.18,-2.45,2.75);
 roomLabel('EINGANG',0,2.46,5.24,1.85);
 // Outdoor detail to suggest future expansion, without prematurely adding new departments.
@@ -275,7 +311,7 @@ for(const [x,z] of [[-8,-2],[-8,2],[8,-2],[8,3],[-7,-5.8],[7.4,-5.9]]){
 }
 const bounds=[
  {id:'entry',name:'🚪 Eingang',details:'Unten in der Mitte: Glas-Schiebetüren und ein direkter Weg zur Anmeldung.',x1:-1.15,x2:1.15,z1:3.9,z2:8.1},
- {id:'reception',name:'🧑‍💻 Empfang / Anmeldung',details:'Direkt hinter dem Eingang: Tresen, Computer und Anmeldung für Patienten.',x1:-6.55,x2:1.35,z1:-3.35,z2:3.9},
+ {id:'reception',name:'🧑‍💻 Empfang / Anmeldung',details:'Direkt hinter dem Eingang: großer beschrifteter Tresen, zwei Computer, Empfangsperson und Wartebereich.',x1:-6.55,x2:1.35,z1:-3.35,z2:3.9},
  {id:'waiting',name:'🪑 Wartezimmer',details:'Rechts neben dem Empfang: Sitzplätze, Pflanzen, Wasserspender und Bildschirm.',x1:1.35,x2:6.55,z1:-3.35,z2:4.35}
 ];
 const raycaster=new THREE.Raycaster();
@@ -293,10 +329,12 @@ function inspectRoom(px,py){
  document.getElementById('roomInfo').hidden=false;
  document.getElementById('status').textContent='✓ '+room.name+' – dieser Bereich steht schon.';
 }
-const focus=new THREE.Vector3(0,.1,.70);
-let orbit=.62,elevation=1.0,distance=20;
+// New first-view angle highlights the desk rather than looking through the divider.
+const focus=new THREE.Vector3(-.45,.1,.72);
+let orbit=-.42,elevation=1.03,distance=17.9;
 const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
-const storedKey='klinik-am-park-kamera-v1';
+// View version bump applies the better entrance/reception angle once; no town data is reset.
+const storedKey='klinik-am-park-kamera-v2';
 try{
  const saved=JSON.parse(localStorage.getItem(storedKey)||'null');
  if(saved&&Number.isFinite(saved.orbit)&&Number.isFinite(saved.elevation)&&Number.isFinite(saved.distance)&&
