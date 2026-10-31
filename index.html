@@ -1375,6 +1375,27 @@ function addField(k){
  worldShadowsDirty=true;fields.set(k,g);save();return true
 }
 function productionFields(){let count=0;for(const k of fields.keys())if(fieldHasMarketDelivery(k))count++;return count}
+/* One active windmill per grain farm gives +1 Nahrung per 12 seconds.
+   Farms require a neighboring wheat field; the mill also needs a delivery road
+   after the first market is built. An extra mill on one farm cannot stack bonuses. */
+function millHasActiveField(farm){
+ const [x,z]=pos(farm);
+ return neighbors(x,z).some(([a,b])=>fields.has(key(a,b))&&hasDeliveryRoute('farm',farm))
+}
+function activeMillCount(){
+ const servedFarms=new Set();
+ for(const mill of mills.keys()){
+  if(!hasDeliveryRoute('mill',mill))continue;
+  const [x,z]=pos(mill);
+  for(const [a,b] of neighbors(x,z)){
+   const farm=key(a,b);
+   if(farms.has(farm)&&!servedFarms.has(farm)&&millHasActiveField(farm)){
+    servedFarms.add(farm);break
+   }
+  }
+ }
+ return servedFarms.size
+}
 function refreshFood(){foodCount.textContent=food.toLocaleString('de-DE')}
 function refreshWood(){woodCount.textContent=wood.toLocaleString('de-DE');refreshBuildCostLabels()}
 function refreshStone(){stoneCount.textContent=stone.toLocaleString('de-DE');refreshBuildCostLabels()}
@@ -1425,7 +1446,7 @@ function roadLeadsToDoor(x,z,dx,dz){
  if(dx!==0||dz!==-1)return false;
  const neighbor=at(key(x+dx,z+dz));if(!neighbor)return false;
  const [ax,az]=pos(neighbor.anchor);
- if(neighbor.type==='house'||neighbor.type==='farm'||neighbor.type==='lumber'||neighbor.type==='quarry')return x===ax&&z===az+1;
+ if(neighbor.type==='house'||neighbor.type==='farm'||neighbor.type==='lumber'||neighbor.type==='quarry'||neighbor.type==='mill')return x===ax&&z===az+1;
  if(neighbor.type==='market')return (x===ax||x===ax+1)&&z===az+2;
  if(neighbor.type==='castle')return x===ax+1&&z===az+3;
  return false
@@ -1585,9 +1606,10 @@ function fieldHasMarketDelivery(k){
 function refreshTransportSummary(){
  const target=document.getElementById('transportStatus');
  if(!target)return;
- const total=lumberjacks.size+quarries.size+farms.size;
+ const total=lumberjacks.size+quarries.size+farms.size+mills.size;
  const active=activeLumberjackCount()+activeQuarryCount()+
-  [...farms.keys()].filter(k=>hasDeliveryRoute('farm',k)).length;
+  [...farms.keys()].filter(k=>hasDeliveryRoute('farm',k)).length+
+  [...mills.keys()].filter(k=>hasDeliveryRoute('mill',k)).length;
  if(!markets.size){
   target.textContent='🛒 Noch kein Markt: Produktion läuft. Später brauchen Betriebe einen Straßenweg zum Markt.';
   return
@@ -1697,7 +1719,8 @@ food=Math.max(0,Math.floor(Number(data.food)||0));foodElapsed=Math.max(0,Math.mi
 stone=Math.max(0,Math.floor(Number(data.stone)||0));stoneElapsed=Math.max(0,Math.min(STONE_TICK_MS-1,Number(data.stoneElapsed)||0));const away=Math.max(0,Math.min(21600000,Date.now()-(Number(data.lastUpdate)||Date.now())));const total=woodElapsed+away;const activeLumber=activeLumberjackCount();if(activeLumber){wood+=Math.floor(total/15000)*activeLumber;woodElapsed=total%15000}else woodElapsed=0;
 const stoneTotal=stoneElapsed+away;
 const activeStone=activeQuarryCount();if(activeStone){stone+=Math.floor(stoneTotal/STONE_TICK_MS)*activeStone;stoneElapsed=stoneTotal%STONE_TICK_MS}else stoneElapsed=0;
-const foodTotal=foodElapsed+away;const deliveredFields=productionFields();if(deliveredFields){food+=Math.floor(foodTotal/12000)*deliveredFields;foodElapsed=foodTotal%12000}else foodElapsed=0;
+const foodTotal=foodElapsed+away;const deliveredFields=productionFields(),millingBonus=activeMillCount();
+if(deliveredFields+millingBonus){food+=Math.floor(foodTotal/12000)*(deliveredFields+millingBonus);foodElapsed=foodTotal%12000}else foodElapsed=0;
  if(!rockSites.size)seedRockSites([...owned]);restored=true}}}catch(e){}
 if(!restored){for(let x=-1;x<=1;x++)for(let z=-1;z<=1;z++)owned.add(key(x,z));refreshEdge();
  try{const prev=JSON.parse(localStorage.getItem(OLD_KEY)||'null');if(Array.isArray(prev)){prev.forEach(i=>{if(Number.isInteger(i)&&i>=0&&i<9)addHouse(key(i%3-1,Math.floor(i/3)-1))})}else addHouse(key(0,0))}catch(e){addHouse(key(0,0))}}
@@ -1760,7 +1783,7 @@ function hideBuildUndo(){
 function showBuildUndo(type,k,group,woodCost=0,stoneCost=0){
  hideBuildUndo();
  lastBuildUndo={type,k,group,woodCost,stoneCost};
- const names={house:'🏠 Haus',lumber:'🪓 Holzfäller',quarry:'⛏️ Steinbruch',farm:'🚜 Getreidefarm',field:'🌾 Weizenfeld',market:'🛒 Markt',castle:'🏰 Burg'};
+ const names={house:'🏠 Haus',lumber:'🪓 Holzfäller',quarry:'⛏️ Steinbruch',farm:'🚜 Getreidefarm',mill:'🌬️ Windmühle',field:'🌾 Weizenfeld',market:'🛒 Markt',castle:'🏰 Burg'};
  document.getElementById('buildUndoText').textContent='✅ '+(names[type]||'Gebäude')+' gebaut!';
  document.getElementById('buildUndo').hidden=false;
  buildUndoTimer=setTimeout(hideBuildUndo,10000)
@@ -1783,7 +1806,7 @@ document.getElementById('undoLastBuild').onclick=()=>{
  refreshWood();refreshStone();save();
  status.textContent='↶ Bau rückgängig gemacht. Holz und Stein wurden zurückerstattet.'
 };
-function canPlace(type,k){if(!owned.has(k))return false;if(type==='quarry')return !!quarryDepositFor(k);if(type==='road')return !occupied(k);if(type==='roadErase')return roads.has(k);if(type==='market')return canMarket(k);if(type==='castle')return canCastle(k);if(occupied(k))return false;if(type==='field')return nearFarm(k);return true}
+function canPlace(type,k){if(!owned.has(k))return false;if(type==='quarry')return !!quarryDepositFor(k);if(type==='mill')return !occupied(k)&&nearMillFarm(k);if(type==='road')return !occupied(k);if(type==='roadErase')return roads.has(k);if(type==='market')return canMarket(k);if(type==='castle')return canCastle(k);if(occupied(k))return false;if(type==='field')return nearFarm(k);return true}
 function clearPreview(){} // No second confirmation: one tap builds immediately.
 function placeBuildingNow(k){
  const type=buildType;
@@ -1791,6 +1814,7 @@ function placeBuildingNow(k){
   status.textContent=type==='castle'?'🏰 Die Burg braucht 3×3 freie Felder.'
    :type==='market'?'🛒 Der Markt braucht 2×2 freie Felder.'
    :type==='quarry'?'🏔️ Steinbruch nur direkt neben einem freien Steinvorkommen bauen! Jeder Berg kann einen Steinbruch versorgen.'
+   :type==='mill'&&!nearMillFarm(k)?'🌬️ Die Windmühle muss direkt neben einer Getreidefarm stehen.'
    :type==='field'&&!nearFarm(k)?'🌾 Das Weizenfeld muss neben einer Getreidefarm liegen.'
    :roads.has(k)?'🪨 Hier liegt eine Straße. Entferne sie zuerst.'
    :'❌ Dieser Platz ist bereits belegt oder nicht zum Bauen geeignet.';
@@ -1814,6 +1838,7 @@ function placeBuildingNow(k){
   :type==='lumber'?addLumberjack(k)
   :type==='quarry'?addQuarry(k)
   :type==='farm'?addFarm(k)
+  :type==='mill'?addMill(k)
   :type==='field'?addField(k)
   :type==='house'?(addHouse(k),buildings.has(k)):false;
  if(!ok){wood+=cost;stone+=stoneCost;refreshWood();refreshStone();return false}
@@ -1845,9 +1870,9 @@ function buildingAtFinger(e){
  // Broadphase: test an inexpensive sphere around each building before raycasting
  // thousands of roof tiles, decorative beams, lanterns and wheat meshes.
  // Keep the sphere generous so tall roofs and castle towers remain tappable.
- const bounds={house:[.85,1.65],farm:[.72,1.60],field:[.27,1.20],
+ const bounds={house:[.85,1.65],farm:[.72,1.60],mill:[1.03,2.00],field:[.27,1.20],
    lumber:[.80,1.70],quarry:[.85,1.95],market:[.91,2.55],castle:[1.35,3.90]};
- for(const [type,items] of [['house',buildings],['farm',farms],['field',fields],['lumber',lumberjacks],['quarry',quarries],['market',markets],['castle',castles]]){
+ for(const [type,items] of [['house',buildings],['farm',farms],['mill',mills],['field',fields],['lumber',lumberjacks],['quarry',quarries],['market',markets],['castle',castles]]){
   const [height,radius]=bounds[type];
   const radiusSq=radius*radius;
   for(const [anchor,group] of items){
@@ -1869,19 +1894,19 @@ function buildingAtFinger(e){
  }
  return null
 }
-function at(k){if(buildings.has(k))return {type:'house',anchor:k};if(lumberjacks.has(k))return {type:'lumber',anchor:k};if(quarries.has(k))return {type:'quarry',anchor:k};if(farms.has(k))return {type:'farm',anchor:k};if(fields.has(k))return {type:'field',anchor:k};const [a,b]=pos(k);for(const m of markets.keys()){const [x,z]=pos(m);if(a>=x&&a<x+2&&b>=z&&b<z+2)return {type:'market',anchor:m}}for(const m of castles.keys()){const [x,z]=pos(m);if(a>=x&&a<x+3&&b>=z&&b<z+3)return {type:'castle',anchor:m}}return null}
+function at(k){if(buildings.has(k))return {type:'house',anchor:k};if(lumberjacks.has(k))return {type:'lumber',anchor:k};if(quarries.has(k))return {type:'quarry',anchor:k};if(farms.has(k))return {type:'farm',anchor:k};if(mills.has(k))return {type:'mill',anchor:k};if(fields.has(k))return {type:'field',anchor:k};const [a,b]=pos(k);for(const m of markets.keys()){const [x,z]=pos(m);if(a>=x&&a<x+2&&b>=z&&b<z+2)return {type:'market',anchor:m}}for(const m of castles.keys()){const [x,z]=pos(m);if(a>=x&&a<x+3&&b>=z&&b<z+3)return {type:'castle',anchor:m}}return null}
 
 /* Short tap shows the ACTUAL data for the mesh that was touched.
    We keep the old 560ms hold-to-edit action, with no new save keys. */
 const buildingNames={
- house:'🏠 Wohnhaus',farm:'🚜 Getreidefarm',field:'🌾 Weizenfeld',
+ house:'🏠 Wohnhaus',farm:'🚜 Getreidefarm',mill:'🌬️ Windmühle',field:'🌾 Weizenfeld',
  lumber:'🪓 Holzfäller',quarry:'⛏️ Steinbruch',market:'🛒 Marktplatz',castle:'🏰 Burg'
 };
 function buildingInfoData(info){
  if(!info||!mapOf(info.type).has(info.anchor))return null;
  const k=info.anchor,[x,z]=pos(k);
  const result={title:buildingNames[info.type]||'Gebäude',
-               subtitle:'Dorfzeit · '+({house:'1×1 Feld',farm:'1×1 Feld',field:'1×1 Feld',lumber:'1×1 Feld',quarry:'1×1 Feld',market:'2×2 Felder',castle:'3×3 Felder'}[info.type]||'Gebäude'),
+               subtitle:'Dorfzeit · '+({house:'1×1 Feld',farm:'1×1 Feld',field:'1×1 Feld',mill:'1×1 Feld',lumber:'1×1 Feld',quarry:'1×1 Feld',market:'2×2 Felder',castle:'3×3 Felder'}[info.type]||'Gebäude'),
                firstLabel:'Zustand',first:'In Betrieb',secondLabel:'Aufgabe',second:'Stadtentwicklung',details:''};
  if(info.type==='house'){
   const inhabitants=citizens.get(k)??2;
@@ -1909,6 +1934,12 @@ function buildingInfoData(info){
   result.firstLabel='Benachbarte Felder';result.first=adjacent.toString();
   result.secondLabel='Aktive Felder';result.second=active.toString();
   result.details=active>0?'✅ Mit Weizenfeldern wird Nahrung produziert (+1 je aktivem Feld alle 12 Sek.).':'🌾 Setze ein Weizenfeld direkt neben die Getreidefarm, um Nahrung zu produzieren.';
+ }else if(info.type==='mill'){
+  const near=nearMillFarm(k),active=activeMillCount()>0&&hasDeliveryRoute('mill',k)&&
+   neighbors(x,z).some(([a,b])=>farms.has(key(a,b))&&millHasActiveField(key(a,b)));
+  result.firstLabel='Mühlenbetrieb';result.first=active?'Flügel in Betrieb':'Wartet auf Getreide';
+  result.secondLabel='Nahrungsbonus';result.second=active?'+1 / 12 Sek.':'Noch keiner';
+  result.details=near?'🌾 Verarbeitet Getreide der benachbarten Farm. Mit angebundenem Weizenfeld und Straßenweg zum Markt gibt es +1 Nahrung alle 12 Sekunden (ein Bonus pro Farm).':'⚠️ Eine Getreidefarm direkt neben der Mühle wird benötigt.';
  }else if(info.type==='field'){
   const active=fieldHasMarketDelivery(k);
   result.firstLabel='Produktion';result.first=active?'+1 Nahrung / 12 Sek.':'⏸️ Pausiert';
@@ -1957,11 +1988,12 @@ document.getElementById('infoEdit').onclick=()=>{
 
 function cancelHold(){if(holdTimer!==null){clearTimeout(holdTimer);holdTimer=null}}
 function closeEdit(){editMenu.classList.remove('show');selected=null}
-function showEdit(info){closeBuildingInfo();moving=null;selected=info;clearPreview();editMenu.classList.add('show');document.getElementById('editTitle').textContent=(info.type==='castle'?'🏰 Burg':info.type==='market'?'🛒 Markt':info.type==='lumber'?'🪓 Holzfäller':info.type==='quarry'?'⛏️ Steinbruch':info.type==='farm'?'🚜 Getreidefarm':info.type==='field'?'🌾 Weizenfeld':'🏠 Haus')+' bearbeiten';status.textContent='🏠 Gebäude ausgewählt – Verschieben oder Löschen?';if(navigator.vibrate)navigator.vibrate(35)}
-function mapOf(type){return type==='house'?buildings:type==='market'?markets:type==='castle'?castles:type==='lumber'?lumberjacks:type==='quarry'?quarries:type==='farm'?farms:fields}
+function showEdit(info){closeBuildingInfo();moving=null;selected=info;clearPreview();editMenu.classList.add('show');document.getElementById('editTitle').textContent=(info.type==='castle'?'🏰 Burg':info.type==='market'?'🛒 Markt':info.type==='lumber'?'🪓 Holzfäller':info.type==='quarry'?'⛏️ Steinbruch':info.type==='farm'?'🚜 Getreidefarm':info.type==='mill'?'🌬️ Windmühle':info.type==='field'?'🌾 Weizenfeld':'🏠 Haus')+' bearbeiten';status.textContent='🏠 Gebäude ausgewählt – Verschieben oder Löschen?';if(navigator.vibrate)navigator.vibrate(35)}
+function mapOf(type){return type==='house'?buildings:type==='market'?markets:type==='castle'?castles:type==='lumber'?lumberjacks:type==='quarry'?quarries:type==='farm'?farms:type==='mill'?mills:fields}
 function relocate(from,to){const targetCells=from.type==='castle'?castleCells(to):from.type==='market'?marketCells(to):[to];if(!targetCells.every(k=>owned.has(k)&&!rockSites.has(k)&&!roads.has(k)&&(!at(k)||(at(k).type===from.type&&at(k).anchor===from.anchor)))){status.textContent=from.type==='castle'?'❌ Burg braucht 3×3 freie Felder.':from.type==='market'?'❌ Der Markt braucht vier freie Felder (2×2).':'❌ Bitte einen freien Bauplatz wählen.';return false}
 const quarryTarget=from.type==='quarry'?quarryDepositFor(to,from.anchor):null;
 if(from.type==='quarry'&&!quarryTarget){status.textContent='🏔️ Steinbruch kann nur direkt neben einem freien Berg stehen.';return false}
+if(from.type==='mill'&&!nearMillFarm(to)){status.textContent='🌬️ Windmühle nur direkt neben einer Getreidefarm verschieben.';return false}
 if(from.type==='field'){const [x,z]=pos(to);const touches=neighbors(x,z).some(([a,b])=>farms.has(key(a,b))||(from.type==='farm'&&from.anchor===key(a,b)));if(!touches){status.textContent='🌾 Das Weizenfeld muss neben einer Getreidefarm liegen.';return false}}const map=mapOf(from.type),g=map.get(from.anchor);if(!g)return false;map.delete(from.anchor);map.set(to,g);
 if(from.type==='house'){
  const count=citizens.get(from.anchor)??2;
@@ -1972,7 +2004,7 @@ if(from.type==='quarry'){
  quarryDeposits.set(to,quarryTarget);
  orientQuarryPortal(g,to,quarryTarget)
 }
-const [x,z]=pos(to);const by={house:.025,market:.025,lumber:.035,quarry:.03,farm:.015,castle:.16,field:.16};g.position.set(x+(from.type==='castle'?1:from.type==='market'?.5:0),by[from.type]??.16,z+(from.type==='castle'?1:from.type==='market'?.5:0));if(from.type==='market')invalidateMarketRoads();worldShadowsDirty=true;save();status.textContent='✅ Gebäude verschoben! Zum Bearbeiten wieder länger gedrückt halten.';return true}
+const [x,z]=pos(to);const by={house:.025,market:.025,lumber:.035,quarry:.03,farm:.015,mill:.025,castle:.16,field:.16};g.position.set(x+(from.type==='castle'?1:from.type==='market'?.5:0),by[from.type]??.16,z+(from.type==='castle'?1:from.type==='market'?.5:0));if(from.type==='market')invalidateMarketRoads();worldShadowsDirty=true;save();status.textContent='✅ Gebäude verschoben! Zum Bearbeiten wieder länger gedrückt halten.';return true}
 document.getElementById('move').onclick=()=>{if(!selected)return;moving=selected;closeEdit();modeBuild=false;buildPanel.hidden=true;updateTools();status.textContent='↔ Verschieben: Tippe auf ein FREIES grünes Feld. Markt braucht 2×2, Burg braucht 3×3 freie Felder.'};
 document.getElementById('demolish').onclick=()=>{if(!selected)return;const t=selected;if(confirm('Dieses Gebäude wirklich löschen?')){const m=mapOf(t.type),g=m.get(t.anchor);if(g){land.remove(g);m.delete(t.anchor);if(t.type==='house')citizens.delete(t.anchor);if(t.type==='quarry')quarryDeposits.delete(t.anchor);if(t.type==='market')invalidateMarketRoads();worldShadowsDirty=true;save();status.textContent='🗑 Gebäude gelöscht. Der Bauplatz ist wieder frei.'}}closeEdit()};
 document.getElementById('editClose').onclick=closeEdit;
@@ -2193,12 +2225,12 @@ function chooseType(type){
  if(type==='road'||type==='roadErase')status.textContent=type==='road'
   ?'🪨 Straßenmodus: Auf freie Felder tippen oder mit dem Finger einen ganzen Weg ziehen. Die Kamera bleibt dabei still.'
   :'🧹 Straßen entfernen: Auf einen Weg tippen oder darüberziehen. Mit 👁️ Anschauen beenden.';
- else status.textContent='🔨 '+({house:'Haus',farm:'Getreidefarm',field:'Weizenfeld',lumber:'Holzfäller',quarry:'Steinbruch',market:'Markt 2×2',castle:'Burg 3×3'}[type])+
+ else status.textContent='🔨 '+({house:'Haus',farm:'Getreidefarm',mill:'Windmühle',field:'Weizenfeld',lumber:'Holzfäller',quarry:'Steinbruch',market:'Markt 2×2',castle:'Burg 3×3'}[type])+
  ' · '+woodBuildLabel(type)+(buildingStoneCost(type)?' + '+stoneBuildLabel(type):'')+
  ' · Vorrat: 🌲 '+wood+' / 🪨 '+stone+'. Freies Feld antippen, um direkt zu bauen.'
 }
-const typeButtons={house:buildButton,farm:farmButton,field:fieldButton,lumber:lumberButton,quarry:document.getElementById('quarry'),market:marketButton,castle:document.getElementById('castle'),road:document.getElementById('road'),roadErase:document.getElementById('roadErase')};for(const [name,btn] of Object.entries(typeButtons))btn.onclick=()=>chooseType(name);
-const categoryTypes={wohnen:['house'],land:['farm','field'],prod:['lumber','quarry'],shop:['market'],burg:['castle'],wege:['road','roadErase']};
+const typeButtons={house:buildButton,farm:farmButton,field:fieldButton,mill:document.getElementById('mill'),lumber:lumberButton,quarry:document.getElementById('quarry'),market:marketButton,castle:document.getElementById('castle'),road:document.getElementById('road'),roadErase:document.getElementById('roadErase')};for(const [name,btn] of Object.entries(typeButtons))btn.onclick=()=>chooseType(name);
+const categoryTypes={wohnen:['house'],land:['farm','field','mill'],prod:['lumber','quarry'],shop:['market'],burg:['castle'],wege:['road','roadErase']};
 function category(cat){for(const [name,btn] of Object.entries(typeButtons))btn.hidden=!categoryTypes[cat].includes(name);for(const btn of document.querySelectorAll('[data-cat]'))btn.classList.toggle('active',btn.dataset.cat===cat)}
 for(const btn of document.querySelectorAll('[data-cat]'))btn.onclick=()=>category(btn.dataset.cat);
 viewButton.onclick=viewMode;openBuildButton.onclick=()=>{closeBuildingInfo();modeBuild=false;moving=null;closeEdit();clearPreview();buildPanel.hidden=!buildPanel.hidden;updateTools();status.textContent=buildPanel.hidden?'👁️ Ansichtsmodus':'🔨 Wähle eine Kategorie und dann dein Gebäude.'};
@@ -2213,7 +2245,8 @@ const activeStone=activeQuarryCount();if(activeStone){
   refreshStone();save()
  }
 }else stoneElapsed=0;
-const deliveredFields=productionFields();if(deliveredFields){foodElapsed+=dt*1000;if(foodElapsed>=12000){const batches=Math.floor(foodElapsed/12000);foodElapsed%=12000;food+=batches*deliveredFields;refreshFood();save()}}else foodElapsed=0;
+const deliveredFields=productionFields(),millingBonus=activeMillCount();
+if(deliveredFields+millingBonus){foodElapsed+=dt*1000;if(foodElapsed>=12000){const batches=Math.floor(foodElapsed/12000);foodElapsed%=12000;food+=batches*(deliveredFields+millingBonus);refreshFood();save()}}else foodElapsed=0;
 if(buildings.size){
  citizenElapsed+=dt*1000;
  if(citizenElapsed>=CITIZEN_TICK_MS){
@@ -2221,6 +2254,11 @@ if(buildings.size){
  }
 }
 autosave+=dt;if(autosave>10){autosave=0;save()}oceanClock.value=now*.001;
+// Slow windmill sails have no cast shadows and only update one group per mill.
+for(const mill of mills.values()){
+ const rotor=mill.userData.millRotor;
+ if(rotor)rotor.rotation.z-=dt*.43
+}
  applyGestureMotion();
  settleCamera(dt);
  renderer.render(scene,camera)}placeCamera();requestAnimationFrame(animate);
