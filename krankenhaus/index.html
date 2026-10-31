@@ -110,12 +110,13 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
   <div class="room"><span class="symbol">🚪</span><strong>Haupteingang & Foyer</strong><p>Breiter Eingang, großer gemeinsamer Raum und freier Zugang zum Flur.</p></div>
   <div class="room"><span class="symbol">🧑‍💻</span><strong>Anmeldung</strong><p>Links im großen Foyer: gut sichtbarer Tresen, ohne Stühle davor.</p></div>
   <div class="room"><span class="symbol">🪑</span><strong>Wartebereich</strong><p>Rechts im offenen Foyer, mit Stühlen, Tisch und Pflanzen.</p></div>
-  <div class="room"><span class="symbol">🩺</span><strong>Behandlungsraum 1 + 2</strong><p>Zwei kleinere Räume am Hauptflur, noch leer.</p></div>
+  <div class="room"><span class="symbol">🩺</span><strong>Behandlungsraum 1</strong><p>Links am Hauptflur, mit Untersuchungsliege, Waschbecken und medizinischen Geräten.</p></div>
+  <div class="room"><span class="symbol">🩺</span><strong>Behandlungsraum 2</strong><p>Daneben auf der rechten Seite, ebenfalls vollständig für Untersuchungen eingerichtet.</p></div>
   <div class="room"><span class="symbol">🔬</span><strong>Diagnoseraum</strong><p>Linke hintere Seite, noch leer.</p></div>
   <div class="room"><span class="symbol">☕</span><strong>Personalraum</strong><p>Rechts hinten, noch leer.</p></div>
   <div class="room"><span class="symbol">🚻</span><strong>Toilette</strong><p>Hinten am Hauptflur, noch ohne Einrichtung.</p></div>
  </div>
- <p class="note">Der große Haupteingang führt zuerst ins offene Foyer mit Anmeldung links und Wartebereich rechts. Erst hinter dem Foyer beginnt der Hauptflur mit zwei Behandlungsräumen, Diagnose, Personalraum und Toilette. Die zusätzlichen Räume sind bewusst noch leer. Mit „🏗️ Grundriss bearbeiten“ verschiebst du Räume, wählst Größen oder ziehst eigene Wände, Türen, Fenster und Böden. Beim Empfang bleibt der verschiebbare Tresen erhalten. Alle Bau- und Kamerasteuerungen liegen unterhalb des 3D-Bildes. Dein alter Grundriss bleibt separat als Sicherung gespeichert; Inselreich ist unabhängig.</p>
+ <p class="note">Der große Haupteingang führt zuerst ins offene Foyer mit Anmeldung links und Wartebereich rechts. Erst hinter dem Foyer beginnt der Hauptflur mit zwei Behandlungsräumen, Diagnose, Personalraum und Toilette. Diagnose, Personalraum und Toilette bleiben vorerst ohne Einrichtung. Mit „🏗️ Grundriss bearbeiten“ verschiebst du Räume, wählst Größen oder ziehst eigene Wände, Türen, Fenster und Böden. Beim Empfang bleibt der verschiebbare Tresen erhalten. Alle Bau- und Kamerasteuerungen liegen unterhalb des 3D-Bildes. Dein alter Grundriss bleibt separat als Sicherung gespeichert; Inselreich ist unabhängig.</p>
 </section>
 </main>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"}}</script>
@@ -483,6 +484,87 @@ function takeDecorIntoRoom(id,start){
  }
 }
 for(const r of roomSpecs)makeRoomShell(r);
+
+// Treatment rooms 1 + 2: matching furnished rooms on the same corridor row.
+// The room shell, side doors and custom room positions stay unchanged.
+// All furnishings are children of their movable room, so relocating the room
+// in the existing floorplan mode also relocates the furniture automatically.
+const treatmentCotFrame=mat(0x568f93,.58,.18);
+const treatmentCotMattress=mat(0xe8f6f3,.85);
+const treatmentPillow=mat(0xfffaf0,.96);
+const treatmentCabinet=mat(0xe7eeea,.78);
+const treatmentAccent=mat(0x398f94,.65);
+const treatmentBlanket=mat(0x92c8c5,.94);
+const treatmentSteel=mat(0x839da3,.45,.35);
+const treatmentScreen=new THREE.MeshStandardMaterial({
+ color:0xa8e9e4,emissive:0x267a86,emissiveIntensity:.50,roughness:.35
+});
+const treatmentWarmLight=new THREE.MeshBasicMaterial({color:0xffedc2});
+function furnishTreatmentRoom(id,number){
+ const root=roomGroups.get(id);
+ if(!root)return;
+ const decor=new THREE.Group();decor.name='Einrichtung Behandlungsraum '+number;
+ root.add(decor);
+ const outer=id==='treatment'?-1:1,inner=-outer;
+ const bedX=outer*.82;
+ // Exam couch, adjustable-looking raised base, head pillow, sheet and four feet.
+ for(const x of [bedX-.35,bedX+.35])for(const z of [-.93,.46])
+  box(.075,.46,.075,x,.40,z,treatmentSteel,decor);
+ box(.88,.15,1.66,bedX,.65,-.24,treatmentCotFrame,decor);
+ box(.81,.11,1.56,bedX,.78,-.24,treatmentCotMattress,decor);
+ box(.77,.022,.73,bedX,.844,.11,treatmentBlanket,decor,false);
+ box(.68,.11,.34,bedX,.89,-.83,treatmentPillow,decor);
+ box(.89,.26,.11,bedX,.90,-1.08,treatmentCotFrame,decor);
+ // A small rolling medical trolley with tray and instruments.
+ const tx=inner*.98,tz=-.94;
+ for(const x of [tx-.24,tx+.24])for(const z of [tz-.17,tz+.17]){
+  box(.04,.61,.04,x,.49,z,treatmentSteel,decor);
+  sphere(.075,x,.23,z,black,decor)
+ }
+ box(.63,.065,.48,tx,.85,tz,treatmentCabinet,decor);
+ box(.55,.04,.40,tx,.48,tz,treatmentSteel,decor);
+ box(.20,.075,.13,tx-.12,.91,tz,white,decor);
+ cylinder(.07,.08,.12,tx+.13,.95,tz,treatmentAccent,12,decor);
+ // Medicine / hygiene cabinet along the outer wall.
+ const cx=outer*2.04;
+ box(.85,.87,.38,cx,.69,-1.17,treatmentCabinet,decor);
+ box(.91,.055,.43,cx,1.14,-1.17,treatmentCotFrame,decor);
+ box(.80,.045,.03,cx,.82,-.96,treatmentAccent,decor,false);
+ box(.80,.045,.03,cx,.49,-.96,treatmentAccent,decor,false);
+ for(const delta of [-.13,.13])
+  box(.055,.14,.028,cx+delta,.68,-.947,treatmentSteel,decor,false);
+ // Washbasin and sanitizer, on the rear wall without blocking the corridor door.
+ const sx=0,sz=-1.26;
+ box(.71,.63,.29,sx,.53,sz,treatmentCabinet,decor);
+ box(.80,.10,.42,sx,.89,sz+.05,white,decor);
+ box(.52,.018,.26,sx,.96,sz+.06,treatmentCotFrame,decor,false);
+ cylinder(.035,.035,.21,sx,.999,sz-.05,treatmentSteel,10,decor);
+ box(.17,.22,.11,sx+.50,.95,sz,treatmentAccent,decor);
+ // Patient chair with backrest, next to the bed rather than inside the aisle.
+ const chairX=inner*.54,chairZ=.83;
+ for(const x of [chairX-.19,chairX+.19])for(const z of [chairZ-.17,chairZ+.17])
+  box(.05,.37,.05,x,.37,z,treatmentSteel,decor);
+ box(.48,.12,.43,chairX,.59,chairZ,chairBlue,decor);
+ box(.49,.55,.08,chairX,.85,chairZ-.19,chairBlue,decor);
+ // Patient vital-signs screen on a wall-side stand.
+ const mx=outer*1.82,mz=.93;
+ box(.09,.82,.09,mx,.67,mz,treatmentSteel,decor);
+ box(.57,.47,.11,mx,1.24,mz,treatmentCotFrame,decor);
+ box(.47,.36,.025,mx,1.25,mz+.068,treatmentScreen,decor,false);
+ for(const z of [mz-.20,mz+.20])
+  box(.21,.05,.07,mx,.26,z,treatmentSteel,decor);
+ // Compact ambient panel: bright and recognisable without additional shadow lights.
+ box(1.26,.045,.43,0,1.60,-.78,treatmentWarmLight,decor,false);
+ // Small green room identifier on the back wall.
+ const idLabel=new THREE.Mesh(new THREE.PlaneGeometry(1.15,.30),
+  new THREE.MeshBasicMaterial({
+   map:labelTexture('RAUM '+number,'#216b6c','#fafff2',80),
+   transparent:true,side:THREE.DoubleSide,depthWrite:false
+  }));
+ idLabel.position.set(inner*.94,1.20,-1.405);decor.add(idLabel);
+}
+furnishTreatmentRoom('treatment',1);
+furnishTreatmentRoom('treatment2',2);
 // Full-width foyer entrance: generous sliding glass doors at the front center.
 // The visitor comes into the foyer first, then goes to left registration or
 // right waiting; the clinical hallway begins behind the foyer.
