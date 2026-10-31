@@ -24,7 +24,7 @@ const scene=new THREE.Scene();scene.background=new THREE.Color(0xc9dfba);
 const camera=new THREE.PerspectiveCamera(45,1,.1,150);const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;holder.prepend(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xfffaf0,0x719063,2.25));const sun=new THREE.DirectionalLight(0xfff3d9,2.45);sun.position.set(-7,12,8);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.bias=-.0002;sun.shadow.camera.left=-12;sun.shadow.camera.right=12;sun.shadow.camera.top=12;sun.shadow.camera.bottom=-12;scene.add(sun);
 const mat=(hex)=>new THREE.MeshStandardMaterial({color:hex,roughness:0.9});
-const grass=[mat(0x81bd5b),mat(0x8fc767)],soil=mat(0x97704c),wall=mat(0xead1a6),roof=mat(0xac5944),roofSide=mat(0x843f34),door=mat(0x65432e),glass=mat(0x93c6cc),trunk=mat(0x8e653c);
+const grass=[mat(0x7faa5b),mat(0x91bc6d),mat(0x6f984e)],soil=mat(0x866342),wall=mat(0xead1a6),roof=mat(0xac5944),roofSide=mat(0x843f34),door=mat(0x65432e),glass=mat(0x93c6cc),trunk=mat(0x8e653c);
 const land=new THREE.Group();scene.add(land);
 const tiles=[],tileModels=new Map(),buildings=new Map(),markets=new Map(),castles=new Map(),lumberjacks=new Map(),farms=new Map(),fields=new Map(),owned=new Set();
 const LIMIT=5,KEY='inselreich-pages-test-01',OLD_KEY='inselreich-3d-test-01';
@@ -33,13 +33,130 @@ const pos=k=>k.split(',').map(Number);
 const inside=(x,z)=>Math.abs(x)<=LIMIT&&Math.abs(z)<=LIMIT;
 const neighbors=(x,z)=>[[x-1,z],[x+1,z],[x,z-1],[x,z+1]];
 function validFrontier(x,z){return inside(x,z)&&!owned.has(key(x,z))&&neighbors(x,z).some(([a,b])=>owned.has(key(a,b)))}
+
+/* Boden-Upgrade 1: deterministic low-poly meadow without texture downloads.
+   Terrain tiles are painted using vertex colors; only 2-4 grass tufts are instanced per cell.
+   Tile recognition, building placement, island expansion and game saves stay intact. */
+const groundTopMaterial=new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,metalness:0});
+const meadowPalette=[new THREE.Color(0x7faa5b),new THREE.Color(0x91bc6d),new THREE.Color(0x6f984e)];
+const earthTone=new THREE.Color(0x9b7650);
+const groundTuftMaterial=new THREE.MeshStandardMaterial({color:0xffffff,roughness:1,side:THREE.DoubleSide});
+const groundPebbleMaterial=new THREE.MeshStandardMaterial({color:0xc8b79a,roughness:1});
+const groundPebbleGeometry=new THREE.IcosahedronGeometry(1,0);
+// Stable per-grid-cell values: old fields never change when the island grows.
+function terrainRand(x,z,seed){
+ let h=Math.imul(x+101,374761393)^Math.imul(z+101,668265263)^Math.imul(seed+37,1442695041);
+ h=Math.imul(h^(h>>>13),1274126177);return ((h^(h>>>16))>>>0)/4294967295
+}
+function meadowPaletteIndex(x,z){
+ const bucket=Math.floor(terrainRand(x,z,0)*4);
+ return bucket<2?0:bucket===2?1:2
+}
+function meadowTopGeometry(x,z,baseIndex){
+ const geo=new THREE.PlaneGeometry(1,1,10,10);
+ const positions=geo.getAttribute('position'),colors=new Float32Array(positions.count*3);
+ const base=meadowPalette[baseIndex],paint=new THREE.Color();
+ const earth=terrainRand(x,z,1)<.26;
+ const patchX=(terrainRand(x,z,2)-.5)*.44,patchZ=(terrainRand(x,z,3)-.5)*.44;
+ const radiusX=.18+terrainRand(x,z,4)*.08,radiusZ=.14+terrainRand(x,z,5)*.075;
+ for(let i=0;i<positions.count;i++){
+  const lx=positions.getX(i),lz=positions.getY(i);
+  const edge=Math.pow(Math.min(1,Math.max(Math.abs(lx),Math.abs(lz))*2),5);
+  const waves=Math.sin((lx+x)*11.6+(lz+z)*5.1)*.025+Math.cos((lz+z)*9.4-(lx+x)*4.4)*.019;
+  paint.copy(base).multiplyScalar(1-edge*.10+waves);
+  if(earth){
+   const delta=Math.pow((lx-patchX)/radiusX,2)+Math.pow((lz-patchZ)/radiusZ,2);
+   const blend=Math.exp(-delta*1.25)*.70;
+   paint.lerp(earthTone,blend)
+  }
+  colors[i*3]=paint.r;colors[i*3+1]=paint.g;colors[i*3+2]=paint.b
+ }
+ geo.setAttribute('color',new THREE.BufferAttribute(colors,3));
+ geo.rotateX(-Math.PI/2);
+ return geo
+}
+function makeGroundTuftGeometry(){
+ const vertices=[];
+ for(let n=0;n<3;n++){
+  const angle=n*Math.PI/3,cs=Math.cos(angle),sn=Math.sin(angle),width=.034,
+        height=.09+(n%2)*.025;
+  vertices.push(-width*cs,0,-width*sn,
+                .008*sn,height,.008*cs,
+                width*cs,0,width*sn)
+ }
+ const geo=new THREE.BufferGeometry();
+ geo.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
+ geo.computeVertexNormals();return geo
+}
+const groundTuftGeometry=makeGroundTuftGeometry();
+function attachMeadowDetails(group,x,z){
+ const visual=new THREE.Group();visual.name='Wiesen-Details';
+ const count=2+Math.floor(terrainRand(x,z,6)*3);
+ const grassClumps=new THREE.InstancedMesh(groundTuftGeometry,groundTuftMaterial,count);
+ const colors=[new THREE.Color(0x6f984e),new THREE.Color(0x91bc6d),new THREE.Color(0x5d7c47)];
+ const dummy=new THREE.Object3D();
+ for(let i=0;i<count;i++){
+  const gx=(terrainRand(x,z,10+i*3)-.5)*.69;
+  const gz=(terrainRand(x,z,11+i*3)-.5)*.69;
+  const size=.78+terrainRand(x,z,12+i*3)*.42;
+  dummy.position.set(gx,.156,gz);
+  dummy.rotation.set(0,terrainRand(x,z,30+i)*Math.PI*2,0);
+  dummy.scale.set(size,size,size);dummy.updateMatrix();
+  grassClumps.setMatrixAt(i,dummy.matrix);
+  grassClumps.setColorAt(i,colors[Math.floor(terrainRand(x,z,40+i)*3)])
+ }
+ grassClumps.instanceMatrix.needsUpdate=true;
+ if(grassClumps.instanceColor)grassClumps.instanceColor.needsUpdate=true;
+ grassClumps.castShadow=false;grassClumps.receiveShadow=false;
+ visual.add(grassClumps);
+ // Tiny rounded stones on only about 12 percent of the terrain.
+ if(terrainRand(x,z,56)<.12){
+  const stone=new THREE.Mesh(groundPebbleGeometry,groundPebbleMaterial);
+  stone.position.set((terrainRand(x,z,57)-.5)*.65,.166,(terrainRand(x,z,58)-.5)*.65);
+  const size=.023+terrainRand(x,z,59)*.019;
+  stone.scale.set(size,size*.44,size*.82);
+  stone.castShadow=false;visual.add(stone)
+ }
+ group.add(visual);group.userData.groundDetails=visual
+}
+function syncGroundDetailsVisibility(){
+ for(const [k,group] of tileModels){
+  if(group.userData.groundDetails)group.userData.groundDetails.visible=!occupied(k)
+ }
+}
+
 const edgeMaterial=new THREE.MeshBasicMaterial({color:0xc9ec8b,transparent:true,opacity:.23,depthWrite:false,side:THREE.DoubleSide});
-function tile(k,unlocked){const [x,z]=pos(k);const group=new THREE.Group();group.position.set(x,0,z);land.add(group);
- if(unlocked){const block=new THREE.Mesh(new THREE.BoxGeometry(1,.30,1),[grass[(x+z+50)%2],soil,soil,soil,soil,soil]);block.castShadow=true;block.receiveShadow=true;group.add(block);
- const outline=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1,.302,1)),new THREE.LineBasicMaterial({color:0xe4f8c8,transparent:true,opacity:.85}));group.add(outline);
- }else{const marker=new THREE.Mesh(new THREE.PlaneGeometry(.94,.94),edgeMaterial);marker.rotation.x=-Math.PI/2;marker.position.y=.15;group.add(marker);
- const line=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(.94,.94)),new THREE.LineBasicMaterial({color:0xe2f7b9,transparent:true,opacity:.65}));line.rotation.x=-Math.PI/2;line.position.y=.155;group.add(line)}
- const hit=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({visible:false,side:THREE.DoubleSide}));hit.rotation.x=-Math.PI/2;hit.position.y=.16;hit.userData={key:k};group.add(hit);tiles.push(hit);tileModels.set(k,group)}
+function tile(k,unlocked){
+ const [x,z]=pos(k),group=new THREE.Group();
+ group.position.set(x,0,z);land.add(group);
+ if(unlocked){
+  const paletteIndex=meadowPaletteIndex(x,z);
+  // Same collision/top surface as before: only the visuals change.
+  const block=new THREE.Mesh(new THREE.BoxGeometry(1,.30,1),[grass[paletteIndex],soil,soil,soil,soil,soil]);
+  block.castShadow=true;block.receiveShadow=true;group.add(block);
+  const surface=new THREE.Mesh(meadowTopGeometry(x,z,paletteIndex),groundTopMaterial);
+  surface.position.y=.1515;surface.castShadow=false;surface.receiveShadow=true;group.add(surface);
+  // Warm, low-contrast grid for precise building without glaring white borders.
+  const outline=new THREE.LineSegments(
+   new THREE.EdgesGeometry(new THREE.BoxGeometry(1,.302,1)),
+   new THREE.LineBasicMaterial({color:0x556e46,transparent:true,opacity:.28,depthWrite:false})
+  );
+  group.add(outline);
+  attachMeadowDetails(group,x,z)
+ }else{
+  const marker=new THREE.Mesh(new THREE.PlaneGeometry(.94,.94),edgeMaterial);
+  marker.rotation.x=-Math.PI/2;marker.position.y=.15;group.add(marker);
+  const line=new THREE.LineSegments(
+   new THREE.EdgesGeometry(new THREE.PlaneGeometry(.94,.94)),
+   new THREE.LineBasicMaterial({color:0xe2f7b9,transparent:true,opacity:.65})
+  );
+  line.rotation.x=-Math.PI/2;line.position.y=.155;group.add(line)
+ }
+ const hit=new THREE.Mesh(new THREE.PlaneGeometry(1,1),
+  new THREE.MeshBasicMaterial({visible:false,side:THREE.DoubleSide}));
+ hit.rotation.x=-Math.PI/2;hit.position.y=.16;
+ hit.userData={key:k};group.add(hit);tiles.push(hit);tileModels.set(k,group)
+}
 function refreshEdge(){for(const [k,obj] of tileModels){const [x,z]=pos(k);const unlocked=owned.has(k);if(!unlocked&&!validFrontier(x,z)){land.remove(obj);tileModels.delete(k);const h=obj.children.find(c=>c.userData?.key===k);if(h){const idx=tiles.indexOf(h);if(idx>=0)tiles.splice(idx,1)}}}
  for(const k of owned){if(!tileModels.has(k))tile(k,true)}
  for(const k of owned){const [x,z]=pos(k);for(const [a,b] of neighbors(x,z)){const nk=key(a,b);if(validFrontier(a,b)&&!tileModels.has(nk))tile(nk,false)}}}
@@ -694,7 +811,7 @@ function addField(k){
 function productionFields(){let count=0;for(const k of fields.keys())if(nearFarm(k))count++;return count}
 function refreshFood(){foodCount.textContent=food.toLocaleString('de-DE')}
 function refreshWood(){woodCount.textContent=wood.toLocaleString('de-DE')}
-function save(){try{localStorage.setItem(KEY,JSON.stringify({land:[...owned],houses:[...buildings.keys()],markets:[...markets.keys()],castles:[...castles.keys()],lumberjacks:[...lumberjacks.keys()],farms:[...farms.keys()],fields:[...fields.keys()],food,foodElapsed,wood,woodElapsed,lastUpdate:Date.now()}))}catch(e){}}
+function save(){syncGroundDetailsVisibility();try{localStorage.setItem(KEY,JSON.stringify({land:[...owned],houses:[...buildings.keys()],markets:[...markets.keys()],castles:[...castles.keys()],lumberjacks:[...lumberjacks.keys()],farms:[...farms.keys()],fields:[...fields.keys()],food,foodElapsed,wood,woodElapsed,lastUpdate:Date.now()}))}catch(e){}}
 let restored=false;try{let data=JSON.parse(localStorage.getItem(KEY)||'null');if(data&&Array.isArray(data.land)&&Array.isArray(data.houses)){for(const k of data.land){const [x,z]=pos(k);if(inside(x,z))owned.add(k)}if(owned.size){refreshEdge();data.houses.forEach(k=>{if(owned.has(k))addHouse(k)});if(Array.isArray(data.markets))data.markets.forEach(k=>{if(typeof k==="string")addMarket(k)});if(Array.isArray(data.castles))data.castles.forEach(k=>{if(typeof k==='string')addCastle(k)});if(Array.isArray(data.lumberjacks))data.lumberjacks.forEach(k=>{if(typeof k==="string")addLumberjack(k)});if(Array.isArray(data.farms))data.farms.forEach(k=>{if(typeof k==='string')addFarm(k)});if(Array.isArray(data.fields))data.fields.forEach(k=>{if(typeof k==='string')addField(k)});food=Math.max(0,Math.floor(Number(data.food)||0));foodElapsed=Math.max(0,Math.min(9999,Number(data.foodElapsed)||0));wood=Math.max(0,Math.floor(Number(data.wood)||0));woodElapsed=Math.max(0,Math.min(9999,Number(data.woodElapsed)||0));const away=Math.max(0,Math.min(21600000,Date.now()-(Number(data.lastUpdate)||Date.now())));const total=woodElapsed+away;if(lumberjacks.size){wood+=Math.floor(total/15000)*lumberjacks.size;woodElapsed=total%15000}else woodElapsed=0;const foodTotal=foodElapsed+away;if(productionFields()){food+=Math.floor(foodTotal/12000)*productionFields();foodElapsed=foodTotal%12000}else foodElapsed=0;restored=true}}}catch(e){}
 if(!restored){for(let x=-1;x<=1;x++)for(let z=-1;z<=1;z++)owned.add(key(x,z));refreshEdge();
  try{const prev=JSON.parse(localStorage.getItem(OLD_KEY)||'null');if(Array.isArray(prev)){prev.forEach(i=>{if(Number.isInteger(i)&&i>=0&&i<9)addHouse(key(i%3-1,Math.floor(i/3)-1))})}else addHouse(key(0,0))}catch(e){addHouse(key(0,0))}}
