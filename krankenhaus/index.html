@@ -260,31 +260,32 @@ function lightPost(x,z){
 groundRect(36,34,0,1,green,-.15);
 groundRect(22,20,0,1,grassAlt,-.11);
 // Modular rooms have their own movable floors and walls; broad grass stays empty for expansions.
-groundRect(1.85,4.2,0,6.4,walk,.065);
-tiled(1.85,4.2,0,6.4,tileEntry);
+// Walkway now approaches the wider lobby entrance (at z≈8.3).
+groundRect(2.85,4.3,0,10.18,walk,.065);
+tiled(2.85,4.3,0,10.18,tileEntry);
 // Approach with benches, hedges, flower beds and tree line.
-groundRect(15,.75,0,9.0,mat(0x9ba9ab),.005);
+groundRect(15,.75,0,12.46,mat(0x9ba9ab),.005);
 for(const x of [-7.4,-6.4,6.5,7.45]){
- cylinder(.21,.27,.25,x,.11,3.0,soil);
- sphere(.33,x,.49,3.0,leaf2);
+ cylinder(.21,.27,.25,x,.11,8.85,soil);
+ sphere(.33,x,.49,8.85,leaf2);
 }
 for(const x of [-4.9,-3.7,4.5,5.5]){
- const planter=box(.75,.20,.55,x,.16,5.9,soil);
+ box(.75,.20,.55,x,.16,9.35,soil);
  for(let i=0;i<3;i++){
-  sphere(.12,x+(i-1)*.18,.39,5.92,i%2?leaf:leaf2);
-  sphere(.06,x+(i-1)*.18,.49,5.9,mat(i%2?0xf7d88d:0xe9a0a4))
+  sphere(.12,x+(i-1)*.18,.39,9.37,i%2?leaf:leaf2);
+  sphere(.06,x+(i-1)*.18,.49,9.35,mat(i%2?0xf7d88d:0xe9a0a4))
  }
 }
-lightPost(-1.6,7.1);lightPost(1.6,7.1);
-// Original isometric hospital layout: seven open-top rooms flank a continuous
-// checker-tiled central hallway. Previous user-made floorplans stay in v1;
-// the new Theme-Hospital-inspired template gets its own save key.
-const legacyFloorplanKey='klinik-am-park-grundriss-v1';
-const floorplanKey='klinik-am-park-grundriss-v2';
+lightPost(-1.6,10.35);lightPost(1.6,10.35);
+// Layout v3: a generously proportioned open foyer, left registration and
+// right waiting zone, feeding a narrower hallway behind them.
+const legacyFloorplanKey='klinik-am-park-grundriss-v2';
+const originalFloorplanKey='klinik-am-park-grundriss-v1';
+const floorplanKey='klinik-am-park-grundriss-v3';
 const originalInitialRoomIds=['reception','waiting','treatment'];
 const initialRooms=[
- {id:'reception',name:'🧑‍💻 Anmeldung',kind:'reception',x:-4.05,z:2.00,w:5.30,d:3.65,doorSide:'right',doorOffset:-.05},
- {id:'waiting',name:'🪑 Wartezimmer',kind:'waiting',x:4.05,z:2.00,w:5.30,d:3.65,doorSide:'left',doorOffset:-.05},
+ {id:'reception',name:'🧑‍💻 Anmeldung',kind:'reception',x:-3.60,z:4.10,w:6.15,d:7.55,doorSide:'none',doorOffset:0},
+ {id:'waiting',name:'🪑 Wartebereich',kind:'waiting',x:3.60,z:4.10,w:6.15,d:7.55,doorSide:'none',doorOffset:0},
  {id:'treatment',name:'🩺 Behandlungsraum 1',kind:'treatment',x:-4.05,z:-2.13,w:5.30,d:3.05,doorSide:'right',doorOffset:0},
  {id:'treatment2',name:'🩺 Behandlungsraum 2',kind:'treatment',x:4.05,z:-2.13,w:5.30,d:3.05,doorSide:'left',doorOffset:0},
  {id:'diagnostic',name:'🔬 Diagnoseraum',kind:'diagnostic',x:-4.05,z:-6.13,w:5.30,d:3.58,doorSide:'right',doorOffset:0},
@@ -301,18 +302,62 @@ const trimTint={reception:mat(0x4bab91),waiting:mat(0x57adbc),treatment:mat(0x64
 const brickLower=mat(0xc0957c);
 let extraRoomNumber=3;
 let nextRoomId=0;
-// The corridor is the navigable spine: every starting room has a doorway onto it.
-groundRect(14.18,16.05,0,-3.84,mat(0xd3d3c6),.055);
-groundRect(2.78,15.70,0,-3.80,mat(0xf6f5e8),.09);
-const corridorMap=tileHall.clone();corridorMap.needsUpdate=true;corridorMap.repeat.set(2.78/.85,15.70/.85);
-const hall=new THREE.Mesh(new THREE.PlaneGeometry(2.78,15.70),
+// A common foyer, not two small rooms: the outer walls are shared and the
+// reception / waiting zone floors have no physical partition between them.
+const lobbyMinX=-7.04,lobbyMaxX=7.04,lobbyMinZ=.12,lobbyMaxZ=8.26;
+groundRect(14.26,8.34,0,4.15,concrete,.060);
+const foyerMap=tileHall.clone();foyerMap.needsUpdate=true;foyerMap.repeat.set(14.08/.85,8.14/.85);
+const foyerFloor=new THREE.Mesh(new THREE.PlaneGeometry(14.08,8.14),
+ new THREE.MeshStandardMaterial({map:foyerMap,roughness:1,side:THREE.DoubleSide}));
+foyerFloor.rotation.x=-Math.PI/2;foyerFloor.position.set(0,.151,4.15);foyerFloor.receiveShadow=true;group.add(foyerFloor);
+// Low front walls are intentionally interrupted by a generous glass entrance.
+wallX(-7.04,-1.48,8.26,.83);wallX(1.48,7.04,8.26,.83);
+// Side windows with a genuine opening in the wall geometry.
+for(const x of [-7.04,7.04]){
+ wallZ(x,.12,3.18,1.15);
+ wallZ(x,5.22,8.26,1.15);
+ box(.18,.36,2.04,x,.36,4.20,brickLower,group,false);
+ box(.18,.18,2.04,x,1.37,4.20,wallWhite,group,false);
+ box(.042,.79,1.88,x,.94,4.20,glass,group,false);
+ for(const z of [3.18,5.22])box(.20,.83,.08,x,.96,z,tealLight,group,false);
+ box(.21,.055,2.08,x,1.32,4.20,tealLight,group,false)
+}
+// Behind the foyer, a single 2.8m opening starts the hallway.
+// The flanking wall sections guide patients without hiding the room interiors.
+wallX(-7.04,-1.48,.12,1.02);
+wallX(1.48,7.04,.12,1.02);
+for(const x of [-1.48,1.48])box(.09,1.40,.10,x,.88,.12,teal);
+box(3.02,.11,.18,0,1.63,.12,tealLight);
+const foyerAccent=mat(0x64b69b);
+for(const x of [-6.82,6.82])box(.09,.020,7.8,x,.189,4.19,foyerAccent,group,false);
+for(const z of [.50,7.83])box(13.6,.018,.08,0,.188,z,foyerAccent,group,false);
+// The narrower main hall starts behind the foyer and continues into the clinic.
+groundRect(2.86,12.25,0,-5.87,mat(0xd7d7ca),.082);
+const corridorMap=tileHall.clone();corridorMap.needsUpdate=true;corridorMap.repeat.set(2.78/.85,12.18/.85);
+const hall=new THREE.Mesh(new THREE.PlaneGeometry(2.78,12.18),
  new THREE.MeshStandardMaterial({map:corridorMap,roughness:1,side:THREE.DoubleSide}));
-hall.rotation.x=-Math.PI/2;hall.position.set(0,.152,-3.80);hall.receiveShadow=true;group.add(hall);
-for(const x of [-1.35,1.35])box(.085,.015,15.68,x,.186,-3.80,tealLight,group,false);
-for(const z of [3.5,-.4,-4.45,-8.4])box(2.42,.014,.065,0,.193,z,mat(0x70b8a5),group,false);
+hall.rotation.x=-Math.PI/2;hall.position.set(0,.157,-5.87);hall.receiveShadow=true;group.add(hall);
+for(const x of [-1.36,1.36])box(.085,.015,12.17,x,.193,-5.87,tealLight,group,false);
+for(const z of [-.80,-4.45,-8.40])box(2.43,.014,.065,0,.194,z,foyerAccent,group,false);
 
 function makeRoomShell(r){
  const begin=group.children.length;
+ // Open foyer sub-zones are movable for editing, but have no walls separating
+ // registration from the waiting area. The Foyer shell is a single shared space.
+ if(r.id==='reception'||r.id==='waiting'){
+  groundRect(r.w+.045,r.d+.045,r.x,r.z,
+   r.id==='reception'?mat(0xddece7):mat(0xd9eaf0),.093);
+  tiled(r.w-.13,r.d-.13,r.x,r.z,r.id==='reception'?tileBase:tileWaiting);
+  const line=r.id==='reception'?mat(0x52a993):mat(0x55aaba);
+  for(const z of [r.z-r.d/2+.12,r.z+r.d/2-.12])
+   box(r.w-.38,.018,.06,r.x,.186,z,line,group,false);
+  const root=new THREE.Group();root.name='room-'+r.id;
+  for(const part of group.children.slice(begin)){
+   group.remove(part);part.position.x-=r.x;part.position.z-=r.z;root.add(part)
+  }
+  root.position.set(r.x,0,r.z);group.add(root);roomGroups.set(r.id,root);
+  return root
+ }
  const left=r.x-r.w/2,right=r.x+r.w/2,back=r.z-r.d/2,front=r.z+r.d/2;
  const accent=trimTint[r.kind]||tealLight;
  groundRect(r.w+.14,r.d+.14,r.x,r.z,concrete,.064);
