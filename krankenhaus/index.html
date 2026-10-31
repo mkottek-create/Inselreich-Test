@@ -20,13 +20,13 @@ main{max-width:1100px;margin:auto}
 #topLegend{position:absolute;left:12px;top:12px;z-index:2;background:#fffcf5ef;border:1px solid #ffffffaa;padding:10px 12px;border-radius:14px;box-shadow:0 4px 18px #40727723;pointer-events:none;max-width:min(58vw,245px)}
 #topLegend strong{font-size:12px;color:#30615c;display:block}
 #topLegend small{font-size:11px;color:#607e7d;line-height:1.5;display:block;margin-top:4px}
-#gestureHint{position:absolute;bottom:9px;left:50%;transform:translateX(-50%);z-index:2;background:#173e46df;color:#fff;border-radius:999px;padding:8px 12px;font-size:11px;font-weight:750;text-align:center;white-space:normal;pointer-events:none;max-width:95%}
-#cameraBar{position:absolute;left:50%;bottom:48px;transform:translateX(-50%);z-index:4;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:5px;padding:6px;max-width:calc(100% - 18px);border-radius:15px;background:#f6fffaed;box-shadow:0 3px 15px #25565355;border:1px solid #ffffffaf}
-#cameraBar button{min-height:43px;min-width:41px;border:1px solid #aecfca;border-radius:10px;background:#fff;color:#276a6b;font-size:12px;font-weight:800;padding:8px 10px;white-space:nowrap;touch-action:manipulation;cursor:pointer}
+#gestureHint{position:static;transform:none;max-width:none;background:#e5f2ee;color:#3b6666;padding:5px 12px 8px;font-size:11px;font-weight:700;text-align:center;white-space:normal;pointer-events:none;border-bottom:1px solid #d6e9e5}
+#cameraBar{position:static;display:flex;flex-wrap:nowrap;justify-content:center;align-items:center;gap:6px;padding:8px 10px 4px;width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;background:#f9fffb;box-shadow:none;border:0;touch-action:pan-x}
+#cameraBar button{flex:0 0 auto;min-height:42px;min-width:40px;border:1px solid #aecfca;border-radius:10px;background:#fff;color:#276a6b;font-size:12px;font-weight:800;padding:8px 10px;white-space:nowrap;touch-action:manipulation;cursor:pointer}
 #cameraBar button.active,#cameraBar button[aria-pressed="true"]{background:#246f78;color:#fff;border-color:#246f78}
 #cameraBar button[hidden]{display:none!important}
 #cameraBar button:focus-visible{outline:3px solid #e7ae54;outline-offset:2px}
-@media(max-width:380px){#cameraBar{gap:4px;padding:5px}#cameraBar button{padding:7px 8px;font-size:11px;min-width:37px}}
+@media(max-width:380px){#cameraBar{gap:4px;justify-content:flex-start;padding:6px 8px 4px}#cameraBar button{padding:7px 8px;font-size:11px;min-width:38px}}
 #roomInfo{position:absolute;top:12px;right:12px;z-index:2;padding:9px 11px;border-radius:12px;max-width:min(42vw,210px);background:#fffcf2ed;box-shadow:0 4px 14px #1e4d4c19;border:1px solid #fff;pointer-events:none}
 #roomInfo strong{display:block;font-size:12px}
 #roomInfo span{display:block;color:#657e80;font-size:11px;line-height:1.35;margin-top:4px}
@@ -58,7 +58,7 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
 #editReception.active{background:#c28637}
 #finishReception{background:#32795a!important}
 #rotateReception{background:#497f88!important}
-@media (min-width:760px){#stage{height:72vh;min-height:520px}header{padding:18px 24px}section{padding:20px 24px}#topLegend{left:20px;top:20px}#gestureHint{bottom:20px}}
+@media (min-width:760px){#stage{height:72vh;min-height:520px}header{padding:18px 24px}section{padding:20px 24px}#topLegend{left:20px;top:20px}}
 @media (max-width:350px){.rooms{grid-template-columns:1fr 1fr}.room{min-height:90px}#gestureHint{font-size:10px}}
 </style>
 </head>
@@ -68,7 +68,8 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
 <div id="stage" aria-label="Interaktive dreidimensionale Ansicht des Krankenhauses">
  <div id="topLegend"><strong>🏥 Unser Krankenhaus</strong><small>🚪 Eingang vorne<br>🧑‍💻 Anmeldung links<br>🪑 Wartezimmer rechts<br>🩺 Behandlungsraum hinten</small></div>
  <div id="roomInfo" hidden role="status" aria-live="polite"><strong id="roomTitle"></strong><span id="roomDescription"></span></div>
- <div id="cameraBar" role="group" aria-label="Kamerasteuerung">
+</div>
+<div id="cameraBar" role="group" aria-label="Kamerasteuerung">
   <button id="camBuild" type="button" hidden aria-pressed="false">🛠️ Bauen</button>
   <button id="camPan" type="button" aria-pressed="true">✋ Schieben</button>
   <button id="camRotate" type="button" aria-pressed="false">🔄 Drehen</button>
@@ -76,8 +77,7 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
   <button id="camZoomOut" type="button" title="Wegzoomen" aria-label="Wegzoomen">－</button>
   <button id="camReset" type="button" title="Kamera zurücksetzen" aria-label="Ansicht zurücksetzen">⌂</button>
  </div>
- <div id="gestureHint">☝️ Schieben · ✌️ Zoomen & Drehen</div>
-</div>
+<div id="gestureHint">☝️ Schieben · ✌️ Zoomen & Drehen</div>
 <div id="status" role="status" aria-live="polite">🏥 Anmeldung ohne Stühle, großes Schild und ein neuer leerer Behandlungsraum.</div>
 <div id="layoutTools" aria-label="Einrichtungsmodus">
  <button id="toggleFloorplan" type="button">🏗️ Grundriss bearbeiten</button>
