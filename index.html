@@ -26,6 +26,18 @@
 #rotatePlacement[hidden]{display:none!important}
 #rotatePlacement{background:#fff0d3!important;border-color:#b89c69!important;color:#624528!important}
 #infoRotate{background:linear-gradient(180deg,#e1b76a,#be8f43);border-color:#a67b35;color:#352a16}
+/* The full-screen-bottom edit/info cards disappear during rotation.
+   Only a small upper-left dock remains; island center stays unobstructed. */
+#rotationDock{position:absolute;z-index:19;top:12px;left:10px;width:min(42vw,156px);
+ display:flex;flex-direction:column;gap:7px;align-items:stretch;padding:9px;
+ background:#fffaf0f2;border:2px solid #b49a60;border-radius:13px;
+ box-shadow:0 4px 14px #21372140;pointer-events:auto}
+#rotationDock[hidden]{display:none!important}
+#rotationLabel{font-size:12px;line-height:1.35;font-weight:800;color:#3a5336;text-align:center}
+#rotationDock button{flex:none;width:100%;min-width:0;border-radius:10px;font-size:12px;
+ padding:10px 6px;min-height:42px}
+#rotationNext{background:#477b43}
+#rotationDone{background:#788979}
 #mapTools .mapHint{pointer-events:none;background:#fffae8dd;color:#29452d;border-radius:8px;padding:4px 7px;font-size:11px;font-weight:800}
 #cityPulse{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:7px;background:#eef5de;padding:9px 7px;color:#375839;font-size:12px;font-weight:650}
 #cityPulse span{border-radius:10px;background:#fffef4;padding:7px 10px;white-space:nowrap}
@@ -80,7 +92,7 @@ button.secondary{background:linear-gradient(180deg,#fffef7,#ecefdd);color:#35563
   <div class="infoStats"><div><span id="infoKey1"></span><strong id="infoValue1"></strong></div><div><span id="infoKey2"></span><strong id="infoValue2"></strong></div></div>
   <p id="infoDetails"></p>
   <button id="infoRotate" type="button">🔄 Gebäude 90° drehen</button><button id="infoEdit">↔ Verschieben / 🗑 Löschen</button>
-</div><div id="editMenu" role="dialog" aria-label="Gebäude bearbeiten"><strong id="editTitle">Gebäude</strong><p>Was möchtest du mit diesem Gebäude machen?</p><button id="rotate" type="button">🔄 Drehen (90°)</button><button id="move">↔ Verschieben</button><button id="demolish">🗑 Löschen</button><button id="editClose">✕ Abbrechen</button></div><div id="notice">👆 Gebäude antippen: Infos & Drehen · länger drücken: Verschieben oder Löschen</div></div>
+</div><div id="rotationDock" role="group" aria-label="Gebäude drehen" hidden><span id="rotationLabel">🔄 Gebäude drehen</span><button id="rotationNext" type="button">🔄 Weiterdrehen</button><button id="rotationDone" type="button">✓ Fertig</button></div><div id="editMenu" role="dialog" aria-label="Gebäude bearbeiten"><strong id="editTitle">Gebäude</strong><p>Was möchtest du mit diesem Gebäude machen?</p><button id="rotate" type="button">🔄 Drehen (90°)</button><button id="move">↔ Verschieben</button><button id="demolish">🗑 Löschen</button><button id="editClose">✕ Abbrechen</button></div><div id="notice">👆 Gebäude antippen: Infos & Drehen · länger drücken: Verschieben oder Löschen</div></div>
 <footer><div class="buttons"><button id="view">👁️ Anschauen</button><button id="openBuild">🔨 Bauen</button></div>
 <button id="expandIsland" class="expansionButton">🌿 Insel erweitern</button>
 <section id="citizenPanel" aria-label="Bewohner und Bedürfnisse">
@@ -96,7 +108,7 @@ button.secondary{background:linear-gradient(180deg,#fffef7,#ecefdd);color:#35563
 </section>
 
 <div id="buildPanel" hidden><div class="categoryRow"><button data-cat="wohnen">🏠 Wohnen</button><button data-cat="land">🌾 Landwirtschaft</button><button data-cat="prod">🌲 Produktion</button><button data-cat="shop">🛒 Geschäfte</button><button data-cat="burg">🏰 Burgen</button><button data-cat="wege">🛤️ Straßen</button></div><div class="itemRow"><button id="build">🏠 Haus</button><button id="farm">🚜 Getreidefarm</button><button id="field">🌾 Weizenfeld</button><button id="mill">🌬️ Windmühle</button><button id="lumber">🪓 Holzfäller</button><button id="quarry">⛏️ Steinbruch</button><button id="market">🛒 Markt 2×2</button><button id="castle">🏰 Burg 3×3</button><button id="road">🪨 Steinweg verlegen</button><button id="roadErase">🧹 Straße entfernen</button></div><p class="buildCostHint">🛤️ Baue durchgehende Straßen zwischen Markt und Gebäuden, damit Holz, Stein und Nahrung geliefert werden. Vor dem ersten Markt produzieren die Betriebe normal. 🌲 Der erste Holzfäller bleibt kostenlos.</p></div>
-<p>🔨 Bauen öffnet das Baumenü. Gebäude wählen und auf freie Felder tippen – jedes Gebäude wird sofort gebaut. Mit „🔄 Bauen“ stellst du vorher die Blickrichtung ein, verbraucht die angezeigten Holz-Baukosten und du bleibst im Baumodus, bis du 👁️ Anschauen wählst. Der erste Holzfäller ist kostenlos. 🌬️ Die Windmühle steht direkt neben einer Getreidefarm (10 Holz, 2 Stein) und verbessert die Getreideverarbeitung, wenn die Farm Weizen anbaut und die Mühle zum Markt angebunden ist. Nach der Inselerweiterung entstehen Felsvorkommen: ⛏️ Steinbruch direkt daneben bauen, um 🪨 Stein zu gewinnen. 🛤️ Sobald ein Markt steht, müssen Holzfäller, Steinbruch und Getreidefarm über durchgehende Straßen mit einem Markt verbunden sein, sonst kommt keine neue Ware ins Lager. Burg und Markt benötigen außerdem Stein. Falls du dich vertippst, kannst du die letzte Platzierung 10 Sekunden lang mit ↶ Rückgängig rückgängig machen. 🏰 Burg: 3×3 freie Felder erforderlich. Im Ansichtsmodus wird nichts versehentlich gebaut. Mit 🌿 Insel erweitern wächst deine Insel auf Knopfdruck gleich rundherum um einen ganzen Streifen – ohne einzelne Randfelder anzutippen. 🏠 Gebäude kurz antippen zeigt Infos und den Knopf 🔄 Drehen (immer um 90°). Etwa eine halbe Sekunde gedrückt halten öffnet Drehen, Verschieben oder Löschen. Die Drehung wird gespeichert. Kartensteuerung: ☝️ Mit einem Finger die Karte ohne Anschlag frei verschieben; mit „⌖ Kartenmitte“ jederzeit zurück. ✌️ Mit zwei Fingern drehen (die Finger gegeneinander verdrehen), durch Auseinanderziehen zoomen und gemeinsam verschieben. Mit „⌖ Kartenmitte“ findest du zurück. Mit „🔎 Weit raus“ bekommst du die Gesamtansicht deiner Insel. 👥 Häuser bekommen Bewohner: Nahrung lässt neue Bewohner einziehen, Straßen verbessern ihre Zufriedenheit. Deine Einwohner und Fortschritte werden gespeichert. 🛤️ Straßen: Im Baumenü auf „Straßen“ gehen, „Steinweg verlegen“ wählen und auf freie Felder tippen oder mit einem Finger darüberstreichen. Kurven, Kreuzungen und Zugänge zu Gebäuden entstehen automatisch. Mit „Straße entfernen“ kannst du Wege wieder abtragen.</p><button id="reset" class="secondary resetButton">↺ Test zurücksetzen</button></footer>
+<p>🔨 Bauen öffnet das Baumenü. Gebäude wählen und auf freie Felder tippen – jedes Gebäude wird sofort gebaut. Mit „🔄 Bauen“ stellst du vorher die Blickrichtung ein, verbraucht die angezeigten Holz-Baukosten und du bleibst im Baumodus, bis du 👁️ Anschauen wählst. Der erste Holzfäller ist kostenlos. 🌬️ Die Windmühle steht direkt neben einer Getreidefarm (10 Holz, 2 Stein) und verbessert die Getreideverarbeitung, wenn die Farm Weizen anbaut und die Mühle zum Markt angebunden ist. Nach der Inselerweiterung entstehen Felsvorkommen: ⛏️ Steinbruch direkt daneben bauen, um 🪨 Stein zu gewinnen. 🛤️ Sobald ein Markt steht, müssen Holzfäller, Steinbruch und Getreidefarm über durchgehende Straßen mit einem Markt verbunden sein, sonst kommt keine neue Ware ins Lager. Burg und Markt benötigen außerdem Stein. Falls du dich vertippst, kannst du die letzte Platzierung 10 Sekunden lang mit ↶ Rückgängig rückgängig machen. 🏰 Burg: 3×3 freie Felder erforderlich. Im Ansichtsmodus wird nichts versehentlich gebaut. Mit 🌿 Insel erweitern wächst deine Insel auf Knopfdruck gleich rundherum um einen ganzen Streifen – ohne einzelne Randfelder anzutippen. 🏠 Gebäude kurz antippen zeigt Infos und den Knopf 🔄 Drehen (immer um 90°). Beim Drehen verschwinden die großen Menüs; mit dem kleinen Knopf „Weiterdrehen“ geht es in 90°-Schritten weiter und mit „Fertig“ zurück zur freien Karte. Etwa eine halbe Sekunde gedrückt halten öffnet Drehen, Verschieben oder Löschen. Die Drehung wird gespeichert. Kartensteuerung: ☝️ Mit einem Finger die Karte ohne Anschlag frei verschieben; mit „⌖ Kartenmitte“ jederzeit zurück. ✌️ Mit zwei Fingern drehen (die Finger gegeneinander verdrehen), durch Auseinanderziehen zoomen und gemeinsam verschieben. Mit „⌖ Kartenmitte“ findest du zurück. Mit „🔎 Weit raus“ bekommst du die Gesamtansicht deiner Insel. 👥 Häuser bekommen Bewohner: Nahrung lässt neue Bewohner einziehen, Straßen verbessern ihre Zufriedenheit. Deine Einwohner und Fortschritte werden gespeichert. 🛤️ Straßen: Im Baumenü auf „Straßen“ gehen, „Steinweg verlegen“ wählen und auf freie Felder tippen oder mit einem Finger darüberstreichen. Kurven, Kreuzungen und Zugänge zu Gebäuden entstehen automatisch. Mit „Straße entfernen“ kannst du Wege wieder abtragen.</p><button id="reset" class="secondary resetButton">↺ Test zurücksetzen</button></footer>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"}}</script>
 <script type="module">
 import * as THREE from 'three';
@@ -1800,6 +1812,10 @@ function resize(){const w=holder.clientWidth,h=holder.clientHeight;renderer.setS
 const points=new Map();let down=null,pinch=null,ignoreClick=false,holdTimer=null,selected=null,moving=null,roadStrokeDirty=false;
 const canvas=renderer.domElement,editMenu=document.getElementById('editMenu'),buildPanel=document.getElementById('buildPanel'),centerButton=document.getElementById('centerCamera');
 let lastBuildUndo=null,buildUndoTimer=null;
+const rotationDock=document.getElementById('rotationDock'),
+      rotationLabel=document.getElementById('rotationLabel');
+let rotationTarget=null;
+function dismissRotationDock(){rotationTarget=null;rotationDock.hidden=true}
 function hideBuildUndo(){
  if(buildUndoTimer!==null){clearTimeout(buildUndoTimer);buildUndoTimer=null}
  lastBuildUndo=null;
@@ -1988,7 +2004,7 @@ function buildingInfoData(info){
  result.subtitle+=' · Ausrichtung: '+rotationNames[buildingRotation(info.type,k)];
  return result
 }
-function closeBuildingInfo(){infoSelection=null;document.getElementById('buildingInfo').hidden=true}
+function closeBuildingInfo(){dismissRotationDock();infoSelection=null;document.getElementById('buildingInfo').hidden=true}
 function refreshBuildingInfo(){
  if(!infoSelection)return;
  const data=buildingInfoData(infoSelection);
@@ -2008,12 +2024,7 @@ function showBuildingInfo(info){
 }
 document.getElementById('infoClose').onclick=closeBuildingInfo;
 document.getElementById('infoRotate').onclick=()=>{
- if(!infoSelection)return;
- const {type,anchor}=infoSelection;
- if(setBuildingRotation(type,anchor,buildingRotation(type,anchor)+1)){
-  save();
-  status.textContent='🔄 Gebäude um 90° gedreht. Eingang zeigt nach '+rotationNames[buildingRotation(type,anchor)]+'.'
- }
+ if(infoSelection)startRotationDock({...infoSelection})
 };
 document.getElementById('infoEdit').onclick=()=>{
  if(!infoSelection)return;
@@ -2022,7 +2033,7 @@ document.getElementById('infoEdit').onclick=()=>{
 };
 
 function cancelHold(){if(holdTimer!==null){clearTimeout(holdTimer);holdTimer=null}}
-function closeEdit(){editMenu.classList.remove('show');selected=null}
+function closeEdit(){dismissRotationDock();editMenu.classList.remove('show');selected=null}
 function showEdit(info){closeBuildingInfo();moving=null;selected=info;clearPreview();editMenu.classList.add('show');document.getElementById('editTitle').textContent=(info.type==='castle'?'🏰 Burg':info.type==='market'?'🛒 Markt':info.type==='lumber'?'🪓 Holzfäller':info.type==='quarry'?'⛏️ Steinbruch':info.type==='farm'?'🚜 Getreidefarm':info.type==='mill'?'🌬️ Windmühle':info.type==='field'?'🌾 Weizenfeld':'🏠 Haus')+' bearbeiten';status.textContent='🏠 Gebäude ausgewählt – Drehen, Verschieben oder Löschen?';if(navigator.vibrate)navigator.vibrate(35)}
 function mapOf(type){return type==='house'?buildings:type==='market'?markets:type==='castle'?castles:type==='lumber'?lumberjacks:type==='quarry'?quarries:type==='farm'?farms:type==='mill'?mills:fields}
 /* Every building retains its own 0/90/180/270-degree orientation. These
@@ -2061,13 +2072,41 @@ function loadBuildingRotations(data){
   setBuildingRotation(type,k,step)
  }
 }
-document.getElementById('rotate').onclick=()=>{
- if(!selected)return;
- const {type,anchor}=selected;
+/* Rotation is entered from either large panel but continues using only the
+   floating two-button dock. Moving/zooming the 3D camera stays available. */
+function rotateDockOnce(){
+ if(!rotationTarget)return;
+ const {type,anchor}=rotationTarget;
+ if(!mapOf(type).has(anchor)){dismissRotationDock();return}
  if(setBuildingRotation(type,anchor,buildingRotation(type,anchor)+1)){
+  const facing=rotationNames[buildingRotation(type,anchor)];
+  rotationLabel.textContent=(buildingNames[type]||'Gebäude')+' · '+facing;
   save();
-  status.textContent='🔄 Gebäude gedreht: '+rotationNames[buildingRotation(type,anchor)]+' · Weiterdrehen oder ✕ schließen.'
+  status.textContent='🔄 '+(buildingNames[type]||'Gebäude')+' zeigt nach '+facing+'. Weiterdrehen oder ✓ Fertig.'
  }
+}
+function startRotationDock(info){
+ if(!info||!mapOf(info.type).has(info.anchor))return;
+ closeBuildingInfo();closeEdit();
+ rotationTarget={type:info.type,anchor:info.anchor};
+ rotationDock.hidden=false;
+ // Keep the selected building in the middle, away from the tiny toolbar.
+ const [x,z]=pos(info.anchor);
+ const offset=info.type==='castle'?1:info.type==='market'?.5:0;
+ focus.set(x+offset,.2,z+offset);
+ placeCamera();
+ rotateDockOnce()
+}
+document.getElementById('rotationNext').onclick=rotateDockOnce;
+document.getElementById('rotationDone').onclick=()=>{
+ if(!rotationTarget)return;
+ const {type,anchor}=rotationTarget;
+ const name=buildingNames[type]||'Gebäude';
+ dismissRotationDock();
+ status.textContent='✅ '+name+' ausgerichtet und gespeichert. Die Karte ist wieder frei.'
+};
+document.getElementById('rotate').onclick=()=>{
+ if(selected)startRotationDock({...selected})
 };
 function relocate(from,to){const targetCells=from.type==='castle'?castleCells(to):from.type==='market'?marketCells(to):[to];if(!targetCells.every(k=>owned.has(k)&&!rockSites.has(k)&&!roads.has(k)&&(!at(k)||(at(k).type===from.type&&at(k).anchor===from.anchor)))){status.textContent=from.type==='castle'?'❌ Burg braucht 3×3 freie Felder.':from.type==='market'?'❌ Der Markt braucht vier freie Felder (2×2).':'❌ Bitte einen freien Bauplatz wählen.';return false}
 const quarryTarget=from.type==='quarry'?quarryDepositFor(to,from.anchor):null;
