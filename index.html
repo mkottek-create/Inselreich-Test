@@ -31,7 +31,7 @@
 </style></head><body>
 <header><h1>🏝️ Inselreich 3D</h1><span class="tag">🌲 <strong id="woodCount">0</strong> · 🌾 <strong id="foodCount">0</strong></span></header>
 <div id="cityPulse"><span>👥 <strong id="peopleCount">0</strong> Einwohner</span><span>😊 <strong id="happyCount">0</strong>% zufrieden</span><span>🏡 Dorfzeit</span></div>
-<div id="game"><div id="mapTools"><span class="mapHint">✨ NEU: Karte bewegen</span><button id="panMode">🖐 Karte verschieben</button><button id="centerCamera">⌖ Kartenmitte</button><button id="overviewCamera">🔎 Weit raus</button></div><div id="buildingInfo" role="dialog" aria-label="Gebäudeinformationen" hidden>
+<div id="game"><div id="mapTools"><span class="mapHint">☝️ Schieben · ✌️ Drehen & Zoom</span><button id="centerCamera">⌖ Kartenmitte</button><button id="overviewCamera">🔎 Weit raus</button></div><div id="buildingInfo" role="dialog" aria-label="Gebäudeinformationen" hidden>
   <div class="infoHeading"><strong id="infoTitle">🏠 Gebäude</strong><button id="infoClose" aria-label="Gebäudeinformationen schließen">✕</button></div>
   <p id="infoSubtitle">Gebäudeübersicht</p>
   <div class="infoStats"><div><span id="infoKey1"></span><strong id="infoValue1"></strong></div><div><span id="infoKey2"></span><strong id="infoValue2"></strong></div></div>
@@ -53,7 +53,7 @@
 
 <div id="buildPanel" hidden><div class="categoryRow"><button data-cat="wohnen">🏠 Wohnen</button><button data-cat="land">🌾 Landwirtschaft</button><button data-cat="prod">🌲 Produktion</button><button data-cat="shop">🛒 Geschäfte</button><button data-cat="burg">🏰 Burgen</button><button data-cat="wege">🛤️ Straßen</button></div><div class="itemRow"><button id="build">🏠 Haus</button><button id="farm">🚜 Bauernhof</button><button id="field">🌾 Weizenfeld</button><button id="lumber">🪓 Holzfäller</button><button id="market">🛒 Markt 2×2</button><button id="castle">🏰 Burg 3×3</button><button id="road">🪨 Steinweg verlegen</button><button id="roadErase">🧹 Straße entfernen</button></div></div>
 <div id="placePanel" hidden><span id="placeLabel">Gebäude-Vorschau</span><button id="confirmPlace">✅ Bauen</button><button id="cancelPlace">✕ Abbrechen</button></div>
-<p>🔨 Bauen öffnet das Baumenü. Gebäude wählen, Bauplatz antippen und mit ✅ bestätigen. 🏰 Burg: 3×3 freie Felder erforderlich. Im Ansichtsmodus wird nichts versehentlich gebaut. Mit 🌿 Insel erweitern wächst deine Insel auf Knopfdruck gleich rundherum um einen ganzen Streifen – ohne einzelne Randfelder anzutippen. 🏠 Gebäude kurz antippen zeigt seine Infos (Bewohner, Produktion und Zustand). Etwa eine halbe Sekunde gedrückt halten öffnet Verschieben oder Löschen. Zum Erkunden auf „🖐 Karte verschieben“ tippen und die Karte mit einem Finger schieben; 🤏 Zoomen funktioniert gleichzeitig. Mit zwei Fingern kannst du die Karte auch direkt verschieben. Mit „⌖ Kartenmitte“ findest du zurück. Mit „🔎 Weit raus“ bekommst du die Gesamtansicht deiner Insel. 👥 Häuser bekommen Bewohner: Nahrung lässt neue Bewohner einziehen, Straßen verbessern ihre Zufriedenheit. Deine Einwohner und Fortschritte werden gespeichert. 🛤️ Straßen: Im Baumenü auf „Straßen“ gehen, „Steinweg verlegen“ wählen und auf freie Felder tippen oder mit einem Finger darüberstreichen. Kurven, Kreuzungen und Zugänge zu Gebäuden entstehen automatisch. Mit „Straße entfernen“ kannst du Wege wieder abtragen.</p><button id="reset" class="secondary resetButton">↺ Test zurücksetzen</button></footer>
+<p>🔨 Bauen öffnet das Baumenü. Gebäude wählen, Bauplatz antippen und mit ✅ bestätigen. 🏰 Burg: 3×3 freie Felder erforderlich. Im Ansichtsmodus wird nichts versehentlich gebaut. Mit 🌿 Insel erweitern wächst deine Insel auf Knopfdruck gleich rundherum um einen ganzen Streifen – ohne einzelne Randfelder anzutippen. 🏠 Gebäude kurz antippen zeigt seine Infos (Bewohner, Produktion und Zustand). Etwa eine halbe Sekunde gedrückt halten öffnet Verschieben oder Löschen. Kartensteuerung: ☝️ Mit einem Finger die Karte verschieben. ✌️ Mit zwei Fingern drehen (die Finger gegeneinander verdrehen), durch Auseinanderziehen zoomen und gemeinsam verschieben. Mit „⌖ Kartenmitte“ findest du zurück. Mit „🔎 Weit raus“ bekommst du die Gesamtansicht deiner Insel. 👥 Häuser bekommen Bewohner: Nahrung lässt neue Bewohner einziehen, Straßen verbessern ihre Zufriedenheit. Deine Einwohner und Fortschritte werden gespeichert. 🛤️ Straßen: Im Baumenü auf „Straßen“ gehen, „Steinweg verlegen“ wählen und auf freie Felder tippen oder mit einem Finger darüberstreichen. Kurven, Kreuzungen und Zugänge zu Gebäuden entstehen automatisch. Mit „Straße entfernen“ kannst du Wege wieder abtragen.</p><button id="reset" class="secondary resetButton">↺ Test zurücksetzen</button></footer>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"}}</script>
 <script type="module">
 import * as THREE from 'three';
@@ -1076,7 +1076,7 @@ food=Math.max(0,Math.floor(Number(data.food)||0));foodElapsed=Math.max(0,Math.mi
 if(!restored){for(let x=-1;x<=1;x++)for(let z=-1;z<=1;z++)owned.add(key(x,z));refreshEdge();
  try{const prev=JSON.parse(localStorage.getItem(OLD_KEY)||'null');if(Array.isArray(prev)){prev.forEach(i=>{if(Number.isInteger(i)&&i>=0&&i<9)addHouse(key(i%3-1,Math.floor(i/3)-1))})}else addHouse(key(0,0))}catch(e){addHouse(key(0,0))}}
 refreshWood();refreshFood();save();
-const MAX_ZOOM_DISTANCE=38;let orbit=0.72,elevation=.84,distance=8,modeBuild=false,buildType='house',panMode=false;const focus=new THREE.Vector3(0,.2,0);
+const MAX_ZOOM_DISTANCE=38;let orbit=0.72,elevation=.84,distance=8,modeBuild=false,buildType='house';const focus=new THREE.Vector3(0,.2,0);
 function placeCamera(){camera.position.set(focus.x+Math.sin(orbit)*Math.cos(elevation)*distance,Math.sin(elevation)*distance+focus.y,focus.z+Math.cos(orbit)*Math.cos(elevation)*distance);camera.lookAt(focus)}
 function panCameraPixels(dx,dy){
  const worldPerPixel=2*distance*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))/Math.max(200,holder.clientHeight);
@@ -1089,7 +1089,7 @@ function panCameraPixels(dx,dy){
 }
 function resize(){const w=holder.clientWidth,h=holder.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}new ResizeObserver(resize).observe(holder);resize();
 const points=new Map();let down=null,pinch=null,ignoreClick=false,holdTimer=null,selected=null,moving=null,roadStrokeDirty=false;
-const canvas=renderer.domElement,editMenu=document.getElementById('editMenu'),buildPanel=document.getElementById('buildPanel'),placePanel=document.getElementById('placePanel'),panButton=document.getElementById('panMode'),centerButton=document.getElementById('centerCamera');let pending=null;
+const canvas=renderer.domElement,editMenu=document.getElementById('editMenu'),buildPanel=document.getElementById('buildPanel'),placePanel=document.getElementById('placePanel'),centerButton=document.getElementById('centerCamera');let pending=null;
 const ghost=new THREE.Group();scene.add(ghost);
 const ghostGreen=new THREE.MeshBasicMaterial({color:0x4ee16c,transparent:true,opacity:.48,depthWrite:false,side:THREE.DoubleSide});
 const ghostRed=new THREE.MeshBasicMaterial({color:0xe65753,transparent:true,opacity:.48,depthWrite:false,side:THREE.DoubleSide});
@@ -1239,13 +1239,26 @@ document.getElementById('demolish').onclick=()=>{if(!selected)return;const t=sel
 document.getElementById('editClose').onclick=closeEdit;
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 
+// Gesture model for iPhone: one finger pans, two fingers twist to rotate,
+// pinch to zoom, and moving both fingers together pans the map.
+// Read the same two active touch pointers in insertion order every time.
+function twoFingerSnapshot(){
+ const p=[...points.values()];
+ return {
+  d:Math.max(10,Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)),
+  angle:Math.atan2(p[1].y-p[0].y,p[1].x-p[0].x),
+  midX:(p[0].x+p[1].x)/2,
+  midY:(p[0].y+p[1].y)/2
+ }
+}
+function shortestAngleDelta(a,b){
+ return Math.atan2(Math.sin(a-b),Math.cos(a-b))
+}
 canvas.addEventListener('pointerdown',e=>{
  points.set(e.pointerId,{x:e.clientX,y:e.clientY});
  canvas.setPointerCapture(e.pointerId);cancelHold();
  if(points.size>=2){
-  const p=[...points.values()];
-  pinch={d:Math.max(10,Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)),distance,
-         midX:(p[0].x+p[1].x)/2,midY:(p[0].y+p[1].y)/2};
+  pinch=twoFingerSnapshot();
   down=null;ignoreClick=true
  }else{
   down={id:e.pointerId,x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,moved:false,tile:hit(e),building:null};
@@ -1262,16 +1275,16 @@ canvas.addEventListener('pointermove',e=>{
  points.set(e.pointerId,{x:e.clientX,y:e.clientY});
  if(points.size>=2){
   cancelHold();
-  const p=[...points.values()];
-  const d=Math.max(10,Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y));
-  const midX=(p[0].x+p[1].x)/2,midY=(p[0].y+p[1].y)/2;
-  if(!pinch)pinch={d,distance,midX,midY};
+  const next=twoFingerSnapshot();
+  if(!pinch)pinch=next;
   else{
-   distance=THREE.MathUtils.clamp(pinch.distance*pinch.d/d,3.5,MAX_ZOOM_DISTANCE);
-   const dx=midX-pinch.midX,dy=midY-pinch.midY;
+   // atan2 avoids a sudden jump when the gesture crosses +/-180 degrees.
+   orbit+=shortestAngleDelta(next.angle,pinch.angle);
+   distance=THREE.MathUtils.clamp(distance*pinch.d/next.d,3.5,MAX_ZOOM_DISTANCE);
+   const dx=next.midX-pinch.midX,dy=next.midY-pinch.midY;
    if(dx||dy)panCameraPixels(dx,dy);
    else placeCamera();
-   pinch.midX=midX;pinch.midY=midY
+   pinch=next
   }
   e.preventDefault();return
  }
@@ -1287,8 +1300,7 @@ canvas.addEventListener('pointermove',e=>{
     const pt={clientX:down.lastX+dx*step/segments,clientY:down.lastY+dy*step/segments};
     paintRoadAt(hit(pt))
    }
-  }else if(panMode)panCameraPixels(dx,dy);
-  else{orbit-=dx*.012;elevation=THREE.MathUtils.clamp(elevation+dy*.004,.40,1.32);placeCamera()}
+  }else panCameraPixels(dx,dy)
  }
  down.lastX=e.clientX;down.lastY=e.clientY;e.preventDefault()
 });
@@ -1316,14 +1328,8 @@ canvas.addEventListener('pointerup',e=>{
 canvas.addEventListener('pointercancel',e=>{cancelHold();points.delete(e.pointerId);pinch=null;down=null;ignoreClick=false;if(roadStrokeDirty){save();roadStrokeDirty=false}});
 function updateTools(){
  viewButton.style.background=!modeBuild?'#416d3e':'#879c79';
- openBuildButton.style.background=modeBuild?'#416d3e':'#879c79';
- panButton.textContent=panMode?'🧭 Wieder drehen':'🖐 Karte verschieben';
- panButton.classList.toggle('isActive',panMode)
+ openBuildButton.style.background=modeBuild?'#416d3e':'#879c79'
 }
-panButton.onclick=()=>{
- panMode=!panMode;cancelHold();down=null;updateTools();
- status.textContent=panMode?'🖐 Ein Finger verschiebt jetzt die Karte. Du kannst nah heranzoomen und über die Insel wandern.':'🧭 Ein Finger dreht wieder die Karte. Mit zwei Fingern kannst du weiterhin zoomen und verschieben.'
-};
 centerButton.onclick=()=>{
  focus.set(0,.2,0);placeCamera();
  status.textContent='⌖ Wieder in der Kartenmitte. Deine Zoomstufe bleibt erhalten.'
