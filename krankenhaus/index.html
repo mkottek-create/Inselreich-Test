@@ -448,19 +448,26 @@ function takeDecorIntoRoom(id,start){
  }
 }
 for(const r of roomSpecs)makeRoomShell(r);
-// Entrance threshold: real sliding-glass doors, low frame and teal canopy.
-box(2.45,.11,.8,.03,.24,4.23,concrete);
-for(const x of [-1.14,1.16])box(.08,1.73,.1,x,1.02,4.38,teal);
-box(2.43,.11,.14,0,1.89,4.38,teal);
-box(.88,1.51,.042,-.48,1.06,4.38,glass,group,false);
-box(.88,1.51,.042,.49,1.06,4.38,glass,group,false);
-for(const x of [-.48,.49])box(.033,1.52,.052,x,1.06,4.4,wallTrim);
-for(const x of [-.07,.08])box(.035,.33,.11,x,1.03,4.48,oak);
-const canopy=box(3.2,.13,1.10,.02,2.15,4.75,tealLight);
-canopy.material=mat(0x82c5c7,.33,.15);
-for(const x of [-1.55,1.55])box(.10,.15,1.14,x,2.18,4.75,teal);
-// Entrance label above the door, visible from the front.
-plane(1.52,.32,0,1.81,4.50,new THREE.MeshBasicMaterial({map:labelTexture('EINGANG'),transparent:true,depthWrite:false}),0);
+// Full-width foyer entrance: generous sliding glass doors at the front center.
+// The visitor comes into the foyer first, then goes to left registration or
+// right waiting; the clinical hallway begins behind the foyer.
+box(3.10,.10,.82,0,.24,8.29,concrete);
+for(const x of [-1.48,1.48])box(.095,1.77,.12,x,1.04,8.32,deepTeal);
+box(3.14,.13,.17,0,1.95,8.33,teal);
+box(1.12,1.56,.045,-.60,1.08,8.36,glass,group,false);
+box(1.12,1.56,.045,.60,1.08,8.36,glass,group,false);
+for(const x of [-1.17,0,1.17])box(.040,1.58,.047,x,1.08,8.39,wallTrim,group,false);
+for(const x of [-.075,.075])box(.042,.34,.10,x,1.08,8.44,oak);
+const canopy=box(3.72,.14,1.36,0,2.21,8.78,tealLight);
+canopy.material=mat(0x78c8c4,.32,.15);
+for(const x of [-1.80,1.80])box(.10,.18,1.40,x,2.25,8.78,teal);
+plane(2.18,.44,0,1.81,8.47,new THREE.MeshBasicMaterial({
+ map:labelTexture('HAUPTEINGANG','#17525a','#ffffff',52),transparent:true,depthWrite:false}),0);
+// Large, bright foyer navigation signs along the low rear wall.
+plane(2.38,.42,-4.05,1.37,.28,new THREE.MeshBasicMaterial({
+ map:labelTexture('ANMELDUNG','#176a5a','#ffffff',53),transparent:true,depthWrite:false}),0);
+plane(2.55,.42,4.07,1.37,.28,new THREE.MeshBasicMaterial({
+ map:labelTexture('WARTEBEREICH','#236a81','#ffffff',51),transparent:true,depthWrite:false}),0);
 // RECEPTION 2.0: bring registration into the direct line of sight from the entrance.
 // A pale-blue zone, tall contrast-rich front and floating sign distinguish it from
 // the waiting area, even when viewed on a small iPhone display.
@@ -527,41 +534,42 @@ for(const part of group.children.slice(deskStartIndex)){
  part.position.z-=deskOriginalZ;
  receptionDesk.add(part)
 }
-receptionDesk.position.set(-4.34,0,1.55); // Counter now sits inside the front-left reception room.
+receptionDesk.position.set(-3.76,0,4.82); // The reception counter stands on the LEFT side of the spacious foyer.
 group.add(receptionDesk);
-plant(-6.18,.77,.63);
-plant(-6.06,3.23,.57);
+plant(-6.04,2.02,.65);
+plant(-6.04,6.88,.57);
 takeDecorIntoRoom('reception',receptionDecorStart);
 const waitingDecorStart=group.children.length;
-// Front-right waiting room: bright seating, side table, plants and a wall screen.
-for(const [x,z,angle] of [[2.72,.83,0],[3.69,.83,0],[4.66,.83,0],
-                           [2.72,2.93,Math.PI],[3.69,2.93,Math.PI],[4.66,2.93,Math.PI]])
- lobbyChair(x,z,angle,x<3.2?chairTeal:chairBlue);
-box(.83,.13,.53,4.34,.46,1.84,oak);
-for(const x of [4.04,4.64])for(const z of [1.64,2.03])
- box(.042,.29,.042,x,.30,z,oakDark);
-box(.54,.012,.28,4.35,.54,1.84,mat(0xf8f4e7),group,false);
-visitor(3.7,2.88,mat(0xdf9f87),.62,Math.PI);
-visitor(2.73,.82,mat(0xe6c67c),.62,0);
-plant(6.15,3.23,.59);
-plant(6.10,.66,.55);
-box(.34,.83,.35,5.84,.60,1.87,white);
-box(.26,.30,.026,5.84,.76,2.06,screenMat);
-cylinder(.065,.078,.13,5.84,1.07,1.87,glass,12);
-box(.96,.67,.09,5.52,1.19,.32,black);
-box(.85,.56,.10,5.52,1.20,.39,screenMat);
+// Right side of the OPEN lobby: waiting chairs, side table and plants stay in
+// their own zone with no dividing wall to block views from the main entrance.
+for(const [x,z,angle] of [[2.42,3.08,0],[3.42,3.08,0],[4.42,3.08,0],
+                           [2.42,5.62,Math.PI],[3.42,5.62,Math.PI],[4.42,5.62,Math.PI]])
+ lobbyChair(x,z,angle,x<3?chairTeal:chairBlue);
+box(.88,.13,.57,5.38,.47,4.36,oak);
+for(const x of [5.06,5.68])for(const z of [4.13,4.57])
+ box(.041,.31,.041,x,.29,z,oakDark);
+box(.54,.013,.28,5.38,.55,4.36,mat(0xf8f4e7),group,false);
+visitor(3.43,5.56,mat(0xdf9f87),.62,Math.PI);
+visitor(2.42,3.08,mat(0xe6c67c),.62,0);
+plant(6.12,6.91,.59);plant(6.14,1.22,.60);
+box(.37,.84,.36,5.88,.60,2.52,white);
+box(.26,.30,.026,5.88,.77,2.73,screenMat);
+cylinder(.065,.078,.15,5.88,1.08,2.52,glass,12);
+box(1.00,.66,.09,5.40,1.39,.55,black);
+box(.88,.55,.10,5.40,1.40,.62,screenMat);
 takeDecorIntoRoom('waiting',waitingDecorStart);
 // Static people remain in the central corridor when room modules are moved.
-visitor(.24,2.40,mat(0xb0d1e7),.71,.3);
-visitor(-.28,-2.67,mat(0xeca8a2),.65,Math.PI);
-visitor(.28,-6.64,mat(0x77b8ac),.69,0);
-roomLabel('EINGANG',0,2.46,5.24,1.85);
+visitor(.40,5.67,mat(0xb0d1e7),.71,.3);
+visitor(-.31,2.48,mat(0xeca8a2),.65,Math.PI);
+visitor(.24,-2.67,mat(0x77b8ac),.69,0);
+visitor(-.25,-6.42,mat(0xe6c67c),.70,0);
 // Outdoor detail to suggest future expansion, without prematurely adding new departments.
 for(const [x,z] of [[-8,-2],[-8,2],[8,-2],[8,3],[-7,-5.8],[7.4,-5.9]]){
  cylinder(.085,.11,.8,x,.33,z,soil);
  sphere(.42,x,.87,z,leaf);sphere(.28,x+.24,.8,z+.12,leaf2)
 }
-const entryBounds={id:'entry',name:'🚪 Eingang',details:'Vorne in der Mitte: Glastüren und ein Eingangsweg.',x1:-1.15,x2:1.15,z1:3.9,z2:8.1};
+const entryBounds={id:'entry',name:'🚪 Haupteingang',details:'Große Glastüren in den offenen Eingangsbereich.',x1:-1.50,x2:1.50,z1:8.20,z2:12.6};
+const foyerBounds={id:'foyer',name:'🏥 Großes Foyer',details:'Offener Eingang: Anmeldung links, Wartebereich rechts. Der Hauptflur führt hinten weiter.',x1:-1.48,x2:1.48,z1:.12,z2:8.20};
 function roomAt(x,z){
  for(let i=roomSpecs.length-1;i>=0;i--){
   const r=roomSpecs[i];
@@ -585,7 +593,9 @@ function groundHit(px,py){
 function inspectRoom(px,py){
  const hit=groundHit(px,py);
  if(!hit)return;
- const room=roomAt(hit.x,hit.z)||((hit.x>=entryBounds.x1&&hit.x<=entryBounds.x2&&hit.z>=entryBounds.z1&&hit.z<=entryBounds.z2)?entryBounds:null);
+ const room=roomAt(hit.x,hit.z)||
+  ((hit.x>=foyerBounds.x1&&hit.x<=foyerBounds.x2&&hit.z>=foyerBounds.z1&&hit.z<=foyerBounds.z2)?foyerBounds:null)||
+  ((hit.x>=entryBounds.x1&&hit.x<=entryBounds.x2&&hit.z>=entryBounds.z1&&hit.z<=entryBounds.z2)?entryBounds:null);
  if(!room)return;
  document.getElementById('roomTitle').textContent=room.name;
  document.getElementById('roomDescription').textContent=room.details||
@@ -595,11 +605,11 @@ function inspectRoom(px,py){
 }
 // New first-view angle highlights the desk rather than looking through the divider.
 // A slightly wider first-view frame includes the new treatment room at the rear.
-const focus=new THREE.Vector3(0,.1,-3.44);
-let orbit=-.32,elevation=1.18,distance=32.0;
+const focus=new THREE.Vector3(0,.1,-1.65);
+let orbit=-.32,elevation=1.19,distance=35.5;
 const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 // View version bump applies the better entrance/reception angle once; no town data is reset.
-const storedKey='klinik-am-park-kamera-v3'; // Keep older camera setting untouched as backup.
+const storedKey='klinik-am-park-kamera-v4'; // Preserve the earlier v3 view as a backup.
 try{
  const saved=JSON.parse(localStorage.getItem(storedKey)||'null');
  if(saved&&Number.isFinite(saved.orbit)&&Number.isFinite(saved.elevation)&&Number.isFinite(saved.distance)&&
@@ -1224,7 +1234,7 @@ function adjustZoom(ratio,px,py){
 document.getElementById('camZoomIn').onclick=()=>adjustZoom(.84);
 document.getElementById('camZoomOut').onclick=()=>adjustZoom(1.19);
 document.getElementById('camReset').onclick=()=>{
- focus.set(0,.1,-3.44);orbit=-.32;elevation=1.18;distance=32.0;
+ focus.set(0,.1,-1.65);orbit=-.32;elevation=1.19;distance=35.5;
  placeCamera();storeCamera();
  document.getElementById('status').textContent='🎯 Kamera wieder auf die Übersicht ausgerichtet.'
 };
