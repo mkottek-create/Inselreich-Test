@@ -1643,18 +1643,31 @@ function buildingAtFinger(e){
  const p=coords(e),ray=new THREE.Raycaster();
  ray.setFromCamera(new THREE.Vector2(p.x,p.y),camera);
  const roots=new Map();
+ const center=new THREE.Vector3();
+ // Broadphase: test an inexpensive sphere around each building before raycasting
+ // thousands of roof tiles, decorative beams, lanterns and wheat meshes.
+ // Keep the sphere generous so tall roofs and castle towers remain tappable.
+ const bounds={house:[.85,1.65],farm:[.72,1.60],field:[.27,1.20],
+   lumber:[.80,1.70],quarry:[.85,1.95],market:[.91,2.55],castle:[1.35,3.90]};
  for(const [type,items] of [['house',buildings],['farm',farms],['field',fields],['lumber',lumberjacks],['quarry',quarries],['market',markets],['castle',castles]]){
-   for(const [anchor,group] of items)roots.set(group,{type,anchor})
+  const [height,radius]=bounds[type];
+  const radiusSq=radius*radius;
+  for(const [anchor,group] of items){
+   const [x,z]=pos(anchor),offset=type==='castle'?1:type==='market'?.5:0;
+   center.set(x+offset,height,z+offset);
+   if(ray.ray.distanceSqToPoint(center)>radiusSq)continue;
+   roots.set(group,{type,anchor})
+  }
  }
  if(!roots.size)return null;
  const intersections=ray.intersectObjects([...roots.keys()],true);
  for(const intersection of intersections){
-   let target=intersection.object;
-   while(target){
-     const info=roots.get(target);
-     if(info)return info;
-     target=target.parent
-   }
+  let target=intersection.object;
+  while(target){
+   const info=roots.get(target);
+   if(info)return info;
+   target=target.parent
+  }
  }
  return null
 }
@@ -1795,9 +1808,9 @@ canvas.addEventListener('pointerdown',e=>{
   down=null;ignoreClick=true
  }else{
   down={id:e.pointerId,x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,moved:false,tile:hit(e),building:null};
-  const k=down.tile,info=buildingAtFinger(e)||(k===undefined?null:at(k));
+  const k=down.tile,info=(!modeBuild||moving)?(buildingAtFinger(e)||(k===undefined?null:at(k))):null;
   down.building=info;
-  if(info&&!moving&&!roadModeActive()){
+  if(info&&!modeBuild&&!moving&&!roadModeActive()){
    holdTimer=setTimeout(()=>{if(down&&!down.moved&&points.size===1){showEdit(info);down=null;ignoreClick=true}holdTimer=null},560)
   }
  }
@@ -1844,7 +1857,7 @@ canvas.addEventListener('pointerup',e=>{
  if(pinch){if(points.size<2)pinch=null;down=null;if(roadStrokeDirty){save();roadStrokeDirty=false}return}
  if(down?.id===e.pointerId&&!down.moved&&!ignoreClick){
   const i=down.tile??hit(e);
-  const touchedBuilding=down.building||buildingAtFinger(e)||(i===undefined?null:at(i));
+  const touchedBuilding=modeBuild?null:(down.building||buildingAtFinger(e)||(i===undefined?null:at(i)));
   if(moving){if(i!==undefined&&relocate(moving,i))moving=null}
   else if(roadModeActive()){if(i!==undefined)paintRoadAt(i)}
   else if(!modeBuild&&touchedBuilding){showBuildingInfo(touchedBuilding)}
