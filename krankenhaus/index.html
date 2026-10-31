@@ -1509,7 +1509,7 @@ function moveTouch(e){
  if(!touchState)return;
  if(e.touches.length>=2){
   if(touchState.mode==='construction')clearConstructionPreview();
-  if(touchState.mode==='furnitureMove')furnitureEditor.pointerEnd(n.midX,n.midY,touchState);
+  if(touchState.mode==='furnitureMove')furnitureEditor.pointerEnd(0,0,touchState);
   const n=snapshot(e.touches);
   if(touchState.mode===2){
    // First calculate the scene point under the old gesture midpoint.
