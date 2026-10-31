@@ -23,6 +23,9 @@
 #mapTools{position:absolute;top:12px;right:10px;z-index:7;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none}
 #mapTools button{pointer-events:auto;flex:none;min-width:0;max-width:152px;padding:10px 12px;font-size:12px;background:#fffef4;color:#29442c;border:2px solid #74956e;box-shadow:0 3px 11px #21372135}
 #mapTools button.isActive{background:#416d3e;color:#fff;border-color:#416d3e}
+#rotatePlacement[hidden]{display:none!important}
+#rotatePlacement{background:#fff0d3!important;border-color:#b89c69!important;color:#624528!important}
+#infoRotate{background:linear-gradient(180deg,#e1b76a,#be8f43);border-color:#a67b35;color:#352a16}
 #mapTools .mapHint{pointer-events:none;background:#fffae8dd;color:#29452d;border-radius:8px;padding:4px 7px;font-size:11px;font-weight:800}
 #cityPulse{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:7px;background:#eef5de;padding:9px 7px;color:#375839;font-size:12px;font-weight:650}
 #cityPulse span{border-radius:10px;background:#fffef4;padding:7px 10px;white-space:nowrap}
@@ -71,13 +74,13 @@ button.secondary{background:linear-gradient(180deg,#fffef7,#ecefdd);color:#35563
 </style></head><body>
 <header><h1>🏝️ Inselreich 3D</h1><span class="tag">🌲 <strong id="woodCount">0</strong> · 🌾 <strong id="foodCount">0</strong> · 🪨 <strong id="stoneCount">0</strong></span></header>
 <div id="cityPulse"><span>👥 <strong id="peopleCount">0</strong> Einwohner</span><span>😊 <strong id="happyCount">0</strong>% zufrieden</span><span>🏡 Dorfzeit</span></div>
-<div id="game"><div id="buildUndo" hidden role="status" aria-live="polite"><span id="buildUndoText">🏠 Gebäude gebaut!</span><button id="undoLastBuild" type="button">↶ Rückgängig</button></div><div id="mapTools"><span class="mapHint">☝️ Frei schieben · ✌️ Drehen & Zoom</span><button id="centerCamera">⌖ Kartenmitte</button><button id="overviewCamera">🔎 Weit raus</button></div><div id="buildingInfo" role="dialog" aria-label="Gebäudeinformationen" hidden>
+<div id="game"><div id="buildUndo" hidden role="status" aria-live="polite"><span id="buildUndoText">🏠 Gebäude gebaut!</span><button id="undoLastBuild" type="button">↶ Rückgängig</button></div><div id="mapTools"><span class="mapHint">☝️ Frei schieben · ✌️ Drehen & Zoom</span><button id="centerCamera">⌖ Kartenmitte</button><button id="overviewCamera">🔎 Weit raus</button><button id="rotatePlacement" type="button" hidden>🔄 Bauen: Süd</button></div><div id="buildingInfo" role="dialog" aria-label="Gebäudeinformationen" hidden>
   <div class="infoHeading"><strong id="infoTitle">🏠 Gebäude</strong><button id="infoClose" aria-label="Gebäudeinformationen schließen">✕</button></div>
   <p id="infoSubtitle">Gebäudeübersicht</p>
   <div class="infoStats"><div><span id="infoKey1"></span><strong id="infoValue1"></strong></div><div><span id="infoKey2"></span><strong id="infoValue2"></strong></div></div>
   <p id="infoDetails"></p>
-  <button id="infoEdit">↔ Verschieben / 🗑 Löschen</button>
-</div><div id="editMenu" role="dialog" aria-label="Gebäude bearbeiten"><strong id="editTitle">Gebäude</strong><p>Was möchtest du mit diesem Gebäude machen?</p><button id="move">↔ Verschieben</button><button id="demolish">🗑 Löschen</button><button id="editClose">✕ Abbrechen</button></div><div id="notice">👆 Gebäude antippen: Infos ansehen · länger drücken: Verschieben oder Löschen</div></div>
+  <button id="infoRotate" type="button">🔄 Gebäude 90° drehen</button><button id="infoEdit">↔ Verschieben / 🗑 Löschen</button>
+</div><div id="editMenu" role="dialog" aria-label="Gebäude bearbeiten"><strong id="editTitle">Gebäude</strong><p>Was möchtest du mit diesem Gebäude machen?</p><button id="rotate" type="button">🔄 Drehen (90°)</button><button id="move">↔ Verschieben</button><button id="demolish">🗑 Löschen</button><button id="editClose">✕ Abbrechen</button></div><div id="notice">👆 Gebäude antippen: Infos & Drehen · länger drücken: Verschieben oder Löschen</div></div>
 <footer><div class="buttons"><button id="view">👁️ Anschauen</button><button id="openBuild">🔨 Bauen</button></div>
 <button id="expandIsland" class="expansionButton">🌿 Insel erweitern</button>
 <section id="citizenPanel" aria-label="Bewohner und Bedürfnisse">
@@ -1104,7 +1107,8 @@ function orientQuarryPortal(g,k,deposit){
  const portal=g.getObjectByName('quarryPortal');
  if(!portal||!deposit)return;
  const [x,z]=pos(k),[rx,rz]=pos(deposit);
- portal.rotation.y=Math.atan2(x-rx,z-rz)
+ // Cancel the outer building rotation: the mineshaft always faces its mountain.
+ portal.rotation.y=Math.atan2(x-rx,z-rz)-g.rotation.y
 }
 // Mine entrance, timberwork, rails and cart extend visibly into rock face.
 function addQuarry(k,preferredDeposit=null){
@@ -1443,14 +1447,28 @@ const roadDirs=[
  {dx:-1,dz:0,bit:8}
 ];
 function roadLeadsToDoor(x,z,dx,dz){
- // Every building door faces +z; a road immediately in front meets its doorstep.
- if(dx!==0||dz!==-1)return false;
  const neighbor=at(key(x+dx,z+dz));if(!neighbor)return false;
- const [ax,az]=pos(neighbor.anchor);
- if(neighbor.type==='house'||neighbor.type==='farm'||neighbor.type==='lumber'||neighbor.type==='quarry'||neighbor.type==='mill')return x===ax&&z===az+1;
- if(neighbor.type==='market')return (x===ax||x===ax+1)&&z===az+2;
- if(neighbor.type==='castle')return x===ax+1&&z===az+3;
- return false
+ const type=neighbor.type,[ax,az]=pos(neighbor.anchor);
+ if(type==='field')return false;
+ const step=buildingRotation(type,neighbor.anchor);
+ // A 1x1 entrance faces +Z at 0°, +X at 90°, then -Z / -X.
+ // Square 2x2 / 3x3 footprints rotate around their geometric center.
+ if(type==='market'){
+  if(step===0)return (x===ax||x===ax+1)&&z===az+2;
+  if(step===1)return x===ax+2&&(z===az||z===az+1);
+  if(step===2)return (x===ax||x===ax+1)&&z===az-1;
+  return x===ax-1&&(z===az||z===az+1)
+ }
+ if(type==='castle'){
+  return step===0?x===ax+1&&z===az+3
+   :step===1?x===ax+3&&z===az+1
+   :step===2?x===ax+1&&z===az-1
+   :x===ax-1&&z===az+1
+ }
+ return step===0?x===ax&&z===az+1
+  :step===1?x===ax+1&&z===az
+  :step===2?x===ax&&z===az-1
+  :x===ax-1&&z===az
 }
 function getRoadMask(k){
  const [x,z]=pos(k);let mask=0;
@@ -1699,7 +1717,7 @@ function save(){
  refreshRoadNetworks();syncGroundDetailsVisibility();
  updateCitizenUI();refreshBuildingInfo();refreshBuildCostLabels();
  if(worldShadowsDirty){renderer.shadowMap.needsUpdate=true;worldShadowsDirty=false}
- try{localStorage.setItem(KEY,JSON.stringify({land:[...owned],houses:[...buildings.keys()],markets:[...markets.keys()],castles:[...castles.keys()],lumberjacks:[...lumberjacks.keys()],farms:[...farms.keys()],fields:[...fields.keys()],mills:[...mills.keys()],quarries:[...quarries.keys()],quarryDeposits:[...quarryDeposits],roads:[...roads],rockSites:[...rockSites],citizens:[...citizens],citizenElapsed,food,foodElapsed,wood,woodElapsed,stone,stoneElapsed,starterWoodGranted,lastUpdate:Date.now()}))}catch(e){}}
+ try{localStorage.setItem(KEY,JSON.stringify({land:[...owned],houses:[...buildings.keys()],markets:[...markets.keys()],castles:[...castles.keys()],lumberjacks:[...lumberjacks.keys()],farms:[...farms.keys()],fields:[...fields.keys()],mills:[...mills.keys()],quarries:[...quarries.keys()],quarryDeposits:[...quarryDeposits],rotations:serializedBuildingRotations(),roads:[...roads],rockSites:[...rockSites],citizens:[...citizens],citizenElapsed,food,foodElapsed,wood,woodElapsed,stone,stoneElapsed,starterWoodGranted,lastUpdate:Date.now()}))}catch(e){}}
 let restored=false;try{let data=JSON.parse(localStorage.getItem(KEY)||'null');if(data&&Array.isArray(data.land)&&Array.isArray(data.houses)){for(const k of data.land){const [x,z]=pos(k);if(inside(x,z))owned.add(k)}if(owned.size){
 if(Array.isArray(data.rockSites))for(const k of data.rockSites)if(typeof k==='string'&&owned.has(k))rockSites.add(k);
 refreshEdge();data.houses.forEach(k=>{if(owned.has(k))addHouse(k)});if(Array.isArray(data.markets))data.markets.forEach(k=>{if(typeof k==="string")addMarket(k)});if(Array.isArray(data.castles))data.castles.forEach(k=>{if(typeof k==='string')addCastle(k)});if(Array.isArray(data.lumberjacks))data.lumberjacks.forEach(k=>{if(typeof k==="string")addLumberjack(k)});if(Array.isArray(data.farms))data.farms.forEach(k=>{if(typeof k==='string')addFarm(k)});if(Array.isArray(data.fields))data.fields.forEach(k=>{if(typeof k==='string')addField(k)});
@@ -1708,7 +1726,9 @@ if(Array.isArray(data.quarries)){
  const savedClaims=new Map(Array.isArray(data.quarryDeposits)?data.quarryDeposits:[]);
  data.quarries.forEach(k=>{if(typeof k==='string')addQuarry(k,savedClaims.get(k)||null)})
 }
-if(Array.isArray(data.roads))data.roads.forEach(k=>{if(typeof k==='string'&&owned.has(k)&&!occupied(k))roads.add(k)});invalidateMarketRoads();refreshRoadNetworks();
+if(Array.isArray(data.roads))data.roads.forEach(k=>{if(typeof k==='string'&&owned.has(k)&&!occupied(k))roads.add(k)});
+loadBuildingRotations(data);
+invalidateMarketRoads();refreshRoadNetworks();
 if(Array.isArray(data.citizens))for(const entry of data.citizens){
  if(Array.isArray(entry)&&entry.length===2&&buildings.has(entry[0])){
   const value=Number(entry[1]);
@@ -1960,6 +1980,7 @@ function buildingInfoData(info){
   result.details='🏰 Wahrzeichen deines Inselreichs mit Burgbrücke. Weitere Funktionen kommen in späteren Zeitaltern.';
  }
  if(info.type!=='field')result.details+=' · '+transportMessage(info.type,k);
+ result.subtitle+=' · Ausrichtung: '+rotationNames[buildingRotation(info.type,k)];
  return result
 }
 function closeBuildingInfo(){infoSelection=null;document.getElementById('buildingInfo').hidden=true}
@@ -1991,6 +2012,44 @@ function cancelHold(){if(holdTimer!==null){clearTimeout(holdTimer);holdTimer=nul
 function closeEdit(){editMenu.classList.remove('show');selected=null}
 function showEdit(info){closeBuildingInfo();moving=null;selected=info;clearPreview();editMenu.classList.add('show');document.getElementById('editTitle').textContent=(info.type==='castle'?'🏰 Burg':info.type==='market'?'🛒 Markt':info.type==='lumber'?'🪓 Holzfäller':info.type==='quarry'?'⛏️ Steinbruch':info.type==='farm'?'🚜 Getreidefarm':info.type==='mill'?'🌬️ Windmühle':info.type==='field'?'🌾 Weizenfeld':'🏠 Haus')+' bearbeiten';status.textContent='🏠 Gebäude ausgewählt – Verschieben oder Löschen?';if(navigator.vibrate)navigator.vibrate(35)}
 function mapOf(type){return type==='house'?buildings:type==='market'?markets:type==='castle'?castles:type==='lumber'?lumberjacks:type==='quarry'?quarries:type==='farm'?farms:type==='mill'?mills:fields}
+/* Every building retains its own 0/90/180/270-degree orientation. These
+   rotations are stored as additional optional save data; old saves use 0°.
+   Multitile buildings (market/castle) rotate in-place around their center. */
+const rotationNames=['Süd','Ost','Nord','West'];
+const rotatableTypes=['house','farm','field','mill','lumber','quarry','market','castle'];
+function buildingRotation(type,k){
+ const g=mapOf(type).get(k);
+ return g?g.userData.rotationSteps||0:0
+}
+function setBuildingRotation(type,k,steps){
+ if(!rotatableTypes.includes(type))return false;
+ const g=mapOf(type).get(k);if(!g)return false;
+ const step=((Math.trunc(steps)%4)+4)%4;
+ g.rotation.y=step*Math.PI/2;
+ g.userData.rotationSteps=step;
+ if(type==='quarry')orientQuarryPortal(g,k,quarryDeposits.get(k));
+ worldShadowsDirty=true;
+ return true
+}
+function serializedBuildingRotations(){
+ const rotations=[];
+ for(const type of rotatableTypes){
+  for(const [k,g] of mapOf(type)){
+   const step=g.userData.rotationSteps||0;
+   if(step)rotations.push([type,k,step])
+  }
+ }
+ return rotations
+}
+function loadBuildingRotations(data){
+ if(!Array.isArray(data.rotations))return;
+ for(const value of data.rotations){
+  if(!Array.isArray(value)||value.length!==3)continue;
+  const [type,k,step]=value;
+  if(typeof type!=='string'||typeof k!=='string'||!Number.isInteger(step)||step<0||step>3)continue;
+  setBuildingRotation(type,k,step)
+ }
+}
 function relocate(from,to){const targetCells=from.type==='castle'?castleCells(to):from.type==='market'?marketCells(to):[to];if(!targetCells.every(k=>owned.has(k)&&!rockSites.has(k)&&!roads.has(k)&&(!at(k)||(at(k).type===from.type&&at(k).anchor===from.anchor)))){status.textContent=from.type==='castle'?'❌ Burg braucht 3×3 freie Felder.':from.type==='market'?'❌ Der Markt braucht vier freie Felder (2×2).':'❌ Bitte einen freien Bauplatz wählen.';return false}
 const quarryTarget=from.type==='quarry'?quarryDepositFor(to,from.anchor):null;
 if(from.type==='quarry'&&!quarryTarget){status.textContent='🏔️ Steinbruch kann nur direkt neben einem freien Berg stehen.';return false}
