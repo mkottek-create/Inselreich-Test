@@ -999,10 +999,10 @@ function snapshot(touches){
 let touchState=null;
 function startTouch(e){
  e.preventDefault();
- if(e.touches.length>=2){touchState={mode:2,...snapshot(e.touches)}}
+ if(e.touches.length>=2){clearConstructionPreview();touchState={mode:2,...snapshot(e.touches)}}
  else if(e.touches.length===1){
   const t=e.touches[0];
-  touchState=roomPointerStart(t.clientX,t.clientY)||startDeskDrag(t.clientX,t.clientY)||
+  touchState=constructionPointerStart(t.clientX,t.clientY)||roomPointerStart(t.clientX,t.clientY)||startDeskDrag(t.clientX,t.clientY)||
    {mode:1,x:t.clientX,y:t.clientY,startX:t.clientX,startY:t.clientY,moved:false}
  }
 }
@@ -1010,6 +1010,7 @@ function moveTouch(e){
  e.preventDefault();
  if(!touchState)return;
  if(e.touches.length>=2){
+  if(touchState.mode==='construction')clearConstructionPreview();
   const n=snapshot(e.touches);
   if(touchState.mode===2){
    pan(n.midX-touchState.midX,n.midY-touchState.midY);
@@ -1020,7 +1021,9 @@ function moveTouch(e){
   touchState={mode:2,...n};placeCamera();
  }else if(e.touches.length===1){
   const t=e.touches[0];
-  if(touchState.mode==='room'||touchState.mode==='roomTap'){
+  if(touchState.mode==='construction'){
+   constructionPointerMove(t.clientX,t.clientY,touchState)
+  }else if(touchState.mode==='room'||touchState.mode==='roomTap'){
    roomPointerMove(t.clientX,t.clientY,touchState)
   }else if(touchState.mode==='desk'){
    if(Math.hypot(t.clientX-touchState.startX,t.clientY-touchState.startY)>6)touchState.moved=true;
@@ -1036,11 +1039,16 @@ function moveTouch(e){
 }
 function endTouch(e){
  e.preventDefault();
+ if(e.type==='touchcancel'){clearConstructionPreview();touchState=null;storeCamera();return}
  if(e.touches.length>=2){touchState={mode:2,...snapshot(e.touches)};return}
  if(e.touches.length===1){
   const t=e.touches[0];touchState={mode:1,x:t.clientX,y:t.clientY,startX:t.clientX,startY:t.clientY,moved:true};return
  }
- if((touchState?.mode==='room'||touchState?.mode==='roomTap')&&e.changedTouches.length===1){
+ if(touchState?.mode==='construction'&&e.changedTouches.length===1){
+  const t=e.changedTouches[0];
+  constructionPointerMove(t.clientX,t.clientY,touchState);
+  constructionPointerEnd(t.clientX,t.clientY,touchState)
+ }else if((touchState?.mode==='room'||touchState?.mode==='roomTap')&&e.changedTouches.length===1){
   const t=e.changedTouches[0];
   roomPointerEnd(t.clientX,t.clientY,touchState)
  }else if(touchState?.mode==='desk'&&e.changedTouches.length===1){
@@ -1061,7 +1069,7 @@ canvas.addEventListener('touchcancel',endTouch,{passive:false});
 let pointer=null;
 canvas.addEventListener('pointerdown',e=>{
  if(e.pointerType==='touch')return;
- pointer=(e.button===0?(roomPointerStart(e.clientX,e.clientY)||startDeskDrag(e.clientX,e.clientY)):null)||
+ pointer=(e.button===0?(constructionPointerStart(e.clientX,e.clientY)||roomPointerStart(e.clientX,e.clientY)||startDeskDrag(e.clientX,e.clientY)):null)||
  {id:e.pointerId,x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,
           moved:false,rotate:e.button===2};
  pointer.id=e.pointerId;
@@ -1071,7 +1079,8 @@ canvas.addEventListener('pointermove',e=>{
  if(e.pointerType==='touch'||!pointer||pointer.id!==e.pointerId)return;
  const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;
  if(Math.hypot(e.clientX-pointer.startX,e.clientY-pointer.startY)>6)pointer.moved=true;
- if(pointer.mode==='room'||pointer.mode==='roomTap')roomPointerMove(e.clientX,e.clientY,pointer);
+ if(pointer.mode==='construction')constructionPointerMove(e.clientX,e.clientY,pointer);
+ else if(pointer.mode==='room'||pointer.mode==='roomTap')roomPointerMove(e.clientX,e.clientY,pointer);
  else if(pointer.mode==='desk')moveDeskDrag(e.clientX,e.clientY,pointer);
  else if(pointer.rotate){orbit-=dx*.009;elevation=clamp(elevation+dy*.007,.55,1.28);placeCamera()}
  else pan(dx,dy);
@@ -1079,7 +1088,10 @@ canvas.addEventListener('pointermove',e=>{
 });
 canvas.addEventListener('pointerup',e=>{
  if(e.pointerType==='touch'||!pointer||pointer.id!==e.pointerId)return;
- if(pointer.mode==='room'||pointer.mode==='roomTap'){
+ if(pointer.mode==='construction'){
+  constructionPointerMove(e.clientX,e.clientY,pointer);
+  constructionPointerEnd(e.clientX,e.clientY,pointer)
+ }else if(pointer.mode==='room'||pointer.mode==='roomTap'){
   roomPointerEnd(e.clientX,e.clientY,pointer)
  }else if(pointer.mode==='desk'){
   if(!pointer.moved)placeDeskByTap(e.clientX,e.clientY);
@@ -1089,6 +1101,7 @@ canvas.addEventListener('pointerup',e=>{
 });
 canvas.addEventListener('pointercancel',e=>{if(e.pointerType!=='touch'){
  if(pointer?.mode==='desk')storeReception();
+ if(pointer?.mode==='construction')clearConstructionPreview();
  if(pointer?.mode==='room'||pointer?.mode==='roomTap'){
   saveFloorplan();
   if(pointer.id==='reception')storeReception()
