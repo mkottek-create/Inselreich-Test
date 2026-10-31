@@ -840,7 +840,7 @@ function orientQuarryPortal(g,k,deposit){
  const portal=g.getObjectByName('quarryPortal');
  if(!portal||!deposit)return;
  const [x,z]=pos(k),[rx,rz]=pos(deposit);
- portal.rotation.y=Math.atan2(rx-x,-(rz-z))
+ portal.rotation.y=Math.atan2(x-rx,z-rz)
 }
 function addQuarry(k,preferredDeposit=null){
  const deposit=quarryDepositFor(k,null,preferredDeposit);
