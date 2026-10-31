@@ -284,8 +284,8 @@ const originalFloorplanKey='klinik-am-park-grundriss-v1';
 const floorplanKey='klinik-am-park-grundriss-v3';
 const originalInitialRoomIds=['reception','waiting','treatment'];
 const initialRooms=[
- {id:'reception',name:'🧑‍💻 Anmeldung',kind:'reception',x:-3.60,z:4.10,w:6.15,d:7.55,doorSide:'none',doorOffset:0},
- {id:'waiting',name:'🪑 Wartebereich',kind:'waiting',x:3.60,z:4.10,w:6.15,d:7.55,doorSide:'none',doorOffset:0},
+ {id:'reception',name:'🧑‍💻 Anmeldung',kind:'reception',x:-4.35,z:4.10,w:5.30,d:7.55,doorSide:'none',doorOffset:0},
+ {id:'waiting',name:'🪑 Wartebereich',kind:'waiting',x:4.35,z:4.10,w:5.30,d:7.55,doorSide:'none',doorOffset:0},
  {id:'treatment',name:'🩺 Behandlungsraum 1',kind:'treatment',x:-4.05,z:-2.13,w:5.30,d:3.05,doorSide:'right',doorOffset:0},
  {id:'treatment2',name:'🩺 Behandlungsraum 2',kind:'treatment',x:4.05,z:-2.13,w:5.30,d:3.05,doorSide:'left',doorOffset:0},
  {id:'diagnostic',name:'🔬 Diagnoseraum',kind:'diagnostic',x:-4.05,z:-6.13,w:5.30,d:3.58,doorSide:'right',doorOffset:0},
@@ -344,7 +344,8 @@ for(const z of [-.80,-4.45,-8.40])box(2.43,.014,.065,0,.194,z,foyerAccent,group,
 function makeRoomShell(r){
  const begin=group.children.length;
  // Open foyer sub-zones are movable for editing, but have no walls separating
- // registration from the waiting area. The Foyer shell is a single shared space.
+ // registration from the waiting area. A 3.4m-wide central aisle now leads
+ // from the main doors to the 2.8m corridor behind the large shared foyer.
  if(r.id==='reception'||r.id==='waiting'){
   groundRect(r.w+.045,r.d+.045,r.x,r.z,
    r.id==='reception'?mat(0xddece7):mat(0xd9eaf0),.093);
@@ -644,7 +645,7 @@ function pan(dx,dy){
    All layout data use a separate save key, never the Inselreich save. */
 const oldReceptionStorageKey='klinik-am-park-anmeldung-v1';
 const receptionStorageKey='klinik-am-park-anmeldung-v2'; // New foyer default; keep old desk save intact.
-const deskLimits={minX:-4.925,maxX:-2.275,minZ:1.185,maxZ:6.135};
+const deskLimits={minX:-5.25,maxX:-3.45,minZ:1.185,maxZ:6.135};
 function syncDeskLimits(){
  const rec=roomSpecs.find(r=>r.id==='reception');
  // Keep the entire L-shaped reception counter, overhead sign and queue marks
