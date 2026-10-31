@@ -62,11 +62,53 @@
 <script type="module">
 import * as THREE from 'three';
 const holder=document.getElementById('game'),status=document.getElementById('notice'),buildButton=document.getElementById('build'),marketButton=document.getElementById('market'),lumberButton=document.getElementById('lumber'),viewButton=document.getElementById('view'),openBuildButton=document.getElementById('openBuild'),farmButton=document.getElementById('farm'),fieldButton=document.getElementById('field'),woodCount=document.getElementById('woodCount'),foodCount=document.getElementById('foodCount');
-const scene=new THREE.Scene();scene.background=new THREE.Color(0xc9dfba);
-const camera=new THREE.PerspectiveCamera(45,1,.1,150);const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;holder.prepend(renderer.domElement);
-scene.add(new THREE.HemisphereLight(0xfffaf0,0x719063,2.25));const sun=new THREE.DirectionalLight(0xfff3d9,2.45);sun.position.set(-7,12,8);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.bias=-.0002;sun.shadow.camera.left=-12;sun.shadow.camera.right=12;sun.shadow.camera.top=12;sun.shadow.camera.bottom=-12;scene.add(sun);
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0xc3dcd5);
+scene.fog=new THREE.Fog(0xc3dcd5,28,98);
+const camera=new THREE.PerspectiveCamera(45,1,.1,180);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.20;
+holder.prepend(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xfff5df,0x738d78,1.90));
+const sun=new THREE.DirectionalLight(0xffe6b3,2.35);
+sun.position.set(-9,15,10);
+sun.castShadow=true;
+sun.shadow.mapSize.set(1024,1024);
+sun.shadow.bias=-.00016;
+sun.shadow.normalBias=.025;
+sun.shadow.camera.left=-20;sun.shadow.camera.right=20;
+sun.shadow.camera.top=20;sun.shadow.camera.bottom=-20;
+sun.shadow.camera.near=.5;sun.shadow.camera.far=75;
+scene.add(sun);
+// A single, GPU-drawn animated sea replaces the flat background underneath the island.
+// A lightweight procedural water shader works without external textures on iPhone Safari.
+const oceanClock={value:0};
+const oceanMaterial=new THREE.ShaderMaterial({
+ uniforms:{uTime:oceanClock,uShallow:{value:new THREE.Color(0x349fa5)},uDeep:{value:new THREE.Color(0x205c74)}},
+ vertexShader:`varying vec2 vUv;varying vec3 vWorld;void main(){vUv=uv;vec4 world=modelMatrix*vec4(position,1.0);vWorld=world.xyz;gl_Position=projectionMatrix*viewMatrix*world;}`,
+ fragmentShader:`uniform float uTime;uniform vec3 uShallow;uniform vec3 uDeep;varying vec2 vUv;varying vec3 vWorld;
+ void main(){
+ vec2 p=vWorld.xz;
+ float w1=sin(p.x*2.3+p.y*1.1+uTime*.75);
+ float w2=sin(p.y*3.1-p.x*.75-uTime*.55);
+ float w3=sin((p.x+p.y)*5.2+uTime*.92);
+ float water=.55+.15*w1+.10*w2+.035*w3;
+ vec3 base=mix(uDeep,uShallow,clamp(water,0.0,1.0));
+ float glint=pow(max(0.0,sin(p.x*5.7+p.y*3.9-uTime*1.3)),16.0);
+ glint*=smoothstep(.3,.9,w1)*.18;
+ gl_FragColor=vec4(base+vec3(.30,.35,.26)*glint,1.0);
+ }`
+});
+const ocean=new THREE.Mesh(new THREE.PlaneGeometry(250,250),oceanMaterial);
+ocean.rotation.x=-Math.PI/2;ocean.position.y=-.31;
+ocean.frustumCulled=false;scene.add(ocean);
 const mat=(hex)=>new THREE.MeshStandardMaterial({color:hex,roughness:0.9});
-const grass=[mat(0x7faa5b),mat(0x91bc6d),mat(0x6f984e)],soil=mat(0x866342),wall=mat(0xead1a6),roof=mat(0xac5944),roofSide=mat(0x843f34),door=mat(0x65432e),glass=mat(0x93c6cc),trunk=mat(0x8e653c);
+const grass=[mat(0x77a85a),mat(0x94b76c),mat(0x709a54)],soil=mat(0x82694d),wall=mat(0xead1a6),roof=mat(0xac5944),roofSide=mat(0x843f34),door=mat(0x65432e),glass=mat(0x93c6cc),trunk=mat(0x8e653c);
 const land=new THREE.Group();scene.add(land);
 const tiles=[],tileModels=new Map(),buildings=new Map(),markets=new Map(),castles=new Map(),lumberjacks=new Map(),farms=new Map(),fields=new Map(),owned=new Set(),roads=new Set(),roadModels=new Map();
 const citizens=new Map(),rockSites=new Set(),rockModels=new Map(),quarries=new Map(),quarryDeposits=new Map();let citizenElapsed=0,infoSelection=null,starterWoodGranted=false;
@@ -84,11 +126,16 @@ function validFrontier(x,z){return inside(x,z)&&!owned.has(key(x,z))&&neighbors(
    Terrain tiles are painted using vertex colors; only 2-4 grass tufts are instanced per cell.
    Tile recognition, building placement, island expansion and game saves stay intact. */
 const groundTopMaterial=new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,metalness:0});
-const meadowPalette=[new THREE.Color(0x7faa5b),new THREE.Color(0x91bc6d),new THREE.Color(0x6f984e)];
-const earthTone=new THREE.Color(0x9b7650);
+const meadowPalette=[new THREE.Color(0x77a85a),new THREE.Color(0x94b76c),new THREE.Color(0x709a54)];
+const earthTone=new THREE.Color(0xa18459);
 const groundTuftMaterial=new THREE.MeshStandardMaterial({color:0xffffff,roughness:1,side:THREE.DoubleSide});
 const groundPebbleMaterial=new THREE.MeshStandardMaterial({color:0xc8b79a,roughness:1});
 const groundPebbleGeometry=new THREE.IcosahedronGeometry(1,0);
+// Delicate meadow blossoms are shared geometry and only appear on unoccupied grass.
+const meadowFlowerStem=new THREE.CylinderGeometry(.006,.009,.11,4);
+const meadowFlowerBud=new THREE.IcosahedronGeometry(.035,0);
+const meadowStemMat=new THREE.MeshStandardMaterial({color:0x557a38,roughness:1});
+const meadowFlowerColors=[mat(0xf6ddb6),mat(0xf7f2db),mat(0xe5a5a4),mat(0xd8c9ee)];
 // Stable per-grid-cell values: old fields never change when the island grows.
 function terrainRand(x,z,seed){
  let h=Math.imul(x+101,374761393)^Math.imul(z+101,668265263)^Math.imul(seed+37,1442695041);
@@ -162,6 +209,18 @@ function attachMeadowDetails(group,x,z){
   const size=.023+terrainRand(x,z,59)*.019;
   stone.scale.set(size,size*.44,size*.82);
   stone.castShadow=false;visual.add(stone)
+ }
+ // Flowers are deterministic per tile and do not occupy extra building space.
+ if(terrainRand(x,z,66)<.27){
+  const count=1+Math.floor(terrainRand(x,z,67)*3);
+  for(let i=0;i<count;i++){
+   const gx=(terrainRand(x,z,70+i*3)-.5)*.66;
+   const gz=(terrainRand(x,z,71+i*3)-.5)*.66;
+   const stem=new THREE.Mesh(meadowFlowerStem,meadowStemMat);
+   stem.position.set(gx,.215,gz);visual.add(stem);
+   const bud=new THREE.Mesh(meadowFlowerBud,meadowFlowerColors[Math.floor(terrainRand(x,z,72+i*3)*meadowFlowerColors.length)]);
+   bud.position.set(gx,.28,gz);bud.scale.set(1.0,.68,1.0);visual.add(bud)
+  }
  }
  group.add(visual);group.userData.groundDetails=visual
 }
@@ -274,9 +333,38 @@ function tile(k,unlocked){
  hit.userData={key:k};group.add(hit);tiles.push(hit);tileModels.set(k,group);
  if(unlocked&&rockSites.has(k))addMountainModel(k)
 }
+
+/* Shoreline follows the ACTUAL expanded island footprint. Beach and foam layers
+   are purely decorative and do not change tile picking, roads or owned land. */
+const beachSand=new THREE.MeshStandardMaterial({color:0xe8d1a1,roughness:1,transparent:true,opacity:.86,depthWrite:false});
+const beachFoam=new THREE.MeshBasicMaterial({color:0xd9f6e9,transparent:true,opacity:.80,depthWrite:false});
+const beachGeo=new THREE.BoxGeometry(1.02,.009,.15);
+const beachFoamGeo=new THREE.BoxGeometry(1.08,.006,.055);
+function updateCoastline(){
+ for(const [k,group] of tileModels){
+  if(!owned.has(k))continue;
+  if(group.userData.coastVisual){group.remove(group.userData.coastVisual);group.userData.coastVisual=null}
+  const [x,z]=pos(k),visual=new THREE.Group();visual.name='Sand-und-Brandung';
+  for(const [dx,dz] of [[-1,0],[1,0],[0,-1],[0,1]]){
+   if(owned.has(key(x+dx,z+dz)))continue;
+   const horizontal=dz!==0;
+   const sand=new THREE.Mesh(beachGeo,beachSand);
+   sand.position.set(dx*.435,.161,dz*.435);
+   if(!horizontal)sand.rotation.y=Math.PI/2;
+   sand.receiveShadow=false;visual.add(sand);
+   const foam=new THREE.Mesh(beachFoamGeo,beachFoam);
+   foam.position.set(dx*.545,-.235,dz*.545);
+   if(!horizontal)foam.rotation.y=Math.PI/2;
+   visual.add(foam)
+  }
+  if(visual.children.length){group.add(visual);group.userData.coastVisual=visual}
+ }
+}
 function refreshEdge(){for(const [k,obj] of tileModels){const [x,z]=pos(k);const unlocked=owned.has(k);if(!unlocked&&!validFrontier(x,z)){land.remove(obj);tileModels.delete(k);const h=obj.children.find(c=>c.userData?.key===k);if(h){const idx=tiles.indexOf(h);if(idx>=0)tiles.splice(idx,1)}}}
  for(const k of owned){if(!tileModels.has(k))tile(k,true)}
- for(const k of owned){const [x,z]=pos(k);for(const [a,b] of neighbors(x,z)){const nk=key(a,b);if(validFrontier(a,b)&&!tileModels.has(nk))tile(nk,false)}}}
+ for(const k of owned){const [x,z]=pos(k);for(const [a,b] of neighbors(x,z)){const nk=key(a,b);if(validFrontier(a,b)&&!tileModels.has(nk))tile(nk,false)}}
+ updateCoastline()
+}
 // Add an entire new ring in one action instead of unlocking edge tiles individually.
 // Existing owned tiles are kept; old saved islands, including irregular shapes, are supported.
 function nextIslandRing(){
@@ -1085,13 +1173,13 @@ function refreshBuildCostLabels(){
 /* Inselreich Straßen: seamless cobblestone paths on the existing 3D terrain.
    Each owned tile can hold one road; roads do not alter building save data.
    Geometry batches all stones per tile in one InstancedMesh for mobile Safari. */
-const roadEdgeMaterial=new THREE.MeshStandardMaterial({color:0x887452,roughness:1}),
-      roadSoilMaterial=new THREE.MeshStandardMaterial({color:0xa08a69,roughness:1}),
+const roadEdgeMaterial=new THREE.MeshStandardMaterial({color:0x796f5d,roughness:1}),
+      roadSoilMaterial=new THREE.MeshStandardMaterial({color:0xa59b84,roughness:1}),
       roadStoneMaterial=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.98,metalness:0}),
       roadStoneGeom=new THREE.BoxGeometry(1,1,1),
-      roadColors=[new THREE.Color(0xc9b89a),new THREE.Color(0xb4a48a),
-                  new THREE.Color(0xd9c6a6),new THREE.Color(0x9c917f),
-                  new THREE.Color(0xc3b6a2)];
+      roadColors=[new THREE.Color(0xc7bba4),new THREE.Color(0xb5aca1),
+                  new THREE.Color(0xdbceae),new THREE.Color(0xa69f91),
+                  new THREE.Color(0xd0c3ac)];
 const roadDirs=[
  {dx:0,dz:-1,bit:1},
  {dx:1,dz:0,bit:2},
@@ -1653,5 +1741,6 @@ if(productionFields()){foodElapsed+=dt*1000;if(foodElapsed>=12000){const batches
   citizenElapsed-=CITIZEN_TICK_MS;citizenCycle()
  }
 }
-autosave+=dt;if(autosave>10){autosave=0;save()}renderer.render(scene,camera)}placeCamera();requestAnimationFrame(animate);
+autosave+=dt;if(autosave>10){autosave=0;save()}oceanClock.value=now*.001;
+ renderer.render(scene,camera)}placeCamera();requestAnimationFrame(animate);
 </script></body></html>
