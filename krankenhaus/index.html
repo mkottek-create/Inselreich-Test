@@ -481,6 +481,7 @@ function syncDeskLimits(){
  deskLimits.minX=-4.60+dx;deskLimits.maxX=-.65+dx;
  deskLimits.minZ=-1.10+dz;deskLimits.maxZ=2.0+dz
 }
+let restoredDeskWorldPosition=null;
 let editingReception=false;
 function deskWithinRoom(hit){
  const rec=roomSpecs.find(r=>r.id==='reception');
@@ -499,6 +500,7 @@ function storeReception(){
 try{
  const layout=JSON.parse(localStorage.getItem(receptionStorageKey)||'null');
  if(layout&&Number.isFinite(layout.x)&&Number.isFinite(layout.z)&&Number.isFinite(layout.rotation)){
+  restoredDeskWorldPosition={x:layout.x,z:layout.z};
   moveReceptionTo(layout.x,layout.z);
   const steps=Math.round(layout.rotation/(Math.PI/2));
   receptionDesk.rotation.y=((steps%4)+4)%4*Math.PI/2
@@ -597,7 +599,7 @@ function moveRoomTo(id,x,z,force=false,relocateContents=true){
  // The registration counter remains independently movable, but follows its room.
  if(id==='reception'&&relocateContents){
   receptionDesk.position.x+=dx;receptionDesk.position.z+=dz;
-  syncDeskLimits();storeReception()
+  syncDeskLimits()
  }
  renderer.shadowMap.needsUpdate=true;
  return true
@@ -651,7 +653,7 @@ function showBuilder(){
 }
 function finishFloorplan(){
  if(!editingFloorplan)return;
- editingFloorplan=false;selectedRoomId=null;saveFloorplan();showBuilder();
+ editingFloorplan=false;selectedRoomId=null;saveFloorplan();storeReception();showBuilder();
  document.getElementById('status').textContent='✅ Grundriss gespeichert! Du kannst die Kamera wieder frei bewegen.'
 }
 floorplanToggle.onclick=()=>{
@@ -665,7 +667,7 @@ floorplanToggle.onclick=()=>{
   distance=Math.max(distance,21);
   placeCamera();
   document.getElementById('status').textContent='🏗️ Raum antippen und ziehen, oder neuen Raum bauen.';
- }else{selectedRoomId=null;saveFloorplan()}
+ }else{selectedRoomId=null;saveFloorplan();storeReception()}
  showBuilder()
 };
 document.getElementById('roomFinish').onclick=finishFloorplan;
@@ -704,9 +706,7 @@ roomDelete.onclick=()=>{
  const i=roomSpecs.findIndex(r=>r.id===selectedRoomId);
  if(i<0)return;
  const r=roomSpecs[i],root=roomGroups.get(r.id);
- if(root){group.remove(root);root.traverse?.(part=>{part.geometry?.dispose?.();if(part.material){
-   for(const material of Array.isArray(part.material)?part.material:[part.material])material.dispose?.()
-  }});}
+ if(root){group.remove(root);root.traverse(part=>{part.geometry?.dispose?.()})}
  roomSpecs.splice(i,1);roomGroups.delete(r.id);selectedRoomId=null;
  renderer.shadowMap.needsUpdate=true;saveFloorplan();showBuilder();
  document.getElementById('status').textContent='🗑 '+r.name+' entfernt.'
@@ -746,9 +746,15 @@ function roomPointerEnd(px,py,state){
    roomHint.textContent='🚫 Hier ist zu wenig Platz. Freie Stelle suchen.'
   }
  }
- saveFloorplan()
+ saveFloorplan();
+ if(state.id==='reception')storeReception()
 }
 applyFloorplanFromStorage();
+// Restore the saved GLOBAL position only after the floorplan has restored the
+// reception room's new bounds. Otherwise old bounds would clamp the desk.
+if(restoredDeskWorldPosition){
+ moveReceptionTo(restoredDeskWorldPosition.x,restoredDeskWorldPosition.z)
+}
 showBuilder();
 
 function snapshot(touches){
@@ -850,7 +856,10 @@ canvas.addEventListener('pointerup',e=>{
 });
 canvas.addEventListener('pointercancel',e=>{if(e.pointerType!=='touch'){
  if(pointer?.mode==='desk')storeReception();
- if(pointer?.mode==='room'||pointer?.mode==='roomTap')saveFloorplan();
+ if(pointer?.mode==='room'||pointer?.mode==='roomTap'){
+  saveFloorplan();
+  if(pointer.id==='reception')storeReception()
+ }
  pointer=null;storeCamera()
 }});
 canvas.addEventListener('wheel',e=>{
