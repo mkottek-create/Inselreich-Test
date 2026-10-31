@@ -327,14 +327,23 @@ function track(parent,x,z,w=.23,d=.24,height=.016){
 }
 // Solid earth/stone supports underneath a doorstep; every stair starts at local ground height.
 // All distances stay within the original building tile.
+// Flat, ground-level entrance paving. The previous steps were floating well
+// above the road surface (.195 world Y), so both entrance and street use one datum.
+const STREET_SURFACE_Y=.195;
 function groundedEntrance(parent,x,frontZ,width,finishHeight,material=stoneDetail){
- const depths=[.075,.080,.090],levels=[.055,Math.max(.09,finishHeight*.68),finishHeight];
- for(let i=0;i<3;i++){
-  const top=levels[i],z=frontZ-i*.061;
-  box(width-i*.025,top,depths[i],material,x,top/2+.002,z,parent)
+ const localY=STREET_SURFACE_Y-parent.position.y;
+ const depth=Math.min(.26,Math.max(.17,frontZ+.07));
+ const midZ=Math.min(.49-depth*.5,frontZ-.035);
+ // Thin paving slab instead of a high staircase.
+ const paving=box(width,.018,depth,material,x,localY-.009,midZ,parent);
+ paving.castShadow=false;
+ // Four narrow stone courses on the same level.
+ for(let i=0;i<4;i++){
+  const px=x+(i-1.5)*width*.235;
+  const stone=box(width*.205,.005,depth*.70,i%2?pebbleLight:pebbleDark,
+   px,localY+.002,midZ,parent);
+  stone.castShadow=false
  }
- // Soft earthen approach, flush with the meadow surface.
- track(parent,x,Math.min(.45,frontZ+.025),width*.92,.13,.013)
 }
 
 function woodshedDecor(parent){
@@ -348,8 +357,8 @@ function embellishHouse(g){
  roofDetails(g,0,0,.91,.84,.70);
  timberX(g,-.31,.42,.357,.17,.29);
  timberX(g,.32,.42,.357,.17,.29);
- track(g,0,.45,.22,.11,.014);
- garden(g,.31,.43,.015);
+ track(g,0,.45,.22,.11,.17);
+ garden(g,.31,.43,.13);
  // Wooden side trellis and roof ornament
  for(let i=0;i<3;i++)box(.024,.25,.03,timber,.36,.26,-.16+i*.13,g);
  box(.22,.025,.035,oakAccent,0,.66,.355,g)
@@ -358,8 +367,8 @@ function embellishFarm(g){
  roofDetails(g,-.095,-.10,.88,.78,.685);
  faceBricks(g,.02,.261,.38,2,.38);
  for(const xx of [-.37,.25])box(.045,.18,.045,oakAccent,xx,.50,.270,g);
- garden(g,-.39,.18,.075);
- track(g,0,.42,.25,.13,.014);
+ garden(g,-.39,.18,.15);
+ track(g,0,.42,.25,.13,.175);
  // A small wooden watering trough and more square hay bundles.
  box(.24,.06,.09,timber,.29,.17,.38,g);
  for(const xx of [-.17,-.04])box(.14,.09,.13,hayGold,xx,.17,-.36,g)
@@ -371,7 +380,7 @@ function embellishLumber(g){
  // Front timber slats and chopping-area chips.
  for(let i=0;i<3;i++)box(.027,.31,.024,timber,-.43+i*.045,.29,-.42,g);
  box(.26,.03,.12,pebbleDark,-.25,.14,.40,g);
- garden(g,.0,.39,.08)
+ garden(g,.0,.39,.13)
 }
 function embellishMarket(g){
  roofDetails(g,0,-.52,1.35,.88,.65);
@@ -381,8 +390,8 @@ function embellishMarket(g){
   for(const dx of [-.09,.09])smallBall(g,.027,marketProduce[xx===0?1:2],xx+dx,.485,.76)
  }
  for(let z=-1;z<=1;z++)for(const xx of [-.45,.45])
-  track(g,xx,z*.25,.20,.18,.119);
- garden(g,-.82,.28,.116);garden(g,.82,.28,.116);
+  track(g,xx,z*.25,.20,.18,.174);
+ garden(g,-.82,.28,.151);garden(g,.82,.28,.151);
  box(.035,.20,.035,timber,0,.86,.47,g)
 }
 function embellishCastle(g){
@@ -425,7 +434,7 @@ function occupied(k){if(roads.has(k)||buildings.has(k)||lumberjacks.has(k)||farm
 
 function addHouse(k){
  if(occupied(k)||!owned.has(k))return;
- const [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.16,z);land.add(g);
+ const [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.025,z);land.add(g);
  // Foundation, warm stucco and exposed timber framing
  box(.85,.105,.84,stoneDetail,0,.05,0,g);
  box(.72,.57,.70,plaster,0,.39,0,g);
@@ -455,9 +464,9 @@ function canMarket(k){const [x,z]=pos(k);return inside(x+1,z+1)&&marketCells(k).
 
 function addMarket(k){
  if(!canMarket(k))return false;
- const [x,z]=pos(k),g=new THREE.Group();g.position.set(x+.5,.165,z+.5);land.add(g);
- box(1.96,.10,1.96,marketStone,0,.04,0,g);
- box(1.83,.018,1.83,stoneDetail,0,.10,0,g);
+ const [x,z]=pos(k),g=new THREE.Group();g.position.set(x+.5,.025,z+.5);land.add(g);
+ box(1.96,.045,1.96,marketStone,0,.140,0,g);
+ box(1.83,.018,1.83,stoneDetail,0,.158,0,g);
  // Permanent merchant hall behind the stalls
  box(1.10,.52,.72,plaster,0,.38,-.52,g);
  for(const xx of [-.53,.53])box(.06,.54,.065,timber,xx,.38,-.16,g);
@@ -471,7 +480,7 @@ function addMarket(k){
  for(let n=0;n<3;n++){
   const xx=-.62+n*.62;
   box(.49,.095,.42,marketWood,xx,.30,.49,g);
-  for(const off of [-.215,.215])box(.046,.51,.048,darkTrim,xx+off,.54,.49,g);
+  for(const off of [-.215,.215])box(.046,.64,.048,darkTrim,xx+off,.48,.49,g);
   const awning=box(.56,.045,.55,canopyColors[n],xx,.80,.49,g);
   for(let stripe=-2;stripe<=2;stripe++){
    box(.085,.012,.565,stripe%2===0?fabricCream:canopyColors[n],xx+stripe*.10,.833,.49,g)
@@ -572,57 +581,58 @@ function addCastle(k){
  const fortress=new THREE.Group();fortress.name='Burganlage';
  while(g.children.length)fortress.add(g.children[0]);
  fortress.scale.set(.72,1,.72);
+ // Courtyard and gate threshold now line up with the street and drawbridge.
+ fortress.position.y=-.11;
  g.add(fortress);
  // Stone basin underneath the moat. Total width is 2.98 (< 3 tiles).
  const moatBed=mat(0x476b68),
        moatWater=new THREE.MeshStandardMaterial({color:0x409dba,roughness:.22,metalness:.14,transparent:true,opacity:.92,side:THREE.DoubleSide}),
        moatSparkle=new THREE.MeshBasicMaterial({color:0xd3f0e7,transparent:true,opacity:.58,depthWrite:false,side:THREE.DoubleSide}),
        bridgeOak=mat(0x916338),bridgeDark=mat(0x603e26),bridgeRope=mat(0xd6b57e);
- box(2.97,.075,2.97,moatBed,0,.037,0,g);
+ box(2.97,.075,2.97,moatBed,0,-.042,0,g);
  // Continuous water ring: two full side channels and front/back connectors.
  for(const side of [-1,1]){
-   box(.405,.033,2.90,moatWater,side*1.274,.104,0,g);
-   box(2.16,.033,.405,moatWater,0,.104,side*1.274,g);
-   // The raised stone edge makes the channel read as a real, deep moat.
-   box(.050,.095,2.94,castleDark,side*1.467,.15,0,g);
-   box(.035,.075,2.94,castleLight,side*1.088,.153,0,g);
-   box(2.94,.095,.050,castleDark,0,.15,side*1.467,g);
-   box(2.16,.075,.035,castleLight,0,.153,side*1.088,g);
+   box(.405,.021,2.90,moatWater,side*1.274,.010,0,g);
+   box(2.16,.021,.405,moatWater,0,.010,side*1.274,g);
+   // Low stone edges now meet the road surface instead of forming a high wall.
+   box(.050,.035,2.94,castleDark,side*1.467,.017,0,g);
+   box(.035,.035,2.94,castleLight,side*1.088,.017,0,g);
+   box(2.94,.035,.050,castleDark,0,.017,side*1.467,g);
+   box(2.16,.035,.035,castleLight,0,.017,side*1.088,g);
  }
  // Bright water reflections, deliberately lightweight on the iPhone.
  for(const [rx,rz] of [[-1.27,-.77],[1.27,-.48],[-1.27,.43],[1.27,.83],[-.71,-1.27],[.73,-1.27],[-.75,1.27],[.82,1.27]]){
    const ripple=new THREE.Mesh(new THREE.RingGeometry(.048,.063,12),moatSparkle);
-   ripple.rotation.x=-Math.PI/2;ripple.position.set(rx,.125,rz);g.add(ripple)
+   ripple.rotation.x=-Math.PI/2;ripple.position.set(rx,.022,rz);g.add(ripple)
  }
- // Drawbridge across the southern/front water channel, exactly aligned with the gate.
- // Wooden sleepers span from the castle's entrance to the outer shore.
- box(.60,.085,.62,bridgeDark,0,.214,1.192,g);
+ // Low, walkable drawbridge: its deck is just 1 cm above the paved road,
+ // rather than floating a quarter unit above the water.
+ box(.60,.024,.62,bridgeDark,0,.025,1.192,g);
  for(let plank=0;plank<8;plank++){
    const z=.945+plank*.075;
-   box(.565,.035,.071,plank%3===0?bridgeOak:timber,0,.263,z,g);
-   for(const edgeX of [-.235,.235])box(.024,.017,.066,bridgeDark,edgeX,.291,z,g)
+   box(.565,.012,.071,plank%3===0?bridgeOak:timber,0,.041,z,g);
+   for(const edgeX of [-.235,.235])box(.024,.007,.066,bridgeDark,edgeX,.052,z,g)
  }
- // Low handrails with posts and taut ropes on both sides.
+ // Rail posts touch the new deck and are attached to it, not floating.
  for(const edgeX of [-.315,.315]){
    for(const z of [.97,1.20,1.425]){
-     box(.058,.33,.058,bridgeDark,edgeX,.38,z,g);
-     smallBall(g,.048,castleLight,edgeX,.57,z)
+     box(.058,.28,.058,bridgeDark,edgeX,.185,z,g);
+     smallBall(g,.044,castleLight,edgeX,.337,z)
    }
-   box(.025,.025,.53,bridgeRope,edgeX,.51,1.198,g);
-   box(.024,.025,.53,bridgeOak,edgeX,.405,1.198,g)
+   box(.025,.025,.53,bridgeRope,edgeX,.30,1.198,g);
+   box(.024,.025,.53,bridgeOak,edgeX,.215,1.198,g)
  }
- // Real stone bridge abutments rest on the moat bed at BOTH ends of the bridge.
- // They support the elevated wood deck and connect it to the castle threshold.
- box(.68,.245,.29,castleStone,0,.123,.955,g);
- box(.74,.245,.19,castleStone,0,.123,1.404,g);
- box(.68,.043,.18,castleLight,0,.265,1.405,g);
- box(.62,.055,.08,castleLight,0,.190,1.455,g);
- box(.64,.040,.18,castlePath,0,.175,.815,g);
- box(.62,.080,.18,castleLight,0,.210,.895,g);
- // Visible supporting timber braces under the bridge, without hiding the water.
+ // Flush, short stone abutments under both bridge ends.
+ box(.68,.042,.29,castleStone,0,.013,.955,g);
+ box(.74,.042,.19,castleStone,0,.013,1.404,g);
+ box(.68,.017,.16,castleLight,0,.036,1.405,g);
+ box(.62,.017,.085,castleLight,0,.035,1.455,g);
+ box(.64,.025,.18,castlePath,0,.030,.815,g);
+ box(.62,.030,.18,castleLight,0,.025,.895,g);
+ // Small supports remain visible below the wooden deck.
  for(const xx of [-.235,.235]){
-  box(.052,.17,.09,bridgeDark,xx,.16,1.05,g);
-  box(.052,.17,.09,bridgeDark,xx,.16,1.33,g)
+  box(.052,.055,.09,bridgeDark,xx,.004,1.05,g);
+  box(.052,.055,.09,bridgeDark,xx,.004,1.33,g)
  }
  castles.set(k,g);save();return true
 }
@@ -633,11 +643,11 @@ let wood=0,woodElapsed=0;
 function addLumberjack(k){
  if(!owned.has(k)||occupied(k))return false;
  const [x,z]=pos(k),g=new THREE.Group();
- g.position.set(x,.16,z);land.add(g);
+ g.position.set(x,.035,z);land.add(g);
  // Eigener kleiner Holzfällerhof mit deutlich erkennbarer Holzhütte.
  const logEnd=mat(0xd6aa6b),bark=mat(0x765139),roofMoss=mat(0x657b4e),
        plank=mat(0xb88b59),grassClump=mat(0x568a4c),iron=mat(0x777c78);
- box(.86,.085,.86,stoneDetail,0,.042,0,g);
+ box(.86,.038,.86,stoneDetail,0,.135,0,g);
  // Hütte aus warmem Holz und hellem Lehmfachwerk.
  box(.52,.47,.49,plaster,-.19,.31,-.17,g);
  box(.535,.075,.51,timber,-.19,.11,-.17,g);
@@ -717,13 +727,13 @@ let food=0,foodElapsed=0;
 
 function addFarm(k){
  if(!owned.has(k)||occupied(k))return false;
- const [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.16,z);land.add(g);
+ const [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.015,z);land.add(g);
  // A compact but clearly readable farmyard on a single island tile.
  const barnBoards=mat(0xb85d43),barnBeams=mat(0x64432f),warmPlaster=mat(0xeed5aa),
        barnRoof=mat(0x98513b),roofEdge=mat(0x6e382b),farmGravel=mat(0xbaa888),
        grainBrown=mat(0x8b6540),feedGreen=mat(0x6d9552);
- box(.90,.065,.90,farmGravel,0,.032,0,g);
- box(.77,.023,.65,stoneDetail,-.07,.074,-.095,g);
+ box(.90,.040,.90,farmGravel,0,.154,0,g);
+ box(.77,.016,.65,stoneDetail,-.07,.177,-.095,g);
  // Red timber-framed barn, in front of a separate little grain silo.
  box(.69,.60,.65,barnBoards,-.095,.38,-.10,g);
  for(const xx of [-.44,.25]){
@@ -1029,7 +1039,7 @@ function closeEdit(){editMenu.classList.remove('show');selected=null}
 function showEdit(info){moving=null;selected=info;clearPreview();editMenu.classList.add('show');document.getElementById('editTitle').textContent=(info.type==='castle'?'🏰 Burg':info.type==='market'?'🛒 Markt':info.type==='lumber'?'🪓 Holzfäller':info.type==='farm'?'🚜 Bauernhof':info.type==='field'?'🌾 Weizenfeld':'🏠 Haus')+' bearbeiten';status.textContent='🏠 Gebäude ausgewählt – Verschieben oder Löschen?';if(navigator.vibrate)navigator.vibrate(35)}
 function mapOf(type){return type==='house'?buildings:type==='market'?markets:type==='castle'?castles:type==='lumber'?lumberjacks:type==='farm'?farms:fields}
 function relocate(from,to){const targetCells=from.type==='castle'?castleCells(to):from.type==='market'?marketCells(to):[to];if(!targetCells.every(k=>owned.has(k)&&!roads.has(k)&&(!at(k)||(at(k).type===from.type&&at(k).anchor===from.anchor)))){status.textContent=from.type==='castle'?'❌ Burg braucht 3×3 freie Felder.':from.type==='market'?'❌ Der Markt braucht vier freie Felder (2×2).':'❌ Bitte einen freien Bauplatz wählen.';return false}
-if(from.type==='field'){const [x,z]=pos(to);const touches=neighbors(x,z).some(([a,b])=>farms.has(key(a,b))||(from.type==='farm'&&from.anchor===key(a,b)));if(!touches){status.textContent='🌾 Das Weizenfeld muss neben einem Bauernhof liegen.';return false}}const map=mapOf(from.type),g=map.get(from.anchor);if(!g)return false;map.delete(from.anchor);map.set(to,g);const [x,z]=pos(to);g.position.set(x+(from.type==='castle'?1:from.type==='market'?.5:0),.16,z+(from.type==='castle'?1:from.type==='market'?.5:0));save();status.textContent='✅ Gebäude verschoben! Zum Bearbeiten wieder länger gedrückt halten.';return true}
+if(from.type==='field'){const [x,z]=pos(to);const touches=neighbors(x,z).some(([a,b])=>farms.has(key(a,b))||(from.type==='farm'&&from.anchor===key(a,b)));if(!touches){status.textContent='🌾 Das Weizenfeld muss neben einem Bauernhof liegen.';return false}}const map=mapOf(from.type),g=map.get(from.anchor);if(!g)return false;map.delete(from.anchor);map.set(to,g);const [x,z]=pos(to);const by={house:.025,market:.025,lumber:.035,farm:.015,castle:.16,field:.16};g.position.set(x+(from.type==='castle'?1:from.type==='market'?.5:0),by[from.type]??.16,z+(from.type==='castle'?1:from.type==='market'?.5:0));save();status.textContent='✅ Gebäude verschoben! Zum Bearbeiten wieder länger gedrückt halten.';return true}
 document.getElementById('move').onclick=()=>{if(!selected)return;moving=selected;closeEdit();modeBuild=false;buildPanel.hidden=true;updateTools();status.textContent='↔ Verschieben: Tippe auf ein FREIES grünes Feld. Markt braucht 2×2, Burg braucht 3×3 freie Felder.'};
 document.getElementById('demolish').onclick=()=>{if(!selected)return;const t=selected;if(confirm('Dieses Gebäude wirklich löschen?')){const m=mapOf(t.type),g=m.get(t.anchor);if(g){land.remove(g);m.delete(t.anchor);save();status.textContent='🗑 Gebäude gelöscht. Der Bauplatz ist wieder frei.'}}closeEdit()};
 document.getElementById('editClose').onclick=closeEdit;
