@@ -35,6 +35,8 @@
 #peopleGoal{font-size:12px}
 
 /* Inselreich visual identity: warm parchment, forest greens and clear mobile controls. */
+html,body{overscroll-behavior-y:none}
+#game,#game canvas{touch-action:none!important;overscroll-behavior:contain;-webkit-user-select:none;user-select:none}
 :root{--forest:#355d43;--forest-deep:#214535;--cream:#f5f0de;--gold:#d8b875;--line:#c9d0b4}
 body{background:linear-gradient(180deg,#d8e9d1 0%,#eff0df 65%,#e7ead6 100%);color:#263e31}
 header{background:linear-gradient(135deg,#fff6db,#e4ecd5 72%,#d3e9df);
@@ -1833,10 +1835,10 @@ function applyGestureMotion(){
  const dx=point.x-down.lastX,dy=point.y-down.lastY;
  if(dx||dy){panCameraPixels(dx,dy);down.lastX=point.x;down.lastY=point.y}
 }
-canvas.addEventListener('pointerdown',e=>{
+function handleGamePointerDown(e){
  points.set(e.pointerId,{x:e.clientX,y:e.clientY});
  gesturePointerCount=points.size;
- if(canvas.setPointerCapture)canvas.setPointerCapture(e.pointerId);
+ if(!e.isSyntheticTouch&&canvas.setPointerCapture)canvas.setPointerCapture(e.pointerId);
  cancelHold();
  if(points.size>=2){
   // Apply the last single-finger movement before switching gesture modes.
@@ -1864,8 +1866,8 @@ canvas.addEventListener('pointerdown',e=>{
   }
  }
  e.preventDefault()
-});
-canvas.addEventListener('pointermove',e=>{
+}
+function handleGamePointerMove(e){
  const point=points.get(e.pointerId);
  if(!point)return;
  point.x=e.clientX;point.y=e.clientY;
@@ -1890,8 +1892,8 @@ canvas.addEventListener('pointermove',e=>{
   down.lastX=e.clientX;down.lastY=e.clientY
  }
  e.preventDefault()
-});
-canvas.addEventListener('pointerup',e=>{
+}
+function handleGamePointerUp(e){
  cancelHold();
  const released=points.get(e.pointerId);
  if(released){released.x=e.clientX;released.y=e.clientY;applyGestureMotion()}
@@ -1928,13 +1930,59 @@ canvas.addEventListener('pointerup',e=>{
  }
  if(roadStrokeDirty){save();roadStrokeDirty=false}
  down=null;if(points.size===0)ignoreClick=false
-});
-canvas.addEventListener('pointercancel',e=>{
+}
+function handleGamePointerCancel(e){
  cancelHold();points.delete(e.pointerId);
  gesturePointerCount=points.size;pinch=null;down=null;ignoreClick=false;
  if(roadStrokeDirty){roadStrokeDirty=false;save()}
  if(gesturePointerCount===0&&pendingGestureSave){pendingGestureSave=false;save()}
+}
+// iOS Safari sometimes steals vertical swipes for page scrolling and sends
+// pointercancel. Use raw Touch Events on the game canvas and prevent browser
+// handling at the source. Mouse/stylus retain native Pointer Events.
+let gameTouchInput=false;
+canvas.addEventListener('pointerdown',e=>{
+ if(!gameTouchInput||e.pointerType!=='touch')handleGamePointerDown(e)
 });
+canvas.addEventListener('pointermove',e=>{
+ if(!gameTouchInput||e.pointerType!=='touch')handleGamePointerMove(e)
+});
+canvas.addEventListener('pointerup',e=>{
+ if(!gameTouchInput||e.pointerType!=='touch')handleGamePointerUp(e)
+});
+canvas.addEventListener('pointercancel',e=>{
+ if(!gameTouchInput||e.pointerType!=='touch')handleGamePointerCancel(e)
+});
+const touchAsPointer=t=>({
+ pointerId:t.identifier+1000,clientX:t.clientX,clientY:t.clientY,
+ isSyntheticTouch:true,preventDefault(){}
+});
+canvas.addEventListener('touchstart',e=>{
+ // Reset native touch pointer data on the first touch of a Safari stream,
+ // since some iOS releases emit pointerdown BEFORE touchstart.
+ if(!gameTouchInput){
+  gameTouchInput=true;
+  cancelHold();points.clear();pinch=null;down=null;gesturePointerCount=0;
+  ignoreClick=false
+ }
+ for(const t of e.changedTouches)handleGamePointerDown(touchAsPointer(t));
+ e.preventDefault()
+},{passive:false});
+canvas.addEventListener('touchmove',e=>{
+ if(!gameTouchInput)return;
+ for(const t of e.changedTouches)handleGamePointerMove(touchAsPointer(t));
+ e.preventDefault()
+},{passive:false});
+canvas.addEventListener('touchend',e=>{
+ if(!gameTouchInput)return;
+ for(const t of e.changedTouches)handleGamePointerUp(touchAsPointer(t));
+ e.preventDefault()
+},{passive:false});
+canvas.addEventListener('touchcancel',e=>{
+ if(!gameTouchInput)return;
+ for(const t of e.changedTouches)handleGamePointerCancel(touchAsPointer(t));
+ e.preventDefault()
+},{passive:false});
 function updateTools(){
  viewButton.style.background=!modeBuild?'#416d3e':'#879c79';
  openBuildButton.style.background=modeBuild?'#416d3e':'#879c79'
