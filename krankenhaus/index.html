@@ -34,6 +34,12 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
 .room strong{font-size:12px;display:block}
 .room p{font-size:11px;line-height:1.5;margin:5px 0 0;color:#638084}
 .note{color:#668289;font-size:12px;line-height:1.55;margin:13px 2px 0}
+#layoutTools{display:flex;gap:8px;flex-wrap:wrap;padding:10px 14px;background:#f9fffb;border-bottom:1px solid #d4e6e1}
+#layoutTools button{background:#276d75;color:#fff;border:0;border-radius:12px;font-size:13px;font-weight:800;padding:12px 13px;min-height:44px;cursor:pointer;flex:1}
+#layoutTools button[hidden]{display:none!important}
+#editReception.active{background:#c28637}
+#finishReception{background:#32795a!important}
+#rotateReception{background:#497f88!important}
 @media (min-width:760px){#stage{height:72vh;min-height:520px}header{padding:18px 24px}section{padding:20px 24px}#topLegend{left:20px;top:20px}#gestureHint{bottom:20px}}
 @media (max-width:350px){.rooms{grid-template-columns:1fr 1fr}.room{min-height:90px}#gestureHint{font-size:10px}}
 </style>
@@ -46,15 +52,20 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
  <div id="roomInfo" hidden role="status" aria-live="polite"><strong id="roomTitle"></strong><span id="roomDescription"></span></div>
  <div id="gestureHint">☝️ Verschieben &nbsp;·&nbsp; ✌️ Zoomen & Drehen</div>
 </div>
-<div id="status">✨ Empfang verbessert: Den Anmeldungstresen siehst du jetzt gleich hinter dem Eingang.</div>
+<div id="status" role="status" aria-live="polite">🏥 Die Anmeldung steht jetzt links im Raum. Du kannst sie selbst verschieben.</div>
+<div id="layoutTools" aria-label="Einrichtungsmodus">
+ <button id="editReception" type="button">🛠️ Anmeldung verschieben</button>
+ <button id="rotateReception" type="button" hidden>🔄 Tresen drehen</button>
+ <button id="finishReception" type="button" hidden>✓ Fertig</button>
+</div>
 <section>
  <h2>Das ist bereits gebaut</h2>
  <div class="rooms">
   <div class="room"><span class="symbol">🚪</span><strong>Eingang</strong><p>Vorne mittig, mit Glastür und Eingangsweg.</p></div>
-  <div class="room"><span class="symbol">🧑‍💻</span><strong>Empfang</strong><p>Direkt dahinter: gut sichtbarer Tresen, zwei PCs und Anmeldungsschild.</p></div>
+  <div class="room"><span class="symbol">🧑‍💻</span><strong>Empfang</strong><p>Jetzt links im Raum, mit verschiebbarem Tresen, PCs und Anmeldungsschild.</p></div>
   <div class="room"><span class="symbol">🪑</span><strong>Wartezimmer</strong><p>Rechts daneben, mit Sitzplätzen und Einrichtung.</p></div>
  </div>
- <p class="note">Du kannst die Ansicht schon frei verschieben, heranzoomen und drehen – ganz ohne Kameraknöpfe. Tippe auf einen Bereich, um ihn zu erkunden. Weitere Abteilungen kommen später dazu. Dieses Spiel ist unabhängig von Inselreich.</p>
+ <p class="note">Mit „🛠️ Anmeldung verschieben“ kannst du den Empfang selbst im linken Zimmer platzieren und drehen. Außerhalb des Einrichtungsmodus lässt sich die Ansicht frei verschieben, zoomen und drehen – ohne Kameraknöpfe. Tippe auf einen Bereich, um ihn zu erkunden. Weitere Abteilungen kommen später dazu. Dieses Spiel ist unabhängig von Inselreich.</p>
 </section>
 </main>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"}}</script>
@@ -235,7 +246,11 @@ for(const x of [-3.73,.43]){
  box(.055,.035,3.40,x,.194,1.28,tealLight,group,false)
 }
 box(4.28,.038,.052,-1.65,.194,2.94,tealLight,group,false);
-// Entrance-facing L-shaped desk, placed immediately behind the glass doors.
+// All reception furniture is captured in one movable 3D group without altering
+// the room walls/floor. Saved position is independent of the camera and Inselreich.
+const deskStartIndex=group.children.length;
+const deskOriginalX=-1.40,deskOriginalZ=2.02;
+// Entrance-facing L-shaped desk, movable freely within the left room.
 const deskFront=mat(0x197982),deskPanel=mat(0x2d9295),trimBrass=mat(0xe5bd75,.56,.22),
       creamCounter=mat(0xf9f4e8,.33);
 box(3.35,.72,.72,-1.40,.60,2.02,deskFront);
@@ -279,6 +294,17 @@ for(const z of [3.12,3.70])
 // Two visitor chairs behind the desk and one visible receptionist.
 for(const x of [-2.12,-.72])lobbyChair(x,.75,Math.PI,chairTeal);
 visitor(-1.53,.88,mat(0x78bcb3),.78,Math.PI);
+// Reparent existing desk, signs, chairs and receptionist as a single movable unit.
+const receptionDesk=new THREE.Group();
+receptionDesk.name='receptionDesk';
+for(const part of group.children.slice(deskStartIndex)){
+ group.remove(part);
+ part.position.x-=deskOriginalX;
+ part.position.z-=deskOriginalZ;
+ receptionDesk.add(part)
+}
+receptionDesk.position.set(-3.50,0,.90); // Default: registration on the left.
+group.add(receptionDesk);
 plant(-4.97,2.85,.80);
 plant(.63,-2.65,.72);
 // Waiting room: two neat bench rows, reading corner, water dispenser and TV.
@@ -301,7 +327,7 @@ box(.96,.70,.09,5.28,1.38,-3.20,black);box(.84,.57,.096,5.28,1.40,-3.13,screenMa
 cylinder(.24,.24,.08,-1.4,1.35,-3.24,white,20);
 for(const [xx,zz] of [[-5.4,-1.9],[-4.9,-2.52],[1.9,-2.55],[5.9,3.7]])
  box(.19,.03,.16,xx,.205,zz,mat(0xbad2cf),group,false);
-roomLabel('ANMELDUNG',-1.40,2.48,1.25,2.58);
+// The physical ANMELDUNG sign now moves with its desk; no duplicated floating label.
 roomLabel('WARTEZIMMER',3.65,2.18,-2.45,2.75);
 roomLabel('EINGANG',0,2.46,5.24,1.85);
 // Outdoor detail to suggest future expansion, without prematurely adding new departments.
@@ -316,12 +342,16 @@ const bounds=[
 ];
 const raycaster=new THREE.Raycaster();
 const onGround=new THREE.Plane(new THREE.Vector3(0,1,0),-.13);
-function inspectRoom(px,py){
+function groundHit(px,py){
  const rect=renderer.domElement.getBoundingClientRect();
  const mouse=new THREE.Vector2((px-rect.left)/rect.width*2-1,-(py-rect.top)/rect.height*2+1);
  raycaster.setFromCamera(mouse,camera);
  const hit=new THREE.Vector3();
- if(!raycaster.ray.intersectPlane(onGround,hit))return;
+ return raycaster.ray.intersectPlane(onGround,hit)?hit:null
+}
+function inspectRoom(px,py){
+ const hit=groundHit(px,py);
+ if(!hit)return;
  const room=bounds.find(r=>hit.x>=r.x1&&hit.x<=r.x2&&hit.z>=r.z1&&hit.z<=r.z2);
  if(!room)return;
  document.getElementById('roomTitle').textContent=room.name;
@@ -359,6 +389,92 @@ function pan(dx,dy){
  focus.z+=Math.sin(orbit)*dx*p-Math.cos(orbit)*dy*v;
  placeCamera()
 }
+
+/* Reception setup mode: one finger on the left room moves the whole reception
+   desk; the other ground still pans. Two fingers retain free zoom and orbit.
+   All layout data use a separate save key, never the Inselreich save. */
+const receptionStorageKey='klinik-am-park-anmeldung-v1';
+const deskLimits={minX:-4.60,maxX:-.65,minZ:-1.10,maxZ:2.0};
+let editingReception=false;
+function deskWithinRoom(hit){
+ return hit&&hit.x>-6.55&&hit.x<1.35&&hit.z>-3.35&&hit.z<4.30
+}
+function moveReceptionTo(x,z){
+ if(!Number.isFinite(x)||!Number.isFinite(z))return;
+ receptionDesk.position.x=clamp(x,deskLimits.minX,deskLimits.maxX);
+ receptionDesk.position.z=clamp(z,deskLimits.minZ,deskLimits.maxZ)
+}
+function storeReception(){
+ try{localStorage.setItem(receptionStorageKey,JSON.stringify({
+  x:receptionDesk.position.x,z:receptionDesk.position.z,rotation:receptionDesk.rotation.y
+ }))}catch(e){}
+}
+try{
+ const layout=JSON.parse(localStorage.getItem(receptionStorageKey)||'null');
+ if(layout&&Number.isFinite(layout.x)&&Number.isFinite(layout.z)&&Number.isFinite(layout.rotation)){
+  moveReceptionTo(layout.x,layout.z);
+  const steps=Math.round(layout.rotation/(Math.PI/2));
+  receptionDesk.rotation.y=((steps%4)+4)%4*Math.PI/2
+ }
+}catch(e){}
+const editReceptionBtn=document.getElementById('editReception');
+const rotateReceptionBtn=document.getElementById('rotateReception');
+const finishReceptionBtn=document.getElementById('finishReception');
+const gestureHint=document.getElementById('gestureHint');
+function updateReceptionEditor(){
+ editReceptionBtn.classList.toggle('active',editingReception);
+ editReceptionBtn.textContent=editingReception?'🛠️ Einrichten läuft':'🛠️ Anmeldung verschieben';
+ rotateReceptionBtn.hidden=!editingReception;
+ finishReceptionBtn.hidden=!editingReception;
+ gestureHint.textContent=editingReception
+  ?'☝️ Im linken Raum ziehen oder antippen · ✌️ Zoom & Drehen'
+  :'☝️ Verschieben · ✌️ Zoomen & Drehen';
+}
+editReceptionBtn.onclick=()=>{
+ editingReception=!editingReception;
+ if(editingReception){
+  document.getElementById('roomInfo').hidden=true;
+  document.getElementById('status').textContent='🛠️ Tippe im linken Raum auf den Wunschplatz oder ziehe den Tresen dorthin.';
+  focus.set(-2.4,.1,.6);
+  distance=Math.min(distance,15.7);
+  placeCamera()
+ }else{
+  storeReception();
+  document.getElementById('status').textContent='✅ Neue Position der Anmeldung gespeichert.'
+ }
+ updateReceptionEditor()
+};
+rotateReceptionBtn.onclick=()=>{
+ if(!editingReception)return;
+ receptionDesk.rotation.y=(receptionDesk.rotation.y+Math.PI/2)%(Math.PI*2);
+ storeReception();
+ document.getElementById('status').textContent='🔄 Anmeldung um 90° gedreht. Du kannst sie weiter verschieben.'
+};
+finishReceptionBtn.onclick=()=>{
+ editingReception=false;
+ storeReception();
+ updateReceptionEditor();
+ document.getElementById('status').textContent='✅ Anmeldung gespeichert. Du kannst die Karte wieder normal verschieben.'
+};
+updateReceptionEditor();
+function startDeskDrag(px,py){
+ if(!editingReception)return null;
+ const hit=groundHit(px,py);
+ if(!deskWithinRoom(hit))return null;
+ return {mode:'desk',x:px,y:py,startX:px,startY:py,moved:false,
+         offsetX:receptionDesk.position.x-hit.x,
+         offsetZ:receptionDesk.position.z-hit.z}
+}
+function moveDeskDrag(px,py,state){
+ const hit=groundHit(px,py);
+ if(!hit)return;
+ moveReceptionTo(hit.x+state.offsetX,hit.z+state.offsetZ)
+}
+function placeDeskByTap(px,py){
+ const hit=groundHit(px,py);
+ if(deskWithinRoom(hit))moveReceptionTo(hit.x,hit.z)
+}
+
 function snapshot(touches){
  const a=touches[0],b=touches[1];
  return {midX:(a.clientX+b.clientX)/2,midY:(a.clientY+b.clientY)/2,
@@ -371,7 +487,8 @@ function startTouch(e){
  if(e.touches.length>=2){touchState={mode:2,...snapshot(e.touches)}}
  else if(e.touches.length===1){
   const t=e.touches[0];
-  touchState={mode:1,x:t.clientX,y:t.clientY,startX:t.clientX,startY:t.clientY,moved:false}
+  touchState=startDeskDrag(t.clientX,t.clientY)||
+   {mode:1,x:t.clientX,y:t.clientY,startX:t.clientX,startY:t.clientY,moved:false}
  }
 }
 function moveTouch(e){
@@ -388,7 +505,10 @@ function moveTouch(e){
   touchState={mode:2,...n};placeCamera();
  }else if(e.touches.length===1){
   const t=e.touches[0];
-  if(touchState.mode===1){
+  if(touchState.mode==='desk'){
+   if(Math.hypot(t.clientX-touchState.startX,t.clientY-touchState.startY)>6)touchState.moved=true;
+   if(touchState.moved)moveDeskDrag(t.clientX,t.clientY,touchState)
+  }else if(touchState.mode===1){
    if(Math.hypot(t.clientX-touchState.startX,t.clientY-touchState.startY)>7)touchState.moved=true;
    pan(t.clientX-touchState.x,t.clientY-touchState.y);
    touchState.x=t.clientX;touchState.y=t.clientY
@@ -403,7 +523,12 @@ function endTouch(e){
  if(e.touches.length===1){
   const t=e.touches[0];touchState={mode:1,x:t.clientX,y:t.clientY,startX:t.clientX,startY:t.clientY,moved:true};return
  }
- if(touchState?.mode===1&&!touchState.moved&&e.changedTouches.length===1){
+ if(touchState?.mode==='desk'&&e.changedTouches.length===1){
+  if(!touchState.moved){
+   const t=e.changedTouches[0];placeDeskByTap(t.clientX,t.clientY)
+  }
+  storeReception()
+ }else if(touchState?.mode===1&&!touchState.moved&&e.changedTouches.length===1){
   const t=e.changedTouches[0];inspectRoom(t.clientX,t.clientY)
  }
  touchState=null;storeCamera()
@@ -416,24 +541,33 @@ canvas.addEventListener('touchcancel',endTouch,{passive:false});
 let pointer=null;
 canvas.addEventListener('pointerdown',e=>{
  if(e.pointerType==='touch')return;
- pointer={id:e.pointerId,x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,
+ pointer=startDeskDrag(e.clientX,e.clientY)||
+ {id:e.pointerId,x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,
           moved:false,rotate:e.button===2};
+ pointer.id=e.pointerId;
  canvas.setPointerCapture(e.pointerId);e.preventDefault()
 });
 canvas.addEventListener('pointermove',e=>{
  if(e.pointerType==='touch'||!pointer||pointer.id!==e.pointerId)return;
  const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;
  if(Math.hypot(e.clientX-pointer.startX,e.clientY-pointer.startY)>6)pointer.moved=true;
- if(pointer.rotate){orbit-=dx*.009;elevation=clamp(elevation+dy*.007,.55,1.28);placeCamera()}
+ if(pointer.mode==='desk')moveDeskDrag(e.clientX,e.clientY,pointer);
+ else if(pointer.rotate){orbit-=dx*.009;elevation=clamp(elevation+dy*.007,.55,1.28);placeCamera()}
  else pan(dx,dy);
  pointer.x=e.clientX;pointer.y=e.clientY
 });
 canvas.addEventListener('pointerup',e=>{
  if(e.pointerType==='touch'||!pointer||pointer.id!==e.pointerId)return;
- if(!pointer.moved)inspectRoom(e.clientX,e.clientY);
+ if(pointer.mode==='desk'){
+  if(!pointer.moved)placeDeskByTap(e.clientX,e.clientY);
+  storeReception()
+ }else if(!pointer.moved)inspectRoom(e.clientX,e.clientY);
  pointer=null;storeCamera()
 });
-canvas.addEventListener('pointercancel',e=>{if(e.pointerType!=='touch'){pointer=null;storeCamera()}});
+canvas.addEventListener('pointercancel',e=>{if(e.pointerType!=='touch'){
+ if(pointer?.mode==='desk')storeReception();
+ pointer=null;storeCamera()
+}});
 canvas.addEventListener('wheel',e=>{
  e.preventDefault();distance=clamp(distance*Math.exp(e.deltaY*.001),8,35);placeCamera();storeCamera()
 },{passive:false});
