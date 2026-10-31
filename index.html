@@ -2,6 +2,18 @@
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Inselreich – Spielbare Testversion</title><style>
 *{box-sizing:border-box}body{margin:0;background:#deebca;font-family:-apple-system,system-ui,sans-serif;color:#263f2e}header{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;background:#f3f8e9}h1{margin:0;font-size:22px}.tag{font-size:12px;background:#e0edd0;padding:8px;border-radius:999px;font-weight:700}#game{height:72dvh;min-height:390px;position:relative;touch-action:none;background:#c5dbae}canvas{display:block;width:100%;height:100%;touch-action:none}#notice{position:absolute;bottom:12px;left:12px;right:12px;background:#fffffff0;border-radius:12px;padding:12px;font-size:13px;text-align:center;pointer-events:none}footer{padding:14px;display:flex;flex-direction:column;gap:9px}.buttons{display:flex;flex-wrap:wrap;gap:9px}.buttons button{min-width:40%;flex:1}button{border:0;border-radius:12px;background:#416d3e;color:white;padding:14px 12px;font-weight:700;flex:1;font-size:14px}button.secondary{background:#fff;color:#31552e}p{font-size:13px;color:#4f6a4c;margin:0;line-height:1.5}
 #buildPanel{background:#f4f8ec;padding:9px;border-radius:13px}#buildPanel[hidden],#placePanel[hidden]{display:none!important}.categoryRow,.itemRow,#placePanel{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px}.categoryRow button,.itemRow button{padding:11px 5px;font-size:12px;flex:1;min-width:42%}.categoryRow button.active{background:#31562d}.itemRow button[hidden]{display:none}#placePanel{align-items:center;background:#eff5dd;padding:9px;border-radius:12px}#placePanel span{flex:1;font-size:13px;font-weight:700}#placePanel button{padding:11px;flex:0 0 auto;font-size:12px}#cancelPlace{background:#7b8e70}.resetButton{width:100%;margin-top:10px}.expansionButton{width:100%;flex:none;background:#537c42;border:2px solid #385b36;box-shadow:0 3px 9px #213c2633;font-size:15px;padding:15px 12px}.expansionButton:disabled{background:#a9b7a1;color:#f4f5ef;border-color:#a9b7a1;box-shadow:none;opacity:.78}
+#buildingInfo{position:absolute;z-index:16;bottom:12px;left:10px;right:10px;padding:14px;background:#fffcf2;border:2px solid #6e915f;border-radius:16px;box-shadow:0 12px 36px #19342186;display:flex;flex-direction:column;gap:10px;max-height:min(72%,365px);overflow-y:auto}
+#buildingInfo[hidden]{display:none!important}
+.infoHeading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.infoHeading strong{font-size:18px;color:#294b30}
+#infoClose{flex:0 0 auto;background:#e6ecd9;color:#37523b;padding:7px 11px;font-size:17px}
+#infoSubtitle{font-size:12px;color:#66805c;font-weight:600}
+.infoStats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.infoStats>div{display:flex;flex-direction:column;gap:4px;background:#e9f1df;padding:11px;border-radius:11px}
+.infoStats span{font-size:12px;color:#58734d}
+.infoStats strong{font-size:16px;color:#2b4b32}
+#infoDetails{font-size:13px;line-height:1.45;color:#37543a}
+#infoEdit{flex:none;width:100%;background:#517b4c;font-size:13px;padding:11px}
 #editMenu{position:absolute;z-index:15;bottom:12px;left:12px;right:12px;padding:15px;background:#fffef5;border:2px solid #638c59;border-radius:18px;display:none;box-shadow:0 12px 36px #1c362d90;flex-wrap:wrap;gap:9px;align-items:stretch}#editMenu.show{display:flex}#editMenu strong{width:100%;font-size:17px}#editMenu p{width:100%;font-size:12px;color:#456044;margin:0 0 3px}#editMenu button{padding:13px;font-size:14px;min-width:36%}#demolish{background:#b34e44}#editClose{background:#829079}canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 #mapTools{position:absolute;top:12px;right:10px;z-index:7;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none}
 #mapTools button{pointer-events:auto;flex:none;min-width:0;max-width:152px;padding:10px 12px;font-size:12px;background:#fffef4;color:#29442c;border:2px solid #74956e;box-shadow:0 3px 11px #21372135}
@@ -19,7 +31,13 @@
 </style></head><body>
 <header><h1>🏝️ Inselreich 3D</h1><span class="tag">🌲 <strong id="woodCount">0</strong> · 🌾 <strong id="foodCount">0</strong></span></header>
 <div id="cityPulse"><span>👥 <strong id="peopleCount">0</strong> Einwohner</span><span>😊 <strong id="happyCount">0</strong>% zufrieden</span><span>🏡 Dorfzeit</span></div>
-<div id="game"><div id="mapTools"><span class="mapHint">✨ NEU: Karte bewegen</span><button id="panMode">🖐 Karte verschieben</button><button id="centerCamera">⌖ Kartenmitte</button><button id="overviewCamera">🔎 Weit raus</button></div><div id="editMenu" role="dialog" aria-label="Gebäude bearbeiten"><strong id="editTitle">Gebäude</strong><p>Was möchtest du mit diesem Gebäude machen?</p><button id="move">↔ Verschieben</button><button id="demolish">🗑 Löschen</button><button id="editClose">✕ Abbrechen</button></div><div id="notice">🏠 Gebäude länger gedrückt halten: ↔ Verschieben oder 🗑 Löschen</div></div>
+<div id="game"><div id="mapTools"><span class="mapHint">✨ NEU: Karte bewegen</span><button id="panMode">🖐 Karte verschieben</button><button id="centerCamera">⌖ Kartenmitte</button><button id="overviewCamera">🔎 Weit raus</button></div><div id="buildingInfo" role="dialog" aria-label="Gebäudeinformationen" hidden>
+  <div class="infoHeading"><strong id="infoTitle">🏠 Gebäude</strong><button id="infoClose" aria-label="Gebäudeinformationen schließen">✕</button></div>
+  <p id="infoSubtitle">Gebäudeübersicht</p>
+  <div class="infoStats"><div><span id="infoKey1"></span><strong id="infoValue1"></strong></div><div><span id="infoKey2"></span><strong id="infoValue2"></strong></div></div>
+  <p id="infoDetails"></p>
+  <button id="infoEdit">↔ Verschieben / 🗑 Löschen</button>
+</div><div id="editMenu" role="dialog" aria-label="Gebäude bearbeiten"><strong id="editTitle">Gebäude</strong><p>Was möchtest du mit diesem Gebäude machen?</p><button id="move">↔ Verschieben</button><button id="demolish">🗑 Löschen</button><button id="editClose">✕ Abbrechen</button></div><div id="notice">👆 Gebäude antippen: Infos ansehen · länger drücken: Verschieben oder Löschen</div></div>
 <footer><div class="buttons"><button id="view">👁️ Anschauen</button><button id="openBuild">🔨 Bauen</button></div>
 <button id="expandIsland" class="expansionButton">🌿 Insel erweitern</button>
 <section id="citizenPanel" aria-label="Bewohner und Bedürfnisse">
@@ -35,7 +53,7 @@
 
 <div id="buildPanel" hidden><div class="categoryRow"><button data-cat="wohnen">🏠 Wohnen</button><button data-cat="land">🌾 Landwirtschaft</button><button data-cat="prod">🌲 Produktion</button><button data-cat="shop">🛒 Geschäfte</button><button data-cat="burg">🏰 Burgen</button><button data-cat="wege">🛤️ Straßen</button></div><div class="itemRow"><button id="build">🏠 Haus</button><button id="farm">🚜 Bauernhof</button><button id="field">🌾 Weizenfeld</button><button id="lumber">🪓 Holzfäller</button><button id="market">🛒 Markt 2×2</button><button id="castle">🏰 Burg 3×3</button><button id="road">🪨 Steinweg verlegen</button><button id="roadErase">🧹 Straße entfernen</button></div></div>
 <div id="placePanel" hidden><span id="placeLabel">Gebäude-Vorschau</span><button id="confirmPlace">✅ Bauen</button><button id="cancelPlace">✕ Abbrechen</button></div>
-<p>🔨 Bauen öffnet das Baumenü. Gebäude wählen, Bauplatz antippen und mit ✅ bestätigen. 🏰 Burg: 3×3 freie Felder erforderlich. Im Ansichtsmodus wird nichts versehentlich gebaut. Mit 🌿 Insel erweitern wächst deine Insel auf Knopfdruck gleich rundherum um einen ganzen Streifen – ohne einzelne Randfelder anzutippen. 🏠 Gebäude etwa eine halbe Sekunde gedrückt halten: Dann kannst du Verschieben oder Löschen wählen. Zum Erkunden auf „🖐 Karte verschieben“ tippen und die Karte mit einem Finger schieben; 🤏 Zoomen funktioniert gleichzeitig. Mit zwei Fingern kannst du die Karte auch direkt verschieben. Mit „⌖ Kartenmitte“ findest du zurück. Mit „🔎 Weit raus“ bekommst du die Gesamtansicht deiner Insel. 👥 Häuser bekommen Bewohner: Nahrung lässt neue Bewohner einziehen, Straßen verbessern ihre Zufriedenheit. Deine Einwohner und Fortschritte werden gespeichert. 🛤️ Straßen: Im Baumenü auf „Straßen“ gehen, „Steinweg verlegen“ wählen und auf freie Felder tippen oder mit einem Finger darüberstreichen. Kurven, Kreuzungen und Zugänge zu Gebäuden entstehen automatisch. Mit „Straße entfernen“ kannst du Wege wieder abtragen.</p><button id="reset" class="secondary resetButton">↺ Test zurücksetzen</button></footer>
+<p>🔨 Bauen öffnet das Baumenü. Gebäude wählen, Bauplatz antippen und mit ✅ bestätigen. 🏰 Burg: 3×3 freie Felder erforderlich. Im Ansichtsmodus wird nichts versehentlich gebaut. Mit 🌿 Insel erweitern wächst deine Insel auf Knopfdruck gleich rundherum um einen ganzen Streifen – ohne einzelne Randfelder anzutippen. 🏠 Gebäude kurz antippen zeigt seine Infos (Bewohner, Produktion und Zustand). Etwa eine halbe Sekunde gedrückt halten öffnet Verschieben oder Löschen. Zum Erkunden auf „🖐 Karte verschieben“ tippen und die Karte mit einem Finger schieben; 🤏 Zoomen funktioniert gleichzeitig. Mit zwei Fingern kannst du die Karte auch direkt verschieben. Mit „⌖ Kartenmitte“ findest du zurück. Mit „🔎 Weit raus“ bekommst du die Gesamtansicht deiner Insel. 👥 Häuser bekommen Bewohner: Nahrung lässt neue Bewohner einziehen, Straßen verbessern ihre Zufriedenheit. Deine Einwohner und Fortschritte werden gespeichert. 🛤️ Straßen: Im Baumenü auf „Straßen“ gehen, „Steinweg verlegen“ wählen und auf freie Felder tippen oder mit einem Finger darüberstreichen. Kurven, Kreuzungen und Zugänge zu Gebäuden entstehen automatisch. Mit „Straße entfernen“ kannst du Wege wieder abtragen.</p><button id="reset" class="secondary resetButton">↺ Test zurücksetzen</button></footer>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"}}</script>
 <script type="module">
 import * as THREE from 'three';
@@ -47,7 +65,7 @@ const mat=(hex)=>new THREE.MeshStandardMaterial({color:hex,roughness:0.9});
 const grass=[mat(0x7faa5b),mat(0x91bc6d),mat(0x6f984e)],soil=mat(0x866342),wall=mat(0xead1a6),roof=mat(0xac5944),roofSide=mat(0x843f34),door=mat(0x65432e),glass=mat(0x93c6cc),trunk=mat(0x8e653c);
 const land=new THREE.Group();scene.add(land);
 const tiles=[],tileModels=new Map(),buildings=new Map(),markets=new Map(),castles=new Map(),lumberjacks=new Map(),farms=new Map(),fields=new Map(),owned=new Set(),roads=new Set(),roadModels=new Map();
-const citizens=new Map();let citizenElapsed=0;
+const citizens=new Map();let citizenElapsed=0,infoSelection=null;
 const HOME_CAPACITY=6,CITIZEN_TICK_MS=30000;
 const LIMIT=5,KEY='inselreich-pages-test-01',OLD_KEY='inselreich-3d-test-01';
 const key=(x,z)=>x+','+z;
@@ -1045,7 +1063,7 @@ function citizenCycle(){
  refreshFood();save()
 }
 
-function save(){refreshRoadNetworks();syncGroundDetailsVisibility();updateCitizenUI();try{localStorage.setItem(KEY,JSON.stringify({land:[...owned],houses:[...buildings.keys()],markets:[...markets.keys()],castles:[...castles.keys()],lumberjacks:[...lumberjacks.keys()],farms:[...farms.keys()],fields:[...fields.keys()],roads:[...roads],citizens:[...citizens],citizenElapsed,food,foodElapsed,wood,woodElapsed,lastUpdate:Date.now()}))}catch(e){}}
+function save(){refreshRoadNetworks();syncGroundDetailsVisibility();updateCitizenUI();refreshBuildingInfo();try{localStorage.setItem(KEY,JSON.stringify({land:[...owned],houses:[...buildings.keys()],markets:[...markets.keys()],castles:[...castles.keys()],lumberjacks:[...lumberjacks.keys()],farms:[...farms.keys()],fields:[...fields.keys()],roads:[...roads],citizens:[...citizens],citizenElapsed,food,foodElapsed,wood,woodElapsed,lastUpdate:Date.now()}))}catch(e){}}
 let restored=false;try{let data=JSON.parse(localStorage.getItem(KEY)||'null');if(data&&Array.isArray(data.land)&&Array.isArray(data.houses)){for(const k of data.land){const [x,z]=pos(k);if(inside(x,z))owned.add(k)}if(owned.size){refreshEdge();data.houses.forEach(k=>{if(owned.has(k))addHouse(k)});if(Array.isArray(data.markets))data.markets.forEach(k=>{if(typeof k==="string")addMarket(k)});if(Array.isArray(data.castles))data.castles.forEach(k=>{if(typeof k==='string')addCastle(k)});if(Array.isArray(data.lumberjacks))data.lumberjacks.forEach(k=>{if(typeof k==="string")addLumberjack(k)});if(Array.isArray(data.farms))data.farms.forEach(k=>{if(typeof k==='string')addFarm(k)});if(Array.isArray(data.fields))data.fields.forEach(k=>{if(typeof k==='string')addField(k)});if(Array.isArray(data.roads))data.roads.forEach(k=>{if(typeof k==='string'&&owned.has(k)&&!occupied(k))roads.add(k)});refreshRoadNetworks();
 if(Array.isArray(data.citizens))for(const entry of data.citizens){
  if(Array.isArray(entry)&&entry.length===2&&buildings.has(entry[0])){
@@ -1121,9 +1139,93 @@ function buildingAtFinger(e){
  return null
 }
 function at(k){if(buildings.has(k))return {type:'house',anchor:k};if(lumberjacks.has(k))return {type:'lumber',anchor:k};if(farms.has(k))return {type:'farm',anchor:k};if(fields.has(k))return {type:'field',anchor:k};const [a,b]=pos(k);for(const m of markets.keys()){const [x,z]=pos(m);if(a>=x&&a<x+2&&b>=z&&b<z+2)return {type:'market',anchor:m}}for(const m of castles.keys()){const [x,z]=pos(m);if(a>=x&&a<x+3&&b>=z&&b<z+3)return {type:'castle',anchor:m}}return null}
+
+/* Short tap shows the ACTUAL data for the mesh that was touched.
+   We keep the old 560ms hold-to-edit action, with no new save keys. */
+const buildingNames={
+ house:'🏠 Wohnhaus',farm:'🚜 Bauernhof',field:'🌾 Weizenfeld',
+ lumber:'🪓 Holzfäller',market:'🛒 Marktplatz',castle:'🏰 Burg'
+};
+function buildingInfoData(info){
+ if(!info||!mapOf(info.type).has(info.anchor))return null;
+ const k=info.anchor,[x,z]=pos(k);
+ const result={title:buildingNames[info.type]||'Gebäude',
+               subtitle:'Dorfzeit · '+({house:'1×1 Feld',farm:'1×1 Feld',field:'1×1 Feld',lumber:'1×1 Feld',market:'2×2 Felder',castle:'3×3 Felder'}[info.type]||'Gebäude'),
+               firstLabel:'Zustand',first:'In Betrieb',secondLabel:'Aufgabe',second:'Stadtentwicklung',details:''};
+ if(info.type==='house'){
+  const inhabitants=citizens.get(k)??2;
+  const supplied=food>0;
+  const road=residentNearRoad(k);
+  let nearbyMarket=false;
+  for(const mk of markets.keys()){
+   const [mx,mz]=pos(mk);
+   if(Math.abs(mx+.5-x)+Math.abs(mz+.5-z)<=3){nearbyMarket=true;break}
+  }
+  const happiness=Math.min(100,(supplied?80:38)+(road?12:0)+(nearbyMarket?5:0));
+  result.firstLabel='Bewohner';
+  result.first=inhabitants+' / '+HOME_CAPACITY;
+  result.secondLabel='Zufriedenheit';
+  result.second=happiness+' %';
+  result.details=(supplied?'✅ Nahrung vorhanden':'⚠️ Nahrung fehlt – Wachstum pausiert')+
+   ' · '+(road?'✅ Straßenanschluss':'🛤️ Noch keine Straße am Haus')+
+   ' · '+(nearbyMarket?'✅ Markt in Reichweite':'🛒 Kein Markt in der Nähe');
+ }else if(info.type==='lumber'){
+  result.firstLabel='Produktion';result.first='+1 Holz / 15 Sek.';
+  result.secondLabel='Holzlager';result.second=wood.toLocaleString('de-DE');
+  result.details='🌲 Der Holzfäller produziert laufend Holz für dein Inselreich.';
+ }else if(info.type==='farm'){
+  const adjacent=neighbors(x,z).filter(([a,b])=>fields.has(key(a,b))).length;
+  const active=neighbors(x,z).filter(([a,b])=>fields.has(key(a,b))&&nearFarm(key(a,b))).length;
+  result.firstLabel='Benachbarte Felder';result.first=adjacent.toString();
+  result.secondLabel='Aktive Felder';result.second=active.toString();
+  result.details=active>0?'✅ Mit Weizenfeldern wird Nahrung produziert (+1 je aktivem Feld alle 12 Sek.).':'🌾 Setze ein Weizenfeld direkt neben den Bauernhof, um Nahrung zu produzieren.';
+ }else if(info.type==='field'){
+  const active=nearFarm(k);
+  result.firstLabel='Produktion';result.first=active?'+1 Nahrung / 12 Sek.':'Pausiert';
+  result.secondLabel='Verbindung';result.second=active?'Bauernhof ✓':'Fehlt';
+  result.details=active?'✅ Dieses Feld wird von einem benachbarten Bauernhof bewirtschaftet.':'⚠️ Das Feld braucht einen benachbarten Bauernhof.';
+ }else if(info.type==='market'){
+  const nearby=[...buildings.keys()].filter(h=>{
+   const [hx,hz]=pos(h);return Math.abs(x+.5-hx)+Math.abs(z+.5-hz)<=3
+  }).length;
+  result.firstLabel='Wohnhäuser in Nähe';result.first=nearby.toString();
+  result.secondLabel='Zufriedenheit';result.second='+5 Punkte';
+  result.details='🛒 Der Markt steigert die Zufriedenheit naher Wohnhäuser. Er produziert keine eigenen Waren.';
+ }else if(info.type==='castle'){
+  result.firstLabel='Baugröße';result.first='3×3 Felder';
+  result.secondLabel='Besonderheit';result.second='Wassergraben';
+  result.details='🏰 Wahrzeichen deines Inselreichs mit Burgbrücke. Weitere Funktionen kommen in späteren Zeitaltern.';
+ }
+ return result
+}
+function closeBuildingInfo(){infoSelection=null;document.getElementById('buildingInfo').hidden=true}
+function refreshBuildingInfo(){
+ if(!infoSelection)return;
+ const data=buildingInfoData(infoSelection);
+ if(!data){closeBuildingInfo();return}
+ const set=(id,value)=>{document.getElementById(id).textContent=value};
+ set('infoTitle',data.title);set('infoSubtitle',data.subtitle);
+ set('infoKey1',data.firstLabel);set('infoValue1',data.first);
+ set('infoKey2',data.secondLabel);set('infoValue2',data.second);
+ set('infoDetails',data.details)
+}
+function showBuildingInfo(info){
+ if(!info||!mapOf(info.type).has(info.anchor))return;
+ closeEdit();clearPreview();
+ infoSelection={type:info.type,anchor:info.anchor};
+ refreshBuildingInfo();
+ document.getElementById('buildingInfo').hidden=false
+}
+document.getElementById('infoClose').onclick=closeBuildingInfo;
+document.getElementById('infoEdit').onclick=()=>{
+ if(!infoSelection)return;
+ const info={...infoSelection};
+ closeBuildingInfo();showEdit(info)
+};
+
 function cancelHold(){if(holdTimer!==null){clearTimeout(holdTimer);holdTimer=null}}
 function closeEdit(){editMenu.classList.remove('show');selected=null}
-function showEdit(info){moving=null;selected=info;clearPreview();editMenu.classList.add('show');document.getElementById('editTitle').textContent=(info.type==='castle'?'🏰 Burg':info.type==='market'?'🛒 Markt':info.type==='lumber'?'🪓 Holzfäller':info.type==='farm'?'🚜 Bauernhof':info.type==='field'?'🌾 Weizenfeld':'🏠 Haus')+' bearbeiten';status.textContent='🏠 Gebäude ausgewählt – Verschieben oder Löschen?';if(navigator.vibrate)navigator.vibrate(35)}
+function showEdit(info){closeBuildingInfo();moving=null;selected=info;clearPreview();editMenu.classList.add('show');document.getElementById('editTitle').textContent=(info.type==='castle'?'🏰 Burg':info.type==='market'?'🛒 Markt':info.type==='lumber'?'🪓 Holzfäller':info.type==='farm'?'🚜 Bauernhof':info.type==='field'?'🌾 Weizenfeld':'🏠 Haus')+' bearbeiten';status.textContent='🏠 Gebäude ausgewählt – Verschieben oder Löschen?';if(navigator.vibrate)navigator.vibrate(35)}
 function mapOf(type){return type==='house'?buildings:type==='market'?markets:type==='castle'?castles:type==='lumber'?lumberjacks:type==='farm'?farms:fields}
 function relocate(from,to){const targetCells=from.type==='castle'?castleCells(to):from.type==='market'?marketCells(to):[to];if(!targetCells.every(k=>owned.has(k)&&!roads.has(k)&&(!at(k)||(at(k).type===from.type&&at(k).anchor===from.anchor)))){status.textContent=from.type==='castle'?'❌ Burg braucht 3×3 freie Felder.':from.type==='market'?'❌ Der Markt braucht vier freie Felder (2×2).':'❌ Bitte einen freien Bauplatz wählen.';return false}
 if(from.type==='field'){const [x,z]=pos(to);const touches=neighbors(x,z).some(([a,b])=>farms.has(key(a,b))||(from.type==='farm'&&from.anchor===key(a,b)));if(!touches){status.textContent='🌾 Das Weizenfeld muss neben einem Bauernhof liegen.';return false}}const map=mapOf(from.type),g=map.get(from.anchor);if(!g)return false;map.delete(from.anchor);map.set(to,g);
@@ -1146,8 +1248,9 @@ canvas.addEventListener('pointerdown',e=>{
          midX:(p[0].x+p[1].x)/2,midY:(p[0].y+p[1].y)/2};
   down=null;ignoreClick=true
  }else{
-  down={id:e.pointerId,x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,moved:false,tile:hit(e)};
+  down={id:e.pointerId,x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,moved:false,tile:hit(e),building:null};
   const k=down.tile,info=buildingAtFinger(e)||(k===undefined?null:at(k));
+  down.building=info;
   if(info&&!moving&&!roadModeActive()){
    holdTimer=setTimeout(()=>{if(down&&!down.moved&&points.size===1){showEdit(info);down=null;ignoreClick=true}holdTimer=null},560)
   }
@@ -1194,12 +1297,15 @@ canvas.addEventListener('pointerup',e=>{
  if(pinch){if(points.size<2)pinch=null;down=null;if(roadStrokeDirty){save();roadStrokeDirty=false}return}
  if(down?.id===e.pointerId&&!down.moved&&!ignoreClick){
   const i=down.tile??hit(e);
-  if(i!==undefined){
-   if(moving){if(relocate(moving,i))moving=null}
-   else if(roadModeActive()){paintRoadAt(i)}
-   else if(!owned.has(i)){status.textContent='🌿 Neues Land bekommst du mit dem Knopf „Insel erweitern“ unter der Karte.'}
+  const touchedBuilding=down.building||buildingAtFinger(e)||(i===undefined?null:at(i));
+  if(moving){if(i!==undefined&&relocate(moving,i))moving=null}
+  else if(roadModeActive()){if(i!==undefined)paintRoadAt(i)}
+  else if(!modeBuild&&touchedBuilding){showBuildingInfo(touchedBuilding)}
+  else if(i!==undefined){
+   if(!owned.has(i)){status.textContent='🌿 Neues Land bekommst du mit dem Knopf „Insel erweitern“ unter der Karte.'}
    else if(modeBuild){preview(i)}
-  }else{status.textContent='📍 Kein Feld erkannt – tippe mittig auf ein hellgrünes Randfeld.'}
+   else closeBuildingInfo()
+  }else{closeBuildingInfo()}
  }
  if(down?.id===e.pointerId&&down.moved&&roadModeActive()){
   paintRoadAt(hit(e))
@@ -1235,10 +1341,10 @@ document.getElementById('overviewCamera').onclick=()=>{
  placeCamera();
  status.textContent='🔎 Gesamtansicht: Du siehst deine Insel von weiter weg. Mit zwei Fingern kannst du wieder heranzoomen.'
 };
-function viewMode(){if(roadStrokeDirty){save();roadStrokeDirty=false}moving=null;closeEdit();clearPreview();modeBuild=false;buildPanel.hidden=true;updateTools();status.textContent='👁️ Anschauen: Tippe auf 🌿 Insel erweitern, um rundherum neue Flächen zu bekommen.'}
+function viewMode(){if(roadStrokeDirty){save();roadStrokeDirty=false}closeBuildingInfo();moving=null;closeEdit();clearPreview();modeBuild=false;buildPanel.hidden=true;updateTools();status.textContent='👁️ Anschauen: Tippe auf 🌿 Insel erweitern, um rundherum neue Flächen zu bekommen.'}
 function chooseType(type){
  if(roadStrokeDirty){save();roadStrokeDirty=false}
- moving=null;closeEdit();clearPreview();buildType=type;modeBuild=true;buildPanel.hidden=true;updateTools();
+ closeBuildingInfo();moving=null;closeEdit();clearPreview();buildType=type;modeBuild=true;buildPanel.hidden=true;updateTools();
  if(type==='road'||type==='roadErase')status.textContent=type==='road'
   ?'🪨 Straßenmodus: Auf freie Felder tippen oder mit dem Finger einen ganzen Weg ziehen. Die Kamera bleibt dabei still.'
   :'🧹 Straßen entfernen: Auf einen Weg tippen oder darüberziehen. Mit 👁️ Anschauen beenden.';
@@ -1248,9 +1354,9 @@ const typeButtons={house:buildButton,farm:farmButton,field:fieldButton,lumber:lu
 const categoryTypes={wohnen:['house'],land:['farm','field'],prod:['lumber'],shop:['market'],burg:['castle'],wege:['road','roadErase']};
 function category(cat){for(const [name,btn] of Object.entries(typeButtons))btn.hidden=!categoryTypes[cat].includes(name);for(const btn of document.querySelectorAll('[data-cat]'))btn.classList.toggle('active',btn.dataset.cat===cat)}
 for(const btn of document.querySelectorAll('[data-cat]'))btn.onclick=()=>category(btn.dataset.cat);
-viewButton.onclick=viewMode;openBuildButton.onclick=()=>{modeBuild=false;moving=null;closeEdit();clearPreview();buildPanel.hidden=!buildPanel.hidden;updateTools();status.textContent=buildPanel.hidden?'👁️ Ansichtsmodus':'🔨 Wähle eine Kategorie und dann dein Gebäude.'};
+viewButton.onclick=viewMode;openBuildButton.onclick=()=>{closeBuildingInfo();modeBuild=false;moving=null;closeEdit();clearPreview();buildPanel.hidden=!buildPanel.hidden;updateTools();status.textContent=buildPanel.hidden?'👁️ Ansichtsmodus':'🔨 Wähle eine Kategorie und dann dein Gebäude.'};
 category('wohnen');updateTools();updateExpansionButton();
-document.getElementById('reset').onclick=()=>{clearPreview();cancelHold();moving=null;closeEdit();if(!confirm('3D-Test zurücksetzen? Das alte Inselreich bleibt erhalten.'))return;for(const g of buildings.values())land.remove(g);buildings.clear();for(const g of markets.values())land.remove(g);markets.clear();for(const g of castles.values())land.remove(g);castles.clear();for(const g of lumberjacks.values())land.remove(g);lumberjacks.clear();for(const g of farms.values())land.remove(g);farms.clear();for(const g of fields.values())land.remove(g);fields.clear();for(const model of roadModels.values())land.remove(model);roadModels.clear();roads.clear();roadStrokeDirty=false;citizens.clear();citizenElapsed=0;food=0;foodElapsed=0;refreshFood();wood=0;woodElapsed=0;refreshWood();owned.clear();for(const obj of tileModels.values())land.remove(obj);tileModels.clear();tiles.length=0;for(let x=-1;x<=1;x++)for(let z=-1;z<=1;z++)owned.add(key(x,z));refreshEdge();addHouse(key(0,0));updateExpansionButton();status.textContent='🌱 3D-Test zurückgesetzt.'};
+document.getElementById('reset').onclick=()=>{closeBuildingInfo();clearPreview();cancelHold();moving=null;closeEdit();if(!confirm('3D-Test zurücksetzen? Das alte Inselreich bleibt erhalten.'))return;for(const g of buildings.values())land.remove(g);buildings.clear();for(const g of markets.values())land.remove(g);markets.clear();for(const g of castles.values())land.remove(g);castles.clear();for(const g of lumberjacks.values())land.remove(g);lumberjacks.clear();for(const g of farms.values())land.remove(g);farms.clear();for(const g of fields.values())land.remove(g);fields.clear();for(const model of roadModels.values())land.remove(model);roadModels.clear();roads.clear();roadStrokeDirty=false;citizens.clear();citizenElapsed=0;food=0;foodElapsed=0;refreshFood();wood=0;woodElapsed=0;refreshWood();owned.clear();for(const obj of tileModels.values())land.remove(obj);tileModels.clear();tiles.length=0;for(let x=-1;x<=1;x++)for(let z=-1;z<=1;z++)owned.add(key(x,z));refreshEdge();addHouse(key(0,0));updateExpansionButton();status.textContent='🌱 3D-Test zurückgesetzt.'};
 let lastFrame=performance.now(),autosave=0;function animate(now){requestAnimationFrame(animate);const dt=Math.min(1,(now-lastFrame)/1000||0);lastFrame=now;if(lumberjacks.size){woodElapsed+=dt*1000;if(woodElapsed>=15000){const batches=Math.floor(woodElapsed/15000);woodElapsed%=15000;wood+=batches*lumberjacks.size;refreshWood();save()}}if(productionFields()){foodElapsed+=dt*1000;if(foodElapsed>=12000){const batches=Math.floor(foodElapsed/12000);foodElapsed%=12000;food+=batches*productionFields();refreshFood();save()}}if(buildings.size){
  citizenElapsed+=dt*1000;
  if(citizenElapsed>=CITIZEN_TICK_MS){
