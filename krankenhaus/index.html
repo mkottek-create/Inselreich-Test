@@ -27,9 +27,9 @@ main{max-width:1100px;margin:auto}
 #cameraBar button[hidden]{display:none!important}
 #cameraBar button:focus-visible{outline:3px solid #e7ae54;outline-offset:2px}
 @media(max-width:380px){#cameraBar{gap:4px;justify-content:flex-start;padding:6px 8px 4px}#cameraBar button{padding:7px 8px;font-size:11px;min-width:38px}}
-#roomInfo{position:absolute;top:12px;right:12px;z-index:2;padding:9px 11px;border-radius:12px;max-width:min(42vw,210px);background:#fffcf2ed;box-shadow:0 4px 14px #1e4d4c19;border:1px solid #fff;pointer-events:none}
-#roomInfo strong{display:block;font-size:12px}
-#roomInfo span{display:block;color:#657e80;font-size:11px;line-height:1.35;margin-top:4px}
+#roomInfo{position:absolute;top:12px;right:12px;z-index:2;padding:8px 10px;border-radius:12px;max-width:min(48vw,240px);background:#fffff4f2;box-shadow:0 4px 16px #244e5340;border:1px solid #fff;pointer-events:none}
+#roomInfo strong{display:block;font-size:12px;line-height:1.25;color:#27545d}
+#roomInfo span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:#526f74;font-size:10px;line-height:1.35;margin-top:3px}
 #roomInfo[hidden]{display:none}
 #status{padding:11px 15px;background:#d8f0e7;color:#326d64;text-align:center;font-size:12px;font-weight:750}
 section{padding:15px 15px 20px}
@@ -123,21 +123,22 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
 import * as THREE from 'three';
 const stage=document.getElementById('stage');
 const scene=new THREE.Scene();
-scene.background=new THREE.Color(0xd2e9e8);
-scene.fog=new THREE.Fog(0xd2e9e8,30,75);
+scene.background=new THREE.Color(0xc8e0df);
+scene.fog=new THREE.Fog(0xc8e0df,34,82);
 const camera=new THREE.PerspectiveCamera(52,1,.1,130);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,matchMedia('(pointer:coarse)').matches?1.25:1.7));
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.42;
+renderer.toneMappingExposure=1.10;
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.shadowMap.autoUpdate=false;
 renderer.shadowMap.needsUpdate=true;
 stage.insertBefore(renderer.domElement,stage.firstChild);
-const hemi=new THREE.HemisphereLight(0xe8fbff,0x9caa9c,2.3);scene.add(hemi);
-const sun=new THREE.DirectionalLight(0xfff4d8,3.2);sun.position.set(-9,17,12);
+// Reduce the previously washed-out mobile look while keeping cheerful colors.
+const hemi=new THREE.HemisphereLight(0xe8fbff,0x8ba2a0,1.6);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xfff1db,2.45);sun.position.set(-9,17,12);
 sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);
 sun.shadow.camera.left=-22;sun.shadow.camera.right=22;sun.shadow.camera.top=22;sun.shadow.camera.bottom=-22;
 sun.shadow.normalBias=.025;sun.shadow.bias=-.0003;scene.add(sun);
@@ -653,6 +654,11 @@ function groundHit(px,py){
  const hit=new THREE.Vector3();
  return raycaster.ray.intersectPlane(onGround,hit)?hit:null
 }
+let roomInfoTimer=null;
+function hideRoomInfo(){
+ if(roomInfoTimer!==null){clearTimeout(roomInfoTimer);roomInfoTimer=null}
+ document.getElementById('roomInfo').hidden=true
+}
 function inspectRoom(px,py){
  const hit=groundHit(px,py);
  if(!hit)return;
@@ -663,7 +669,10 @@ function inspectRoom(px,py){
  document.getElementById('roomTitle').textContent=room.name;
  document.getElementById('roomDescription').textContent=room.details||
   'Der Raum gehört jetzt zu deinem Krankenhaus. Du kannst ihn im Grundrissmodus verschieben.';
+ hideRoomInfo();
  document.getElementById('roomInfo').hidden=false;
+ // Temporary inspection overlay does not hide the clinic for the whole session.
+ roomInfoTimer=setTimeout(hideRoomInfo,4500);
  document.getElementById('status').textContent='✓ '+room.name+' – dieser Bereich steht schon.';
 }
 // New first-view angle highlights the desk rather than looking through the divider.
@@ -1277,6 +1286,7 @@ const cameraButtons={build:document.getElementById('camBuild'),
  pan:document.getElementById('camPan'),rotate:document.getElementById('camRotate')};
 function cameraActiveEditor(){return editingFloorplan||editingReception}
 function setCameraMode(mode){
+ hideRoomInfo();
  cameraMode=mode==='rotate'?'rotate':mode==='build'&&cameraActiveEditor()?'build':'pan';
  clearConstructionPreview();
  for(const [name,button] of Object.entries(cameraButtons)){
@@ -1294,6 +1304,7 @@ cameraButtons.pan.onclick=()=>setCameraMode('pan');
 cameraButtons.rotate.onclick=()=>setCameraMode('rotate');
 cameraButtons.build.onclick=()=>setCameraMode('build');
 function adjustZoom(ratio,px,py){
+ hideRoomInfo();
  const before=Number.isFinite(px)&&Number.isFinite(py)?groundHit(px,py):null;
  distance=clamp(distance*ratio,7,42);
  placeCamera();
@@ -1312,6 +1323,7 @@ document.getElementById('camReset').onclick=()=>{
  document.getElementById('status').textContent='🎯 Kamera wieder auf die Übersicht ausgerichtet.'
 };
 function panFinger(oldX,oldY,newX,newY){
+ hideRoomInfo();
  const before=groundHit(oldX,oldY);
  const after=groundHit(newX,newY);
  if(before&&after){
@@ -1321,6 +1333,7 @@ function panFinger(oldX,oldY,newX,newY){
  }else pan(newX-oldX,newY-oldY)
 }
 function rotateFinger(dx,dy){
+ hideRoomInfo();
  orbit-=dx*.008;
  elevation=clamp(elevation+dy*.006,.50,1.43);
  placeCamera()
@@ -1337,7 +1350,7 @@ let touchState=null;
 function startTouch(e){
  e.preventDefault();
  if(e.touches.length>=2){
-  clearConstructionPreview();touchState={mode:2,...snapshot(e.touches)};return
+  hideRoomInfo();clearConstructionPreview();touchState={mode:2,...snapshot(e.touches)};return
  }
  if(e.touches.length===1){
   const t=e.touches[0];
