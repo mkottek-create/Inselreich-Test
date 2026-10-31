@@ -33,6 +33,38 @@
 .progressTrack{height:10px;background:#d1dcc3;border-radius:100px;overflow:hidden}
 #peopleProgress{background:#719d53;height:100%;width:0%;transition:width .25s}
 #peopleGoal{font-size:12px}
+
+/* Inselreich visual identity: warm parchment, forest greens and clear mobile controls. */
+:root{--forest:#355d43;--forest-deep:#214535;--cream:#f5f0de;--gold:#d8b875;--line:#c9d0b4}
+body{background:linear-gradient(180deg,#d8e9d1 0%,#eff0df 65%,#e7ead6 100%);color:#263e31}
+header{background:linear-gradient(135deg,#fff6db,#e4ecd5 72%,#d3e9df);
+ padding:15px 14px;border-bottom:1px solid #b9c6ad;box-shadow:0 3px 15px #233d2822;gap:8px}
+h1{font-weight:850;letter-spacing:-.65px;text-shadow:0 1px 0 #fff9}
+.tag{background:#fcf7e7;border:1px solid #d5cfb5;box-shadow:0 2px 7px #233c2410;
+ color:#35523d;white-space:nowrap}
+#game{background:linear-gradient(180deg,#bbd5d3,#468a9a);border-top:2px solid #e7f6ed;border-bottom:3px solid #98b2a2}
+#cityPulse{background:linear-gradient(180deg,#eaf4dd,#dcebd1);border-bottom:1px solid #c5d2ba}
+#cityPulse span{background:#fffbef;border:1px solid #dae0c5;box-shadow:0 1px 3px #4b684713}
+#notice{background:#fffcf3ef;color:#294732;border:1px solid #d0dbba;
+ backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);box-shadow:0 5px 18px #162f292b}
+footer{background:linear-gradient(180deg,#f3f4e6,#e6ead5);padding:14px 12px 22px}
+button{background:linear-gradient(180deg,#517e57,#355f43);color:#fffdf5;
+ border:1px solid #2e5940;box-shadow:0 3px 0 #21493535,0 2px 7px #1e38271e;
+ transition:filter .14s,transform .1s}
+button:active:not(:disabled){transform:translateY(1px);filter:brightness(1.06)}
+button:disabled{box-shadow:none}
+button.secondary{background:linear-gradient(180deg,#fffef7,#ecefdd);color:#35563f;border:1px solid #c9d3b7}
+#buildPanel{background:#fffae9;border:1px solid #d2d6bb;box-shadow:0 3px 14px #384b351c}
+.categoryRow button.active{background:linear-gradient(180deg,#3f7052,#254f39);border-color:#244734}
+.itemRow button{background:linear-gradient(180deg,#5f845b,#426a4a)}
+#mapTools button{background:#fffbedea;border-color:#8fae95;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+#mapTools .mapHint{background:#fff8e5e9;border:1px solid #f6f2df;box-shadow:0 2px 10px #233c3821}
+#buildingInfo,#editMenu,#buildUndo{background:#fffbef;border-color:#9fbb93}
+#citizenPanel{background:#fffaea;border:1px solid #d1d3b3;box-shadow:0 3px 13px #394b3518}
+.needsRow span,.infoStats>div{background:#ebefd9}
+.expansionButton{background:linear-gradient(180deg,#668e56,#416d43);border-color:#3e6743}
+@media(max-width:400px){header{padding:13px 10px}h1{font-size:19px}.tag{font-size:11px;padding:7px 8px}#cityPulse{gap:5px}#cityPulse span{padding:6px 7px;font-size:11px}}
+
 </style></head><body>
 <header><h1>🏝️ Inselreich 3D</h1><span class="tag">🌲 <strong id="woodCount">0</strong> · 🌾 <strong id="foodCount">0</strong> · 🪨 <strong id="stoneCount">0</strong></span></header>
 <div id="cityPulse"><span>👥 <strong id="peopleCount">0</strong> Einwohner</span><span>😊 <strong id="happyCount">0</strong>% zufrieden</span><span>🏡 Dorfzeit</span></div>
@@ -136,6 +168,12 @@ const meadowFlowerStem=new THREE.CylinderGeometry(.006,.009,.11,4);
 const meadowFlowerBud=new THREE.IcosahedronGeometry(.035,0);
 const meadowStemMat=new THREE.MeshStandardMaterial({color:0x557a38,roughness:1});
 const meadowFlowerColors=[mat(0xf6ddb6),mat(0xf7f2db),mat(0xe5a5a4),mat(0xd8c9ee)];
+// Shared tree meshes add natural silhouettes without multiplying unique geometries.
+const meadowTreeTrunk=new THREE.CylinderGeometry(.055,.095,.36,6);
+const meadowTreeCrown=new THREE.ConeGeometry(.26,.53,7);
+const meadowTreeTop=new THREE.ConeGeometry(.21,.42,7);
+const meadowTreeBark=mat(0x786249);
+const meadowTreeLeaf=[mat(0x426f49),mat(0x60864f),mat(0x739451)];
 // Stable per-grid-cell values: old fields never change when the island grows.
 function terrainRand(x,z,seed){
  let h=Math.imul(x+101,374761393)^Math.imul(z+101,668265263)^Math.imul(seed+37,1442695041);
@@ -221,6 +259,18 @@ function attachMeadowDetails(group,x,z){
    const bud=new THREE.Mesh(meadowFlowerBud,meadowFlowerColors[Math.floor(terrainRand(x,z,72+i*3)*meadowFlowerColors.length)]);
    bud.position.set(gx,.28,gz);bud.scale.set(1.0,.68,1.0);visual.add(bud)
   }
+ }
+ // Thin, stylized pine and orchard silhouettes stay on unoccupied land only.
+ // They disappear automatically when a road or a building occupies the tile.
+ if(terrainRand(x,z,91)<.135&&neighbors(x,z).filter(([a,b])=>owned.has(key(a,b))).length>=3){
+  const tx=(terrainRand(x,z,92)-.5)*.42,tz=(terrainRand(x,z,93)-.5)*.42;
+  const trunk=new THREE.Mesh(meadowTreeTrunk,meadowTreeBark);
+  trunk.position.set(tx,.335,tz);trunk.castShadow=true;visual.add(trunk);
+  const foliage=meadowTreeLeaf[Math.floor(terrainRand(x,z,94)*meadowTreeLeaf.length)];
+  const crown=new THREE.Mesh(meadowTreeCrown,foliage);
+  crown.position.set(tx,.59,tz);crown.castShadow=true;visual.add(crown);
+  const tip=new THREE.Mesh(meadowTreeTop,foliage);
+  tip.position.set(tx,.82,tz);tip.castShadow=true;visual.add(tip)
  }
  group.add(visual);group.userData.groundDetails=visual
 }
@@ -634,6 +684,84 @@ function embellishField(g){
  }
 }
 
+/* A consistent second pass of architectural detailing across ALL building types.
+   Runs when creating and restoring buildings; no additional save data needed. */
+const warmLantern=new THREE.MeshStandardMaterial({
+ color:0xffd28b,emissive:0xf4a64f,emissiveIntensity:.6,roughness:.55
+});
+const darkIron=mat(0x444b46),warmTimber=mat(0x795637);
+const brickCream=mat(0xeedbbd),shopGold=mat(0xe6bc65),roofTones=[
+ mat(0xaf5b49),mat(0xa1493e),mat(0x90614d),mat(0xb76d50)
+];
+function addWarmLantern(g,x,y,z){
+ const frame=box(.085,.12,.075,darkIron,x,y,z,g);
+ frame.castShadow=false;
+ const flame=box(.055,.067,.082,warmLantern,x,y,z+.026,g);
+ flame.castShadow=false;
+ box(.11,.025,.09,warmTimber,x,y+.073,z,g).castShadow=false
+}
+function finishBuilding(type,g,k){
+ const [x,z]=pos(k);
+ if(type==='house'){
+  const variant=roofTones[Math.floor(terrainRand(x,z,220)*roofTones.length)];
+  g.traverse(child=>{if(child.isMesh&&child.material===tileRed)child.material=variant});
+  // Window shutters and warm light make streets feel inhabited.
+  for(const wx of [-.235,.235]){
+   for(const side of [-1,1])
+    box(.050,.255,.035,warmTimber,wx+side*.119,.435,.412,g).castShadow=false;
+   box(.31,.023,.10,brickCream,wx,.285,.40,g).castShadow=false
+  }
+  addWarmLantern(g,.30,.535,.427);
+  for(const zoff of [.44,.50])box(.30,.012,.13,stoneDetail,0,.151,zoff,g).castShadow=false
+ }else if(type==='market'){
+  for(const xx of [-.64,.64]){
+   box(.055,.54,.055,warmTimber,xx,.42,.93,g);
+   addWarmLantern(g,xx,.76,.945)
+  }
+  for(const xx of [-.66,0,.66]){
+   box(.29,.025,.09,brickCream,xx,.173,.91,g).castShadow=false
+  }
+  const sign=box(.45,.20,.038,shopGold,0,1.08,.45,g);
+  sign.castShadow=false
+ }else if(type==='lumber'){
+  const pile=mat(0x98704a);
+  for(let i=0;i<4;i++){
+   const log=new THREE.Mesh(new THREE.CylinderGeometry(.080,.085,.34,7),i%2?pile:logWood);
+   log.rotation.x=Math.PI/2;
+   log.position.set(.25,.22+(i>=2?.15:0),-.22+(i%2)*.17);
+   log.castShadow=true;g.add(log)
+  }
+  addWarmLantern(g,.105,.48,.225)
+ }else if(type==='farm'){
+  for(const xx of [.15,.30]){
+   box(.15,.13,.15,hayGold,xx,.22,-.38,g);
+   box(.155,.026,.158,warmTimber,xx,.30,-.38,g).castShadow=false
+  }
+  addWarmLantern(g,-.39,.55,.27);
+  for(const xx of [-.33,-.20,-.07])box(.02,.26,.03,darkIron,xx,.35,-.448,g).castShadow=false
+ }else if(type==='field'){
+  // A small scarecrow at the back of the wheat plot.
+  box(.035,.59,.038,warmTimber,.34,.37,-.34,g).castShadow=false;
+  box(.36,.034,.04,warmTimber,.34,.54,-.34,g).castShadow=false;
+  const head=new THREE.Mesh(new THREE.IcosahedronGeometry(.082,0),brickCream);
+  head.position.set(.34,.72,-.34);head.castShadow=false;g.add(head);
+  box(.18,.16,.04,fabricBlue,.34,.46,-.32,g).castShadow=false
+ }else if(type==='castle'){
+  for(const xx of [-.69,.69]){
+   addWarmLantern(g,xx,.73,1.375)
+  }
+  for(const xx of [-1.10,1.10]){
+   const banner=box(.16,.32,.025,fabricBlue,xx,1.17,1.49,g);
+   banner.rotation.z=xx<0?.05:-.05;banner.castShadow=false
+  }
+ }else if(type==='quarry'){
+  const portal=g.getObjectByName('quarryPortal');
+  if(portal){
+   addWarmLantern(portal,.35,.80,-.20);
+   box(.25,.13,.25,warmTimber,-.30,.25,.56,portal)
+  }
+ }
+}
 function occupied(k){if(rockSites.has(k)||quarries.has(k)||roads.has(k)||buildings.has(k)||lumberjacks.has(k)||farms.has(k)||fields.has(k))return true;
  for(const anchor of markets.keys()){const [x,z]=pos(anchor),[a,b]=pos(k);if(a>=x&&a<x+2&&b>=z&&b<z+2)return true}
  for(const anchor of castles.keys()){const [x,z]=pos(anchor),[a,b]=pos(k);if(a>=x&&a<x+3&&b>=z&&b<z+3)return true}return false}
@@ -662,6 +790,7 @@ function addHouse(k){
  box(.27,.035,.14,stoneDetail,0,.15,.48,g);
  groundedEntrance(g,0,.47,.31,.162,stoneDetail);
  embellishHouse(g);
+ finishBuilding('house',g,k);
  buildings.set(k,g);if(!citizens.has(k))citizens.set(k,2);save()
 }
 const marketRoof=mat(0xb54f3c),marketCanvas=mat(0xe7d6b0),marketStone=mat(0xc7b28b),marketWood=mat(0x76543a),marketProduce=[mat(0xc3412b),mat(0xe6b84f),mat(0x69a547)];
@@ -707,6 +836,7 @@ function addMarket(k){
  // Shop door meets the paved courtyard instead of hovering over the plaza.
  groundedEntrance(g,0,.085,.31,.172,marketStone);
  embellishMarket(g);
+ finishBuilding('market',g,k);
  markets.set(k,g);save();return true
 }
 
@@ -840,6 +970,7 @@ function addCastle(k){
   box(.052,.055,.09,bridgeDark,xx,.004,1.05,g);
   box(.052,.055,.09,bridgeDark,xx,.004,1.33,g)
  }
+ finishBuilding('castle',g,k);
  castles.set(k,g);save();return true
 }
 
@@ -927,6 +1058,7 @@ function addLumberjack(k){
  groundedEntrance(g,-.255,.235,.255,.158,stoneDetail);
  // Das vorhandene Produktions- und Speichersystem bleibt unverändert.
  embellishLumber(g);
+ finishBuilding('lumber',g,k);
  lumberjacks.set(k,g);save();return true
 }
 const hay=mat(0xddba4c),straw=mat(0x9e8536),barnRed=mat(0xad5343),fieldEarth=mat(0x785637);
@@ -1010,6 +1142,7 @@ function addQuarry(k,preferredDeposit=null){
   fragment.scale.set(.09+(i%3)*.015,.065+(i%4)*.01,.072);
   fragment.rotation.y=i*.57;portal.add(fragment)
  }
+ finishBuilding('quarry',g,k);
  quarries.set(k,g);quarryDeposits.set(k,deposit);
  orientQuarryPortal(g,k,deposit);
  save();return true
@@ -1082,6 +1215,7 @@ function addFarm(k){
  // The barn's double doors are raised; a low, solid three-step entry connects them.
  groundedEntrance(g,-.095,.46,.31,.194,farmGravel);
  embellishFarm(g);
+ finishBuilding('farm',g,k);
  farms.set(k,g);save();return true
 }
 function nearFarm(k){const [x,z]=pos(k);return neighbors(x,z).some(([a,b])=>farms.has(key(a,b)))}
@@ -1138,6 +1272,7 @@ function addField(k){
  }
  ears.instanceColor.needsUpdate=true;
  embellishField(g);
+ finishBuilding('field',g,k);
  fields.set(k,g);save();return true
 }
 function productionFields(){let count=0;for(const k of fields.keys())if(nearFarm(k))count++;return count}
