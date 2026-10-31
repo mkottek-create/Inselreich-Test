@@ -79,7 +79,7 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
   <button id="camReset" type="button" title="Kamera zurücksetzen" aria-label="Ansicht zurücksetzen">⌂</button>
  </div>
 <div id="gestureHint">☝️ Schieben · ✌️ Zoomen & Drehen</div>
-<div id="status" role="status" aria-live="polite">🏥 Großes, offenes Foyer: Anmeldung links, Wartebereich rechts, Hauptflur dahinter.</div>
+<div id="status" role="status" aria-live="polite">🏥 Frisch gestalteter Haupteingang: helles Foyer, Anmeldung links, Wartebereich rechts, freier Mittelweg.</div>
 <div id="layoutTools" aria-label="Einrichtungsmodus">
  <button id="toggleFloorplan" type="button">🏗️ Grundriss bearbeiten</button>
  <button id="editReception" type="button">🛠️ Anmeldung verschieben</button>
@@ -332,6 +332,38 @@ box(3.02,.11,.18,0,1.63,.12,tealLight);
 const foyerAccent=mat(0x64b69b);
 for(const x of [-6.82,6.82])box(.09,.020,7.8,x,.189,4.19,foyerAccent,group,false);
 for(const z of [.50,7.83])box(13.6,.018,.08,0,.188,z,foyerAccent,group,false);
+// Foyer refresh: light stone tiles and slim mint inlays visually guide visitors
+// from the front entrance into the hall without changing the clear 3.4m aisle.
+function welcomingFoyerTiles(){
+ const c=document.createElement('canvas');c.width=c.height=256;
+ const p=c.getContext('2d');
+ p.fillStyle='#f5f1e8';p.fillRect(0,0,256,256);
+ p.strokeStyle='#d5e4df';p.lineWidth=2;
+ for(let i=0;i<=4;i++){
+  const q=i*64;
+  p.beginPath();p.moveTo(q,0);p.lineTo(q,256);p.stroke();
+  p.beginPath();p.moveTo(0,q);p.lineTo(256,q);p.stroke()
+ }
+ for(let i=0;i<72;i++){
+  const x=(i*73+17)%248+4,y=(i*47+29)%248+4;
+  p.fillStyle=i%3===0?'#dce9e3':'#e8e0d5';
+  p.fillRect(x,y,2+i%2,2)
+ }
+ const t=new THREE.CanvasTexture(c);
+ t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=THREE.SRGBColorSpace;
+ return t
+}
+const foyerWalkMap=welcomingFoyerTiles();
+foyerWalkMap.repeat.set(3.18/2,7.9/2);
+const foyerWalk=new THREE.Mesh(new THREE.PlaneGeometry(3.18,7.9),
+ new THREE.MeshStandardMaterial({map:foyerWalkMap,roughness:.97,side:THREE.DoubleSide}));
+foyerWalk.rotation.x=-Math.PI/2;foyerWalk.position.set(0,.163,4.15);
+foyerWalk.receiveShadow=true;group.add(foyerWalk);
+const foyerInlay=mat(0x76b9a9,.75);
+for(const x of [-1.54,1.54])
+ box(.045,.012,7.66,x,.174,4.15,foyerInlay,group,false);
+for(const z of [1.02,7.35])
+ box(2.98,.012,.045,0,.174,z,foyerInlay,group,false);
 // The narrower main hall starts behind the foyer and continues into the clinic.
 groundRect(2.86,12.25,0,-5.87,mat(0xd7d7ca),.082);
 const corridorMap=tileHall.clone();corridorMap.needsUpdate=true;corridorMap.repeat.set(2.78/.85,12.18/.85);
@@ -463,6 +495,32 @@ for(const x of [-.075,.075])box(.042,.34,.10,x,1.08,8.44,oak);
 const canopy=box(3.72,.14,1.36,0,2.21,8.78,tealLight);
 canopy.material=mat(0x78c8c4,.32,.15);
 for(const x of [-1.80,1.80])box(.10,.18,1.40,x,2.25,8.78,teal);
+// Fine metallic trim and warm inset lighting make the glass entrance welcoming.
+// These are emissive surfaces rather than costly additional shadow-casting lights.
+const entranceBrass=mat(0xd5ba88,.48,.12);
+const entranceGlow=new THREE.MeshStandardMaterial({
+ color:0xfff8e8,emissive:0xffe3ab,emissiveIntensity:.9,roughness:.4
+});
+box(3.53,.035,.06,0,2.29,9.43,entranceBrass,group,false);
+for(const x of [-1.2,0,1.2])
+ box(.36,.024,.25,x,2.122,8.92,entranceGlow,group,false);
+// The slim welcome mat sits on the ground, not in the walkable 3D space.
+box(2.56,.014,.56,0,.185,9.08,mat(0x639b99),group,false);
+for(const x of [-2.35,2.35]){
+ box(.77,.35,.73,x,.30,9.24,wallWhite,group,false);
+ box(.69,.028,.65,x,.49,9.24,soil,group,false);
+ for(let i=0;i<3;i++){
+  const dx=(i-1)*.20;
+  sphere(.17,x+dx,.62,9.24+(i%2?.12:-.10),i%2?leaf2:leaf)
+ }
+}
+// Exterior wayfinding plaques sit on existing low front walls.
+plane(2.20,.32,-4.20,.76,8.365,new THREE.MeshBasicMaterial({
+ map:labelTexture('← ANMELDUNG','#23685f','#ffffff',44),
+ transparent:true,depthWrite:false,side:THREE.DoubleSide}),0);
+plane(2.34,.32,4.20,.76,8.365,new THREE.MeshBasicMaterial({
+ map:labelTexture('WARTEBEREICH →','#296d7e','#ffffff',40),
+ transparent:true,depthWrite:false,side:THREE.DoubleSide}),0);
 plane(2.18,.44,0,1.81,8.47,new THREE.MeshBasicMaterial({
  map:labelTexture('HAUPTEINGANG','#17525a','#ffffff',52),transparent:true,depthWrite:false}),0);
 // Large, bright foyer navigation signs along the low rear wall.
