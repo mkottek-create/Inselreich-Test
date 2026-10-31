@@ -1693,6 +1693,7 @@ document.getElementById('undoLastBuild').onclick=()=>{
  map.delete(entry.k);
  if(entry.type==='house')citizens.delete(entry.k);
  if(entry.type==='quarry')quarryDeposits.delete(entry.k);
+ if(entry.type==='market')invalidateMarketRoads();
  worldShadowsDirty=true;
  wood+=entry.woodCost||0;stone+=entry.stoneCost||0;
  refreshWood();refreshStone();save();
@@ -1737,7 +1738,9 @@ function placeBuildingNow(k){
  // Keep the selected building active for placing multiple buildings in a row.
  // Only the explicit "👁️ Anschauen" button ends building mode.
  status.textContent='✅ Gebäude gebaut'+(cost?' (🌲 −'+cost+' Holz)':' (kostenlos)')+
- (stoneCost?' (🪨 −'+stoneCost+' Stein)':'')+'! Nächstes Feld antippen oder 👁️ Anschauen. ↶ Rückgängig möglich.';
+ (stoneCost?' (🪨 −'+stoneCost+' Stein)':'')+'! '+
+ (markets.size&&!hasDeliveryRoute(type,k)&&type!=='field'?'🛤️ Jetzt noch mit dem Markt verbinden! ':'')+
+ 'Nächstes Feld antippen oder 👁️ Anschauen. ↶ Rückgängig möglich.';
  if(group)showBuildUndo(type,k,group,cost,stoneCost);
  return true
 }
@@ -1799,52 +1802,48 @@ function buildingInfoData(info){
  if(info.type==='house'){
   const inhabitants=citizens.get(k)??2;
   const supplied=food>0;
-  const road=residentNearRoad(k);
-  let nearbyMarket=false;
-  for(const mk of markets.keys()){
-   const [mx,mz]=pos(mk);
-   if(Math.abs(mx+.5-x)+Math.abs(mz+.5-z)<=3){nearbyMarket=true;break}
-  }
-  const happiness=Math.min(100,(supplied?80:38)+(road?12:0)+(nearbyMarket?5:0));
+  const road=residentNearRoad(k),marketConnected=connectsToMarket('house',k);
+  const happiness=Math.min(100,(supplied?80:38)+(road?7:0)+(marketConnected?10:0));
   result.firstLabel='Bewohner';
   result.first=inhabitants+' / '+HOME_CAPACITY;
   result.secondLabel='Zufriedenheit';
   result.second=happiness+' %';
   result.details=(supplied?'✅ Nahrung vorhanden':'⚠️ Nahrung fehlt – Wachstum pausiert')+
-   ' · '+(road?'✅ Straßenanschluss':'🛤️ Noch keine Straße am Haus')+
-   ' · '+(nearbyMarket?'✅ Markt in Reichweite':'🛒 Kein Markt in der Nähe');
+   ' · '+(markets.size&&!marketConnected?'⚠️ Wachstum benötigt einen Straßenweg zum Markt':'✅ Bewohner können weiter wachsen');
  }else if(info.type==='lumber'){
-  result.firstLabel='Produktion';result.first='+1 Holz / 15 Sek.';
+  result.firstLabel='Produktion';result.first=hasDeliveryRoute('lumber',k)?'+1 Holz / 15 Sek.':'⏸️ Lieferung gestoppt';
   result.secondLabel='Holzlager';result.second=wood.toLocaleString('de-DE');
   result.details='🌲 Der Holzfäller produziert laufend Holz für dein Inselreich.';
  }else if(info.type==='quarry'){
   const deposit=quarryDeposits.get(k);
-  result.firstLabel='Produktion';result.first='+1 Stein / 15 Sek.';
+  result.firstLabel='Produktion';result.first=hasDeliveryRoute('quarry',k)?'+1 Stein / 15 Sek.':'⏸️ Lieferung gestoppt';
   result.secondLabel='Steinlager';result.second=stone.toLocaleString('de-DE');
   result.details=deposit?'🏔️ Aktiv an einem Steinvorkommen. Baut Stein für Märkte und Burgen ab.':'⚠️ Kein angeschlossener Berg.';
  }else if(info.type==='farm'){
   const adjacent=neighbors(x,z).filter(([a,b])=>fields.has(key(a,b))).length;
-  const active=neighbors(x,z).filter(([a,b])=>fields.has(key(a,b))&&nearFarm(key(a,b))).length;
+  const active=neighbors(x,z).filter(([a,b])=>fields.has(key(a,b))&&hasDeliveryRoute('farm',k)).length;
   result.firstLabel='Benachbarte Felder';result.first=adjacent.toString();
   result.secondLabel='Aktive Felder';result.second=active.toString();
   result.details=active>0?'✅ Mit Weizenfeldern wird Nahrung produziert (+1 je aktivem Feld alle 12 Sek.).':'🌾 Setze ein Weizenfeld direkt neben den Bauernhof, um Nahrung zu produzieren.';
  }else if(info.type==='field'){
-  const active=nearFarm(k);
-  result.firstLabel='Produktion';result.first=active?'+1 Nahrung / 12 Sek.':'Pausiert';
+  const active=fieldHasMarketDelivery(k);
+  result.firstLabel='Produktion';result.first=active?'+1 Nahrung / 12 Sek.':'⏸️ Pausiert';
   result.secondLabel='Verbindung';result.second=active?'Bauernhof ✓':'Fehlt';
-  result.details=active?'✅ Dieses Feld wird von einem benachbarten Bauernhof bewirtschaftet.':'⚠️ Das Feld braucht einen benachbarten Bauernhof.';
+  result.details=active?'✅ Benachbarter Bauernhof liefert Weizen über die Straße zum Markt.':
+   (nearFarm(k)?'⚠️ Bauernhof muss mit einer Straße zum Markt verbunden werden.':'⚠️ Das Feld braucht einen benachbarten Bauernhof.');
  }else if(info.type==='market'){
   const nearby=[...buildings.keys()].filter(h=>{
    const [hx,hz]=pos(h);return Math.abs(x+.5-hx)+Math.abs(z+.5-hz)<=3
   }).length;
   result.firstLabel='Wohnhäuser in Nähe';result.first=nearby.toString();
   result.secondLabel='Zufriedenheit';result.second='+5 Punkte';
-  result.details='🛒 Der Markt steigert die Zufriedenheit naher Wohnhäuser. Er produziert keine eigenen Waren.';
+  result.details='🛒 Der Markt nimmt Holz, Stein und Nahrung über durchgehende Straßen entgegen. Er produziert keine eigenen Waren.';
  }else if(info.type==='castle'){
   result.firstLabel='Baugröße';result.first='3×3 Felder';
   result.secondLabel='Besonderheit';result.second='Wassergraben';
   result.details='🏰 Wahrzeichen deines Inselreichs mit Burgbrücke. Weitere Funktionen kommen in späteren Zeitaltern.';
  }
+ if(info.type!=='field')result.details+=' · '+transportMessage(info.type,k);
  return result
 }
 function closeBuildingInfo(){infoSelection=null;document.getElementById('buildingInfo').hidden=true}
@@ -1889,9 +1888,9 @@ if(from.type==='quarry'){
  quarryDeposits.set(to,quarryTarget);
  orientQuarryPortal(g,to,quarryTarget)
 }
-const [x,z]=pos(to);const by={house:.025,market:.025,lumber:.035,quarry:.03,farm:.015,castle:.16,field:.16};g.position.set(x+(from.type==='castle'?1:from.type==='market'?.5:0),by[from.type]??.16,z+(from.type==='castle'?1:from.type==='market'?.5:0));worldShadowsDirty=true;save();status.textContent='✅ Gebäude verschoben! Zum Bearbeiten wieder länger gedrückt halten.';return true}
+const [x,z]=pos(to);const by={house:.025,market:.025,lumber:.035,quarry:.03,farm:.015,castle:.16,field:.16};g.position.set(x+(from.type==='castle'?1:from.type==='market'?.5:0),by[from.type]??.16,z+(from.type==='castle'?1:from.type==='market'?.5:0));if(from.type==='market')invalidateMarketRoads();worldShadowsDirty=true;save();status.textContent='✅ Gebäude verschoben! Zum Bearbeiten wieder länger gedrückt halten.';return true}
 document.getElementById('move').onclick=()=>{if(!selected)return;moving=selected;closeEdit();modeBuild=false;buildPanel.hidden=true;updateTools();status.textContent='↔ Verschieben: Tippe auf ein FREIES grünes Feld. Markt braucht 2×2, Burg braucht 3×3 freie Felder.'};
-document.getElementById('demolish').onclick=()=>{if(!selected)return;const t=selected;if(confirm('Dieses Gebäude wirklich löschen?')){const m=mapOf(t.type),g=m.get(t.anchor);if(g){land.remove(g);m.delete(t.anchor);if(t.type==='house')citizens.delete(t.anchor);if(t.type==='quarry')quarryDeposits.delete(t.anchor);worldShadowsDirty=true;save();status.textContent='🗑 Gebäude gelöscht. Der Bauplatz ist wieder frei.'}}closeEdit()};
+document.getElementById('demolish').onclick=()=>{if(!selected)return;const t=selected;if(confirm('Dieses Gebäude wirklich löschen?')){const m=mapOf(t.type),g=m.get(t.anchor);if(g){land.remove(g);m.delete(t.anchor);if(t.type==='house')citizens.delete(t.anchor);if(t.type==='quarry')quarryDeposits.delete(t.anchor);if(t.type==='market')invalidateMarketRoads();worldShadowsDirty=true;save();status.textContent='🗑 Gebäude gelöscht. Der Bauplatz ist wieder frei.'}}closeEdit()};
 document.getElementById('editClose').onclick=closeEdit;
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 
@@ -2120,7 +2119,7 @@ function category(cat){for(const [name,btn] of Object.entries(typeButtons))btn.h
 for(const btn of document.querySelectorAll('[data-cat]'))btn.onclick=()=>category(btn.dataset.cat);
 viewButton.onclick=viewMode;openBuildButton.onclick=()=>{closeBuildingInfo();modeBuild=false;moving=null;closeEdit();clearPreview();buildPanel.hidden=!buildPanel.hidden;updateTools();status.textContent=buildPanel.hidden?'👁️ Ansichtsmodus':'🔨 Wähle eine Kategorie und dann dein Gebäude.'};
 category('wohnen');updateTools();updateExpansionButton();
-document.getElementById('reset').onclick=()=>{hideBuildUndo();closeBuildingInfo();clearPreview();cancelHold();moving=null;closeEdit();if(!confirm('3D-Test zurücksetzen? Das alte Inselreich bleibt erhalten.'))return;for(const g of buildings.values())land.remove(g);buildings.clear();for(const g of markets.values())land.remove(g);markets.clear();for(const g of castles.values())land.remove(g);castles.clear();for(const g of lumberjacks.values())land.remove(g);lumberjacks.clear();for(const g of farms.values())land.remove(g);farms.clear();for(const g of fields.values())land.remove(g);fields.clear();for(const g of quarries.values())land.remove(g);quarries.clear();quarryDeposits.clear();for(const model of roadModels.values())land.remove(model);roadModels.clear();roads.clear();rockSites.clear();rockModels.clear();quarries.clear();quarryDeposits.clear();roadStrokeDirty=false;citizens.clear();citizenElapsed=0;food=0;foodElapsed=0;refreshFood();stone=0;stoneElapsed=0;refreshStone();wood=START_WOOD;woodElapsed=0;starterWoodGranted=true;refreshWood();owned.clear();for(const obj of tileModels.values())land.remove(obj);tileModels.clear();tiles.length=0;for(let x=-1;x<=1;x++)for(let z=-1;z<=1;z++)owned.add(key(x,z));refreshEdge();addHouse(key(0,0));updateExpansionButton();status.textContent='🌱 3D-Test zurückgesetzt.'};
+document.getElementById('reset').onclick=()=>{hideBuildUndo();closeBuildingInfo();clearPreview();cancelHold();moving=null;closeEdit();if(!confirm('3D-Test zurücksetzen? Das alte Inselreich bleibt erhalten.'))return;for(const g of buildings.values())land.remove(g);buildings.clear();for(const g of markets.values())land.remove(g);markets.clear();for(const g of castles.values())land.remove(g);castles.clear();for(const g of lumberjacks.values())land.remove(g);lumberjacks.clear();for(const g of farms.values())land.remove(g);farms.clear();for(const g of fields.values())land.remove(g);fields.clear();for(const g of quarries.values())land.remove(g);quarries.clear();quarryDeposits.clear();for(const model of roadModels.values())land.remove(model);roadModels.clear();roads.clear();invalidateMarketRoads();rockSites.clear();rockModels.clear();quarries.clear();quarryDeposits.clear();roadStrokeDirty=false;citizens.clear();citizenElapsed=0;food=0;foodElapsed=0;refreshFood();stone=0;stoneElapsed=0;refreshStone();wood=START_WOOD;woodElapsed=0;starterWoodGranted=true;refreshWood();owned.clear();for(const obj of tileModels.values())land.remove(obj);tileModels.clear();tiles.length=0;for(let x=-1;x<=1;x++)for(let z=-1;z<=1;z++)owned.add(key(x,z));refreshEdge();addHouse(key(0,0));updateExpansionButton();status.textContent='🌱 3D-Test zurückgesetzt.'};
 let lastFrame=performance.now(),autosave=0;function animate(now){requestAnimationFrame(animate);const dt=Math.min(1,(now-lastFrame)/1000||0);lastFrame=now;const activeLumber=activeLumberjackCount();if(activeLumber){woodElapsed+=dt*1000;if(woodElapsed>=15000){const batches=Math.floor(woodElapsed/15000);woodElapsed%=15000;wood+=batches*activeLumber;refreshWood();save()}}else woodElapsed=0;
 const activeStone=activeQuarryCount();if(activeStone){
  stoneElapsed+=dt*1000;
