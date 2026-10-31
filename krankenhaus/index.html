@@ -59,6 +59,25 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
 #finishReception{background:#32795a!important}
 #rotateReception{background:#497f88!important}
 #viewTreatments{flex:1 1 100%;background:#317f88!important;font-size:14px}
+#toggleFurniture{flex:1 1 100%;background:#337d67!important;font-size:15px!important}
+#toggleFurniture.active{background:#c18b3d!important}
+#furniturePanel{background:#f3faf6;border-bottom:2px solid #c6e3db;padding:12px;display:grid;gap:10px}
+#furniturePanel[hidden]{display:none!important}
+#furniturePanel h2{font-size:15px;margin:0;color:#275a55}
+#furniturePanel p{font-size:12px;margin:0;color:#537571;line-height:1.45}
+#furnitureCategories{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+#furnitureCategories button{border:1px solid #a9cbc3;border-radius:11px;min-height:42px;font-weight:800;background:#fff;color:#356f68;font-size:12px}
+#furnitureCategories button.active{color:#fff;background:#317b70}
+#furnitureItems{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+#furnitureItems button{border:1px solid #cadfd8;background:#fff;color:#315e5b;border-radius:12px;padding:7px 4px;min-height:68px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;font-size:11px;font-weight:750;line-height:1.2;overflow-wrap:anywhere}
+#furnitureItems button .itemIcon{font-size:25px;line-height:1.1}
+#furnitureItems button.chosen{border:2px solid #cd9141;background:#fff4dc}
+#furnitureControls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+#furnitureControls button{min-height:43px;padding:9px 6px;border:0;border-radius:10px;background:#317b70;color:#fff;font-weight:800;font-size:12px}
+#furnitureControls button:disabled{opacity:.4}
+#furnitureControls #furnitureDelete{background:#b75d57}
+#furnitureControls #furnitureDone{background:#5f7482}
+#furnitureCount{font-weight:750;color:#2a6e63}
 @media (min-width:760px){#stage{height:72vh;min-height:520px}header{padding:18px 24px}section{padding:20px 24px}#topLegend{left:20px;top:20px}}
 @media (max-width:350px){.rooms{grid-template-columns:1fr 1fr}.room{min-height:90px}#gestureHint{font-size:10px}}
 @media(pointer:coarse){#topLegend{display:none}}
@@ -83,10 +102,29 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
 <div id="status" role="status" aria-live="polite">🏥 Frisch gestalteter Haupteingang: helles Foyer, Anmeldung links, Wartebereich rechts, freier Mittelweg.</div>
 <div id="layoutTools" aria-label="Einrichtungsmodus">
  <button id="viewTreatments" type="button">🩺 Beide Behandlungsräume ansehen</button>
+ <button id="toggleFurniture" type="button" aria-expanded="false" aria-controls="furniturePanel">🪑 Möbel bauen</button>
  <button id="toggleFloorplan" type="button">🏗️ Grundriss bearbeiten</button>
  <button id="editReception" type="button">🛠️ Anmeldung verschieben</button>
  <button id="rotateReception" type="button" hidden>🔄 Tresen drehen</button>
  <button id="finishReception" type="button" hidden>✓ Fertig</button>
+</div>
+<div id="furniturePanel" hidden aria-label="Möbel-Baumodus">
+ <h2>🪑 Möbel auswählen und im Zimmer antippen</h2>
+ <p>1. Gegenstand wählen · 2. Ins Zimmer tippen · 3. Möbel antippen und ziehen, drehen oder entfernen.</p>
+ <div id="furnitureCategories">
+  <button type="button" data-fcategory="alltag" class="active">🪑 Alltag</button>
+  <button type="button" data-fcategory="medizin">🩺 Medizin</button>
+  <button type="button" data-fcategory="deko">🌿 Deko</button>
+ </div>
+ <div id="furnitureItems" aria-label="Möbel auswählen"></div>
+ <p id="furnitureHint" role="status">Stuhl auswählen und in ein Zimmer tippen.</p>
+ <div id="furnitureControls">
+  <button id="furnitureRotate" type="button" disabled>↻ Drehen</button>
+  <button id="furnitureDelete" type="button" disabled>🗑️ Entfernen</button>
+  <button id="furnitureUndo" type="button" disabled>↶ Rückgängig</button>
+  <button id="furnitureDone" type="button">✓ Fertig</button>
+ </div>
+ <p id="furnitureCount">0 selbst platzierte Möbel · Bestehende Einrichtung bleibt.</p>
 </div>
 <div id="roomBuilder" hidden aria-label="Räume bauen und verschieben">
  <div class="builderRow"><select id="buildCategory" aria-label="Baumodus"><option value="rooms">🏠 Räume & Größen</option><option value="construction">🧱 Wände, Türen & Fenster</option></select></div>
@@ -118,12 +156,13 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
   <div class="room"><span class="symbol">☕</span><strong>Personalraum</strong><p>Rechts hinten, noch leer.</p></div>
   <div class="room"><span class="symbol">🚻</span><strong>Toilette</strong><p>Hinten am Hauptflur, noch ohne Einrichtung.</p></div>
  </div>
- <p class="note">Der große Haupteingang führt zuerst ins offene Foyer mit Anmeldung links und Wartebereich rechts. Erst hinter dem Foyer beginnt der Hauptflur mit zwei Behandlungsräumen, Diagnose, Personalraum und Toilette. Diagnose, Personalraum und Toilette bleiben vorerst ohne Einrichtung. Mit „🏗️ Grundriss bearbeiten“ verschiebst du Räume, wählst Größen oder ziehst eigene Wände, Türen, Fenster und Böden. Beim Empfang bleibt der verschiebbare Tresen erhalten. Alle Bau- und Kamerasteuerungen liegen unterhalb des 3D-Bildes. Dein alter Grundriss bleibt separat als Sicherung gespeichert; Inselreich ist unabhängig.</p>
+ <p class="note">Der große Haupteingang führt zuerst ins offene Foyer mit Anmeldung links und Wartebereich rechts. Erst hinter dem Foyer beginnt der Hauptflur mit zwei Behandlungsräumen, Diagnose, Personalraum und Toilette. Diagnose, Personalraum und Toilette bleiben vorerst ohne Einrichtung. Mit „🏗️ Grundriss bearbeiten“ verschiebst du Räume, wählst Größen oder ziehst eigene Wände, Türen, Fenster und Böden. Beim Empfang bleibt der verschiebbare Tresen erhalten. Über „🪑 Möbel bauen“ kannst du Stühle, Tische, Betten, medizinische Geräte und Dekoration einfach ergänzen. Alle Bau- und Kamerasteuerungen liegen unterhalb des 3D-Bildes. Dein alter Grundriss bleibt separat als Sicherung gespeichert; Inselreich ist unabhängig.</p>
 </section>
 </main>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"}}</script>
 <script type="module">
 import * as THREE from 'three';
+import {setupFurniture} from './moebel-editor.js';
 const stage=document.getElementById('stage');
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0xc8e0df);
@@ -847,6 +886,7 @@ function updateReceptionEditor(){
   :'☝️ Verschieben · ✌️ Zoomen & Drehen';
 }
 editReceptionBtn.onclick=()=>{
+ furnitureEditor.close();
  if(editingFloorplan)finishFloorplan();
  editingReception=!editingReception;
  if(editingReception){
@@ -1022,6 +1062,7 @@ function finishFloorplan(){
  document.getElementById('status').textContent='✅ Grundriss gespeichert! Du kannst die Kamera wieder frei bewegen.'
 }
 floorplanToggle.onclick=()=>{
+ furnitureEditor.close();
  if(!editingFloorplan&&editingReception){
   editingReception=false;storeReception();updateReceptionEditor()
  }
@@ -1091,6 +1132,7 @@ roomDelete.onclick=()=>{
  const r=roomSpecs[i],root=roomGroups.get(r.id);
  if(root){group.remove(root);root.traverse(part=>{part.geometry?.dispose?.()})}
  roomSpecs.splice(i,1);roomGroups.delete(r.id);selectedRoomId=null;
+ furnitureEditor.removeRoom(r.id);
  renderer.shadowMap.needsUpdate=true;saveFloorplan();showBuilder();
  document.getElementById('status').textContent='🗑 '+r.name+' entfernt.'
 };
@@ -1362,13 +1404,23 @@ if(restoredDeskWorldPosition){
  moveReceptionTo(restoredDeskWorldPosition.x,restoredDeskWorldPosition.z)
 }
 showBuilder();
-
+// Furniture is separately saved and follows its parent room when moved.
+const furnitureEditor=setupFurniture({
+ THREE,roomSpecs,roomGroups,roomAt,groundHit,renderer,scene,stage,camera,
+ mat,box,cylinder,sphere,white,black,teal,tealLight,oak,oakDark,soil,
+ gold,leaf,leaf2,glass,chairBlue,screenMat,
+ setCameraMode:(mode)=>setCameraMode(mode),
+ stopOther:()=>{
+  if(editingFloorplan)finishFloorplan();
+  if(editingReception){editingReception=false;storeReception();updateReceptionEditor()}
+ }
+});
 // Precise mobile camera control. Pan keeps the world point under the finger;
 // rotation needs its own explicit mode. Two-finger gestures always work.
 let cameraMode='pan';
 const cameraButtons={build:document.getElementById('camBuild'),
  pan:document.getElementById('camPan'),rotate:document.getElementById('camRotate')};
-function cameraActiveEditor(){return editingFloorplan||editingReception}
+function cameraActiveEditor(){return editingFloorplan||editingReception||furnitureEditor.editing}
 function setCameraMode(mode){
  hideRoomInfo();
  cameraMode=mode==='rotate'?'rotate':mode==='build'&&cameraActiveEditor()?'build':'pan';
@@ -1381,7 +1433,7 @@ function setCameraMode(mode){
  gestureHint.textContent=cameraMode==='rotate'
   ?'☝️ Links/rechts drehen · Hoch/runter neigen · ✌️ Zoomen'
   :cameraMode==='build'
-   ?(editingFloorplan?'☝️ Raum/Bauteil bearbeiten · ✌️ Zoomen & Drehen':'☝️ Anmeldung verschieben · ✌️ Zoomen & Drehen')
+   ?(furnitureEditor.editing?'☝️ Möbel antippen oder ziehen · ✌️ Zoomen & Drehen':editingFloorplan?'☝️ Raum/Bauteil bearbeiten · ✌️ Zoomen & Drehen':'☝️ Anmeldung verschieben · ✌️ Zoomen & Drehen')
    :'☝️ Ansicht schieben · ✌️ Zoomen & Drehen';
 }
 cameraButtons.pan.onclick=()=>setCameraMode('pan');
