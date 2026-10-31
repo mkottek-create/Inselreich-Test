@@ -473,7 +473,10 @@ plane(2.55,.42,4.07,1.37,.28,new THREE.MeshBasicMaterial({
 // A pale-blue zone, tall contrast-rich front and floating sign distinguish it from
 // the waiting area, even when viewed on a small iPhone display.
 const receptionDecorStart=group.children.length;
-const receptionFloor=mat(0xe6f3f0);
+// A subtle translucent color wash keeps the individual floor tiles visible.
+const receptionFloor=new THREE.MeshStandardMaterial({
+ color:0xe6f3f0,transparent:true,opacity:.16,roughness:1,depthWrite:false
+});
 const receptionRoom=roomSpecs.find(r=>r.id==='reception');
 box(receptionRoom.w-.34,.018,receptionRoom.d-.34,
  receptionRoom.x,.166,receptionRoom.z,receptionFloor,group,false);
