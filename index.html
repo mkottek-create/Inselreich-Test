@@ -69,7 +69,7 @@ const mat=(hex)=>new THREE.MeshStandardMaterial({color:hex,roughness:0.9});
 const grass=[mat(0x7faa5b),mat(0x91bc6d),mat(0x6f984e)],soil=mat(0x866342),wall=mat(0xead1a6),roof=mat(0xac5944),roofSide=mat(0x843f34),door=mat(0x65432e),glass=mat(0x93c6cc),trunk=mat(0x8e653c);
 const land=new THREE.Group();scene.add(land);
 const tiles=[],tileModels=new Map(),buildings=new Map(),markets=new Map(),castles=new Map(),lumberjacks=new Map(),farms=new Map(),fields=new Map(),owned=new Set(),roads=new Set(),roadModels=new Map();
-const citizens=new Map();let citizenElapsed=0,infoSelection=null,starterWoodGranted=false;
+const citizens=new Map(),rockSites=new Set(),rockModels=new Map(),quarries=new Map(),quarryDeposits=new Map();let citizenElapsed=0,infoSelection=null,starterWoodGranted=false;
 const HOME_CAPACITY=6,CITIZEN_TICK_MS=30000,START_WOOD=10;
 const WOOD_BUILD_COST={house:5,farm:8,field:3,lumber:6,market:14,castle:30};
 const LIMIT=8,KEY='inselreich-pages-test-01',OLD_KEY='inselreich-3d-test-01';
@@ -171,6 +171,51 @@ function syncGroundDetailsVisibility(){
 }
 
 const edgeMaterial=new THREE.MeshBasicMaterial({color:0xc9ec8b,transparent:true,opacity:.23,depthWrite:false,side:THREE.DoubleSide});
+// Distinct jagged mountain deposits. The geometry is deliberately low-poly for iPhone.
+const mountainStone=mat(0x999d9a),mountainDark=mat(0x697774),
+      mountainLight=mat(0xbac0b7),mountainRockShape=new THREE.DodecahedronGeometry(1,0);
+function addMountainModel(k){
+ const tileGroup=tileModels.get(k);
+ if(!tileGroup||rockModels.has(k)||!rockSites.has(k))return;
+ const [x,z]=pos(k),g=new THREE.Group();g.name='mountainDeposit';
+ const shapes=[
+  {x:0,z:-.06,y:.42,sx:.43,sy:.47,sz:.36,material:mountainDark},
+  {x:-.20,z:.19,y:.42,sx:.28,sy:.38,sz:.28,material:mountainStone},
+  {x:.19,z:.16,y:.40,sx:.28,sy:.34,sz:.27,material:mountainStone},
+  {x:-.045,z:-.12,y:.78,sx:.23,sy:.33,sz:.21,material:mountainLight}
+ ];
+ for(const p of shapes){
+  const mesh=new THREE.Mesh(mountainRockShape,p.material);
+  mesh.position.set(p.x,p.y,p.z);mesh.scale.set(p.sx,p.sy,p.sz);
+  mesh.rotation.y=terrainRand(x,z,40+p.x*10)*.65;mesh.castShadow=true;mesh.receiveShadow=true;g.add(mesh)
+ }
+ const shelf=new THREE.Mesh(new THREE.CylinderGeometry(.49,.52,.085,8),mountainStone);
+ shelf.position.set(0,.20,0);shelf.castShadow=true;g.add(shelf);
+ tileGroup.add(g);rockModels.set(k,g)
+}
+function seedRockSites(candidates){
+ // Only claim empty land with an accessible neighboring work tile.
+ // Already occupied cells and old savegames are never overwritten.
+ const possible=[...new Set(candidates)].filter(k=>{
+  if(!owned.has(k)||rockSites.has(k)||occupied(k))return false;
+  const [x,z]=pos(k);
+  if(Math.max(Math.abs(x),Math.abs(z))<2)return false;
+  return neighbors(x,z).some(([a,b])=>owned.has(key(a,b))&&!occupied(key(a,b))&&!rockSites.has(key(a,b)))
+ });
+ possible.sort((a,b)=>{
+  const [ax,az]=pos(a),[bx,bz]=pos(b);
+  return terrainRand(ax,az,881)-terrainRand(bx,bz,881)
+ });
+ for(const k of possible){
+  const [x,z]=pos(k);
+  if(neighbors(x,z).some(([a,b])=>owned.has(key(a,b))&&!occupied(key(a,b))&&!rockSites.has(key(a,b)))){
+   rockSites.add(k);
+   addMountainModel(k);
+   return k
+  }
+ }
+ return null
+}
 function tile(k,unlocked){
  const [x,z]=pos(k),group=new THREE.Group();
  group.position.set(x,0,z);land.add(group);
@@ -187,7 +232,9 @@ function tile(k,unlocked){
    new THREE.LineBasicMaterial({color:0x556e46,transparent:true,opacity:.28,depthWrite:false})
   );
   group.add(outline);
-  attachMeadowDetails(group,x,z)
+  if(rockSites.has(k)){
+   // Register the tile first so its mountain can attach to it below.
+  }else attachMeadowDetails(group,x,z)
  }else{
   const marker=new THREE.Mesh(new THREE.PlaneGeometry(.94,.94),edgeMaterial);
   marker.rotation.x=-Math.PI/2;marker.position.y=.15;group.add(marker);
@@ -200,7 +247,8 @@ function tile(k,unlocked){
  const hit=new THREE.Mesh(new THREE.PlaneGeometry(1,1),
   new THREE.MeshBasicMaterial({visible:false,side:THREE.DoubleSide}));
  hit.rotation.x=-Math.PI/2;hit.position.y=.16;
- hit.userData={key:k};group.add(hit);tiles.push(hit);tileModels.set(k,group)
+ hit.userData={key:k};group.add(hit);tiles.push(hit);tileModels.set(k,group);
+ if(unlocked&&rockSites.has(k))addMountainModel(k)
 }
 function refreshEdge(){for(const [k,obj] of tileModels){const [x,z]=pos(k);const unlocked=owned.has(k);if(!unlocked&&!validFrontier(x,z)){land.remove(obj);tileModels.delete(k);const h=obj.children.find(c=>c.userData?.key===k);if(h){const idx=tiles.indexOf(h);if(idx>=0)tiles.splice(idx,1)}}}
  for(const k of owned){if(!tileModels.has(k))tile(k,true)}
@@ -240,13 +288,14 @@ function expandIslandRing(){
    if(hitMesh){const i=tiles.indexOf(hitMesh);if(i>=0)tiles.splice(i,1)}
   }
  }
+ const newMountain=seedRockSites(cells);
  refreshEdge();save();updateExpansionButton();
  // Keep the expanded island readable on the iPhone without changing the user's camera angle.
  let extent=0;
  for(const k of owned){const [x,z]=pos(k);extent=Math.max(extent,Math.abs(x),Math.abs(z))}
  distance=Math.min(MAX_ZOOM_DISTANCE,Math.max(distance,5.2+(extent+1)*1.05));
  focus.x=0;focus.z=0;placeCamera();
- status.textContent='🌿 Insel erweitert: '+cells.length+' neue Felder! Du kannst jetzt direkt darauf bauen.'
+ status.textContent='🌿 Insel erweitert: '+cells.length+' neue Felder! '+(newMountain?'🏔️ Neues Steinvorkommen entdeckt!':'Jetzt ist mehr Platz zum Bauen.')
 }
 document.getElementById('expandIsland').onclick=expandIslandRing;
 function box(w,h,d,m,x,y,z,parent){const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh}
@@ -473,7 +522,7 @@ function embellishField(g){
  }
 }
 
-function occupied(k){if(roads.has(k)||buildings.has(k)||lumberjacks.has(k)||farms.has(k)||fields.has(k))return true;
+function occupied(k){if(rockSites.has(k)||quarries.has(k)||roads.has(k)||buildings.has(k)||lumberjacks.has(k)||farms.has(k)||fields.has(k))return true;
  for(const anchor of markets.keys()){const [x,z]=pos(anchor),[a,b]=pos(k);if(a>=x&&a<x+2&&b>=z&&b<z+2)return true}
  for(const anchor of castles.keys()){const [x,z]=pos(anchor),[a,b]=pos(k);if(a>=x&&a<x+3&&b>=z&&b<z+3)return true}return false}
 
@@ -1089,8 +1138,10 @@ function citizenCycle(){
  refreshFood();save()
 }
 
-function save(){refreshRoadNetworks();syncGroundDetailsVisibility();updateCitizenUI();refreshBuildingInfo();refreshBuildCostLabels();try{localStorage.setItem(KEY,JSON.stringify({land:[...owned],houses:[...buildings.keys()],markets:[...markets.keys()],castles:[...castles.keys()],lumberjacks:[...lumberjacks.keys()],farms:[...farms.keys()],fields:[...fields.keys()],roads:[...roads],citizens:[...citizens],citizenElapsed,food,foodElapsed,wood,woodElapsed,starterWoodGranted,lastUpdate:Date.now()}))}catch(e){}}
-let restored=false;try{let data=JSON.parse(localStorage.getItem(KEY)||'null');if(data&&Array.isArray(data.land)&&Array.isArray(data.houses)){for(const k of data.land){const [x,z]=pos(k);if(inside(x,z))owned.add(k)}if(owned.size){refreshEdge();data.houses.forEach(k=>{if(owned.has(k))addHouse(k)});if(Array.isArray(data.markets))data.markets.forEach(k=>{if(typeof k==="string")addMarket(k)});if(Array.isArray(data.castles))data.castles.forEach(k=>{if(typeof k==='string')addCastle(k)});if(Array.isArray(data.lumberjacks))data.lumberjacks.forEach(k=>{if(typeof k==="string")addLumberjack(k)});if(Array.isArray(data.farms))data.farms.forEach(k=>{if(typeof k==='string')addFarm(k)});if(Array.isArray(data.fields))data.fields.forEach(k=>{if(typeof k==='string')addField(k)});if(Array.isArray(data.roads))data.roads.forEach(k=>{if(typeof k==='string'&&owned.has(k)&&!occupied(k))roads.add(k)});refreshRoadNetworks();
+function save(){refreshRoadNetworks();syncGroundDetailsVisibility();updateCitizenUI();refreshBuildingInfo();refreshBuildCostLabels();try{localStorage.setItem(KEY,JSON.stringify({land:[...owned],houses:[...buildings.keys()],markets:[...markets.keys()],castles:[...castles.keys()],lumberjacks:[...lumberjacks.keys()],farms:[...farms.keys()],fields:[...fields.keys()],roads:[...roads],rockSites:[...rockSites],citizens:[...citizens],citizenElapsed,food,foodElapsed,wood,woodElapsed,starterWoodGranted,lastUpdate:Date.now()}))}catch(e){}}
+let restored=false;try{let data=JSON.parse(localStorage.getItem(KEY)||'null');if(data&&Array.isArray(data.land)&&Array.isArray(data.houses)){for(const k of data.land){const [x,z]=pos(k);if(inside(x,z))owned.add(k)}if(owned.size){
+if(Array.isArray(data.rockSites))for(const k of data.rockSites)if(typeof k==='string'&&owned.has(k))rockSites.add(k);
+refreshEdge();data.houses.forEach(k=>{if(owned.has(k))addHouse(k)});if(Array.isArray(data.markets))data.markets.forEach(k=>{if(typeof k==="string")addMarket(k)});if(Array.isArray(data.castles))data.castles.forEach(k=>{if(typeof k==='string')addCastle(k)});if(Array.isArray(data.lumberjacks))data.lumberjacks.forEach(k=>{if(typeof k==="string")addLumberjack(k)});if(Array.isArray(data.farms))data.farms.forEach(k=>{if(typeof k==='string')addFarm(k)});if(Array.isArray(data.fields))data.fields.forEach(k=>{if(typeof k==='string')addField(k)});if(Array.isArray(data.roads))data.roads.forEach(k=>{if(typeof k==='string'&&owned.has(k)&&!occupied(k))roads.add(k)});refreshRoadNetworks();
 if(Array.isArray(data.citizens))for(const entry of data.citizens){
  if(Array.isArray(entry)&&entry.length===2&&buildings.has(entry[0])){
   const value=Number(entry[1]);
@@ -1099,7 +1150,8 @@ if(Array.isArray(data.citizens))for(const entry of data.citizens){
 }
 citizenElapsed=Math.max(0,Math.min(CITIZEN_TICK_MS-1,Number(data.citizenElapsed)||0));
 starterWoodGranted=data.starterWoodGranted===true;
-food=Math.max(0,Math.floor(Number(data.food)||0));foodElapsed=Math.max(0,Math.min(9999,Number(data.foodElapsed)||0));wood=Math.max(0,Math.floor(Number(data.wood)||0));woodElapsed=Math.max(0,Math.min(9999,Number(data.woodElapsed)||0));const away=Math.max(0,Math.min(21600000,Date.now()-(Number(data.lastUpdate)||Date.now())));const total=woodElapsed+away;if(lumberjacks.size){wood+=Math.floor(total/15000)*lumberjacks.size;woodElapsed=total%15000}else woodElapsed=0;const foodTotal=foodElapsed+away;if(productionFields()){food+=Math.floor(foodTotal/12000)*productionFields();foodElapsed=foodTotal%12000}else foodElapsed=0;restored=true}}}catch(e){}
+food=Math.max(0,Math.floor(Number(data.food)||0));foodElapsed=Math.max(0,Math.min(9999,Number(data.foodElapsed)||0));wood=Math.max(0,Math.floor(Number(data.wood)||0));woodElapsed=Math.max(0,Math.min(9999,Number(data.woodElapsed)||0));const away=Math.max(0,Math.min(21600000,Date.now()-(Number(data.lastUpdate)||Date.now())));const total=woodElapsed+away;if(lumberjacks.size){wood+=Math.floor(total/15000)*lumberjacks.size;woodElapsed=total%15000}else woodElapsed=0;const foodTotal=foodElapsed+away;if(productionFields()){food+=Math.floor(foodTotal/12000)*productionFields();foodElapsed=foodTotal%12000}else foodElapsed=0;
+ if(!rockSites.size)seedRockSites([...owned]);restored=true}}}catch(e){}
 if(!restored){for(let x=-1;x<=1;x++)for(let z=-1;z<=1;z++)owned.add(key(x,z));refreshEdge();
  try{const prev=JSON.parse(localStorage.getItem(OLD_KEY)||'null');if(Array.isArray(prev)){prev.forEach(i=>{if(Number.isInteger(i)&&i>=0&&i<9)addHouse(key(i%3-1,Math.floor(i/3)-1))})}else addHouse(key(0,0))}catch(e){addHouse(key(0,0))}}
 // New islands and old woodless saves receive a one-time supply of timber.
@@ -1442,7 +1494,7 @@ function category(cat){for(const [name,btn] of Object.entries(typeButtons))btn.h
 for(const btn of document.querySelectorAll('[data-cat]'))btn.onclick=()=>category(btn.dataset.cat);
 viewButton.onclick=viewMode;openBuildButton.onclick=()=>{closeBuildingInfo();modeBuild=false;moving=null;closeEdit();clearPreview();buildPanel.hidden=!buildPanel.hidden;updateTools();status.textContent=buildPanel.hidden?'👁️ Ansichtsmodus':'🔨 Wähle eine Kategorie und dann dein Gebäude.'};
 category('wohnen');updateTools();updateExpansionButton();
-document.getElementById('reset').onclick=()=>{hideBuildUndo();closeBuildingInfo();clearPreview();cancelHold();moving=null;closeEdit();if(!confirm('3D-Test zurücksetzen? Das alte Inselreich bleibt erhalten.'))return;for(const g of buildings.values())land.remove(g);buildings.clear();for(const g of markets.values())land.remove(g);markets.clear();for(const g of castles.values())land.remove(g);castles.clear();for(const g of lumberjacks.values())land.remove(g);lumberjacks.clear();for(const g of farms.values())land.remove(g);farms.clear();for(const g of fields.values())land.remove(g);fields.clear();for(const model of roadModels.values())land.remove(model);roadModels.clear();roads.clear();roadStrokeDirty=false;citizens.clear();citizenElapsed=0;food=0;foodElapsed=0;refreshFood();wood=START_WOOD;woodElapsed=0;starterWoodGranted=true;refreshWood();owned.clear();for(const obj of tileModels.values())land.remove(obj);tileModels.clear();tiles.length=0;for(let x=-1;x<=1;x++)for(let z=-1;z<=1;z++)owned.add(key(x,z));refreshEdge();addHouse(key(0,0));updateExpansionButton();status.textContent='🌱 3D-Test zurückgesetzt.'};
+document.getElementById('reset').onclick=()=>{hideBuildUndo();closeBuildingInfo();clearPreview();cancelHold();moving=null;closeEdit();if(!confirm('3D-Test zurücksetzen? Das alte Inselreich bleibt erhalten.'))return;for(const g of buildings.values())land.remove(g);buildings.clear();for(const g of markets.values())land.remove(g);markets.clear();for(const g of castles.values())land.remove(g);castles.clear();for(const g of lumberjacks.values())land.remove(g);lumberjacks.clear();for(const g of farms.values())land.remove(g);farms.clear();for(const g of fields.values())land.remove(g);fields.clear();for(const model of roadModels.values())land.remove(model);roadModels.clear();roads.clear();rockSites.clear();rockModels.clear();quarries.clear();quarryDeposits.clear();roadStrokeDirty=false;citizens.clear();citizenElapsed=0;food=0;foodElapsed=0;refreshFood();wood=START_WOOD;woodElapsed=0;starterWoodGranted=true;refreshWood();owned.clear();for(const obj of tileModels.values())land.remove(obj);tileModels.clear();tiles.length=0;for(let x=-1;x<=1;x++)for(let z=-1;z<=1;z++)owned.add(key(x,z));refreshEdge();addHouse(key(0,0));updateExpansionButton();status.textContent='🌱 3D-Test zurückgesetzt.'};
 let lastFrame=performance.now(),autosave=0;function animate(now){requestAnimationFrame(animate);const dt=Math.min(1,(now-lastFrame)/1000||0);lastFrame=now;if(lumberjacks.size){woodElapsed+=dt*1000;if(woodElapsed>=15000){const batches=Math.floor(woodElapsed/15000);woodElapsed%=15000;wood+=batches*lumberjacks.size;refreshWood();save()}}if(productionFields()){foodElapsed+=dt*1000;if(foodElapsed>=12000){const batches=Math.floor(foodElapsed/12000);foodElapsed%=12000;food+=batches*productionFields();refreshFood();save()}}if(buildings.size){
  citizenElapsed+=dt*1000;
  if(citizenElapsed>=CITIZEN_TICK_MS){
