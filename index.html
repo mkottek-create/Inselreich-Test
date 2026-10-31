@@ -31,7 +31,7 @@
 </style></head><body>
 <header><h1>🏝️ Inselreich 3D</h1><span class="tag">🌲 <strong id="woodCount">0</strong> · 🌾 <strong id="foodCount">0</strong></span></header>
 <div id="cityPulse"><span>👥 <strong id="peopleCount">0</strong> Einwohner</span><span>😊 <strong id="happyCount">0</strong>% zufrieden</span><span>🏡 Dorfzeit</span></div>
-<div id="game"><div id="mapTools"><span class="mapHint">☝️ Schieben · ✌️ Drehen & Zoom</span><button id="centerCamera">⌖ Kartenmitte</button><button id="overviewCamera">🔎 Weit raus</button></div><div id="buildingInfo" role="dialog" aria-label="Gebäudeinformationen" hidden>
+<div id="game"><div id="mapTools"><span class="mapHint">☝️ Frei schieben · ✌️ Drehen & Zoom</span><button id="centerCamera">⌖ Kartenmitte</button><button id="overviewCamera">🔎 Weit raus</button></div><div id="buildingInfo" role="dialog" aria-label="Gebäudeinformationen" hidden>
   <div class="infoHeading"><strong id="infoTitle">🏠 Gebäude</strong><button id="infoClose" aria-label="Gebäudeinformationen schließen">✕</button></div>
   <p id="infoSubtitle">Gebäudeübersicht</p>
   <div class="infoStats"><div><span id="infoKey1"></span><strong id="infoValue1"></strong></div><div><span id="infoKey2"></span><strong id="infoValue2"></strong></div></div>
@@ -53,7 +53,7 @@
 
 <div id="buildPanel" hidden><div class="categoryRow"><button data-cat="wohnen">🏠 Wohnen</button><button data-cat="land">🌾 Landwirtschaft</button><button data-cat="prod">🌲 Produktion</button><button data-cat="shop">🛒 Geschäfte</button><button data-cat="burg">🏰 Burgen</button><button data-cat="wege">🛤️ Straßen</button></div><div class="itemRow"><button id="build">🏠 Haus</button><button id="farm">🚜 Bauernhof</button><button id="field">🌾 Weizenfeld</button><button id="lumber">🪓 Holzfäller</button><button id="market">🛒 Markt 2×2</button><button id="castle">🏰 Burg 3×3</button><button id="road">🪨 Steinweg verlegen</button><button id="roadErase">🧹 Straße entfernen</button></div></div>
 <div id="placePanel" hidden><span id="placeLabel">Gebäude-Vorschau</span><button id="confirmPlace">✅ Bauen</button><button id="cancelPlace">✕ Abbrechen</button></div>
-<p>🔨 Bauen öffnet das Baumenü. Gebäude wählen, Bauplatz antippen und mit ✅ bestätigen. 🏰 Burg: 3×3 freie Felder erforderlich. Im Ansichtsmodus wird nichts versehentlich gebaut. Mit 🌿 Insel erweitern wächst deine Insel auf Knopfdruck gleich rundherum um einen ganzen Streifen – ohne einzelne Randfelder anzutippen. 🏠 Gebäude kurz antippen zeigt seine Infos (Bewohner, Produktion und Zustand). Etwa eine halbe Sekunde gedrückt halten öffnet Verschieben oder Löschen. Kartensteuerung: ☝️ Mit einem Finger die Karte verschieben. ✌️ Mit zwei Fingern drehen (die Finger gegeneinander verdrehen), durch Auseinanderziehen zoomen und gemeinsam verschieben. Mit „⌖ Kartenmitte“ findest du zurück. Mit „🔎 Weit raus“ bekommst du die Gesamtansicht deiner Insel. 👥 Häuser bekommen Bewohner: Nahrung lässt neue Bewohner einziehen, Straßen verbessern ihre Zufriedenheit. Deine Einwohner und Fortschritte werden gespeichert. 🛤️ Straßen: Im Baumenü auf „Straßen“ gehen, „Steinweg verlegen“ wählen und auf freie Felder tippen oder mit einem Finger darüberstreichen. Kurven, Kreuzungen und Zugänge zu Gebäuden entstehen automatisch. Mit „Straße entfernen“ kannst du Wege wieder abtragen.</p><button id="reset" class="secondary resetButton">↺ Test zurücksetzen</button></footer>
+<p>🔨 Bauen öffnet das Baumenü. Gebäude wählen, Bauplatz antippen und mit ✅ bestätigen. 🏰 Burg: 3×3 freie Felder erforderlich. Im Ansichtsmodus wird nichts versehentlich gebaut. Mit 🌿 Insel erweitern wächst deine Insel auf Knopfdruck gleich rundherum um einen ganzen Streifen – ohne einzelne Randfelder anzutippen. 🏠 Gebäude kurz antippen zeigt seine Infos (Bewohner, Produktion und Zustand). Etwa eine halbe Sekunde gedrückt halten öffnet Verschieben oder Löschen. Kartensteuerung: ☝️ Mit einem Finger die Karte ohne Anschlag frei verschieben; mit „⌖ Kartenmitte“ jederzeit zurück. ✌️ Mit zwei Fingern drehen (die Finger gegeneinander verdrehen), durch Auseinanderziehen zoomen und gemeinsam verschieben. Mit „⌖ Kartenmitte“ findest du zurück. Mit „🔎 Weit raus“ bekommst du die Gesamtansicht deiner Insel. 👥 Häuser bekommen Bewohner: Nahrung lässt neue Bewohner einziehen, Straßen verbessern ihre Zufriedenheit. Deine Einwohner und Fortschritte werden gespeichert. 🛤️ Straßen: Im Baumenü auf „Straßen“ gehen, „Steinweg verlegen“ wählen und auf freie Felder tippen oder mit einem Finger darüberstreichen. Kurven, Kreuzungen und Zugänge zu Gebäuden entstehen automatisch. Mit „Straße entfernen“ kannst du Wege wieder abtragen.</p><button id="reset" class="secondary resetButton">↺ Test zurücksetzen</button></footer>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"}}</script>
 <script type="module">
 import * as THREE from 'three';
@@ -1083,8 +1083,9 @@ function panCameraPixels(dx,dy){
  const vertical=worldPerPixel/Math.max(.39,Math.sin(elevation));
  focus.x-=Math.cos(orbit)*dx*worldPerPixel+Math.sin(orbit)*dy*vertical;
  focus.z+=Math.sin(orbit)*dx*worldPerPixel-Math.cos(orbit)*dy*vertical;
- focus.x=THREE.MathUtils.clamp(focus.x,-LIMIT-.5,LIMIT+.5);
- focus.z=THREE.MathUtils.clamp(focus.z,-LIMIT-.5,LIMIT+.5);
+ // Free camera panning: do not clamp to the island size.
+ // A hard +/-5.5 bound previously made a finger drag stop abruptly.
+ // The always-visible "Kartenmitte" button returns the camera to the island.
  placeCamera()
 }
 function resize(){const w=holder.clientWidth,h=holder.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}new ResizeObserver(resize).observe(holder);resize();
