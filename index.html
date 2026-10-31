@@ -173,25 +173,48 @@ function syncGroundDetailsVisibility(){
 
 const edgeMaterial=new THREE.MeshBasicMaterial({color:0xc9ec8b,transparent:true,opacity:.23,depthWrite:false,side:THREE.DoubleSide});
 // Distinct jagged mountain deposits. The geometry is deliberately low-poly for iPhone.
-const mountainStone=mat(0x999d9a),mountainDark=mat(0x697774),
-      mountainLight=mat(0xbac0b7),mountainRockShape=new THREE.DodecahedronGeometry(1,0);
+// Jagged, high cliffs use shared geometries to remain light on iPhone.
+const mountainStone=mat(0x9da49e),mountainDark=mat(0x626e6c),
+ mountainLight=mat(0xc6cbc1),mountainShade=mat(0x79837e),
+ mountainScree=mat(0x858e87),mountainRockShape=new THREE.DodecahedronGeometry(1,0),
+ mountainPeakShape=new THREE.ConeGeometry(1,1,5);
 function addMountainModel(k){
  const tileGroup=tileModels.get(k);
  if(!tileGroup||rockModels.has(k)||!rockSites.has(k))return;
  const [x,z]=pos(k),g=new THREE.Group();g.name='mountainDeposit';
  const shapes=[
-  {x:0,z:-.06,y:.42,sx:.43,sy:.47,sz:.36,material:mountainDark},
-  {x:-.20,z:.19,y:.42,sx:.28,sy:.38,sz:.28,material:mountainStone},
-  {x:.19,z:.16,y:.40,sx:.28,sy:.34,sz:.27,material:mountainStone},
-  {x:-.045,z:-.12,y:.78,sx:.23,sy:.33,sz:.21,material:mountainLight}
+  {x:0,z:.01,y:.55,sx:.67,sy:.49,sz:.65,material:mountainDark},
+  {x:-.29,z:-.14,y:.72,sx:.43,sy:.59,sz:.47,material:mountainShade},
+  {x:.31,z:.10,y:.68,sx:.40,sy:.53,sz:.47,material:mountainStone},
+  {x:-.02,z:-.21,y:1.07,sx:.49,sy:.70,sz:.48,material:mountainStone},
+  {x:.14,z:.21,y:1.16,sx:.35,sy:.55,sz:.40,material:mountainShade},
+  {x:-.17,z:.04,y:1.46,sx:.33,sy:.66,sz:.35,material:mountainLight},
+  {x:.34,z:-.21,y:.95,sx:.31,sy:.54,sz:.29,material:mountainDark},
+  {x:-.37,z:.25,y:.49,sx:.33,sy:.39,sz:.29,material:mountainStone}
  ];
- for(const p of shapes){
-  const mesh=new THREE.Mesh(mountainRockShape,p.material);
+ for(let i=0;i<shapes.length;i++){
+  const p=shapes[i],mesh=new THREE.Mesh(mountainRockShape,p.material);
   mesh.position.set(p.x,p.y,p.z);mesh.scale.set(p.sx,p.sy,p.sz);
-  mesh.rotation.y=terrainRand(x,z,40+p.x*10)*.65;mesh.castShadow=true;mesh.receiveShadow=true;g.add(mesh)
+  mesh.rotation.set((terrainRand(x,z,i+19)-.5)*.12,
+   terrainRand(x,z,i+43)*.65,(terrainRand(x,z,i+61)-.5)*.20);
+  mesh.castShadow=true;mesh.receiveShadow=true;g.add(mesh)
  }
- const shelf=new THREE.Mesh(new THREE.CylinderGeometry(.49,.52,.085,8),mountainStone);
- shelf.position.set(0,.20,0);shelf.castShadow=true;g.add(shelf);
+ const peak=new THREE.Mesh(mountainPeakShape,mountainLight);
+ peak.position.set(-.17,1.90,.02);peak.scale.set(.25,.62,.25);
+ peak.rotation.z=-.10;peak.castShadow=true;g.add(peak);
+ const sidePeak=new THREE.Mesh(mountainPeakShape,mountainStone);
+ sidePeak.position.set(.25,1.49,-.11);sidePeak.scale.set(.21,.45,.20);
+ sidePeak.rotation.z=.18;sidePeak.castShadow=true;g.add(sidePeak);
+ const shelf=new THREE.Mesh(new THREE.CylinderGeometry(.65,.74,.13,9),mountainScree);
+ shelf.position.y=.21;shelf.castShadow=true;shelf.receiveShadow=true;g.add(shelf);
+ for(let i=0;i<7;i++){
+  const angle=i*Math.PI*2/7+.17,rad=.56+terrainRand(x,z,120+i)*.14;
+  const chip=new THREE.Mesh(mountainRockShape,i%3===0?mountainShade:mountainScree);
+  chip.position.set(Math.cos(angle)*rad,.23,Math.sin(angle)*rad);
+  const scale=.11+terrainRand(x,z,143+i)*.07;
+  chip.scale.set(scale,scale*.52,scale*.80);
+  chip.rotation.y=angle;chip.castShadow=false;g.add(chip)
+ }
  tileGroup.add(g);rockModels.set(k,g)
 }
 function seedRockSites(candidates){
@@ -842,37 +865,67 @@ function orientQuarryPortal(g,k,deposit){
  const [x,z]=pos(k),[rx,rz]=pos(deposit);
  portal.rotation.y=Math.atan2(x-rx,z-rz)
 }
+// Mine entrance, timberwork, rails and cart extend visibly into rock face.
 function addQuarry(k,preferredDeposit=null){
  const deposit=quarryDepositFor(k,null,preferredDeposit);
  if(!deposit)return false;
  const [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.03,z);land.add(g);
- // Pale quarry yard / sorting surface, flush with village roads.
- box(.89,.04,.88,quarryStone,0,.145,0,g);
- box(.65,.02,.62,quarryPale,0,.177,.015,g);
- // Stone-cutters' covered wooden workshop.
- box(.43,.32,.32,quarryWood,-.18,.33,.13,g);
- const roof=box(.54,.055,.43,quarryRoof,-.18,.53,.13,g);roof.rotation.z=-.16;
- for(const xx of [-.4,.02])for(const zz of [-.015,.27])box(.035,.43,.035,quarryWood,xx,.41,zz,g);
- // Mining entrance: timbers and pitch-black cut shaft facing the rock deposit.
+ box(.92,.040,.92,quarryStone,0,.141,0,g);
+ box(.82,.014,.82,quarryPale,0,.171,0,g);
  const portal=new THREE.Group();portal.name='quarryPortal';g.add(portal);
- box(.41,.45,.05,quarryStone,0,.41,-.29,portal);
- box(.30,.34,.065,mat(0x41484a),0,.39,-.325,portal);
- box(.055,.47,.072,quarryWood,-.18,.40,-.343,portal);
- box(.055,.47,.072,quarryWood,.18,.40,-.343,portal);
- box(.46,.065,.092,quarryWood,0,.64,-.343,portal);
- // A minecart, iron-bound wheels and a clear trail of broken stone.
- box(.29,.13,.20,quarryWood,.22,.30,.30,g);
- for(const xx of [.12,.32])for(const zz of [.235,.37])cylinder(g,.055,.055,.035,mat(0x4d5754),xx,.215,zz,8).rotation.z=Math.PI/2;
- for(let i=0;i<7;i++){
-  const px=-.4+(i%4)*.21,pz=-.32+Math.floor(i/4)*.23;
-  const rock=new THREE.Mesh(mountainRockShape,i%3?quarryStone:quarryOre);
-  rock.position.set(px,.22,pz);rock.scale.set(.065+i%2*.02,.05+(i%3)*.016,.07);g.add(rock)
+ // Heavy cliff cheeks and rocky overhang surround the shaft.
+ for(const side of [-1,1]){
+  const cheek=new THREE.Mesh(mountainRockShape,side===1?mountainStone:mountainDark);
+  cheek.position.set(side*.41,.61,-.53);
+  cheek.scale.set(.29,.64,.36);cheek.rotation.y=side*.26;
+  cheek.castShadow=true;portal.add(cheek)
+ }
+ const brow=new THREE.Mesh(mountainRockShape,mountainShade);
+ brow.position.set(0,.92,-.57);brow.scale.set(.53,.30,.34);
+ brow.castShadow=true;portal.add(brow);
+ // Dark recessed tunnel mouth backed by a second deeper shaft.
+ box(.48,.54,.16,mat(0x242c2c),0,.50,-.335,portal);
+ box(.34,.44,.16,mat(0x121c1d),0,.48,-.435,portal);
+ for(const xx of [-.29,.29]){
+  box(.09,.72,.13,quarryWood,xx,.52,-.245,portal);
+  box(.10,.10,.15,quarryRoof,xx,.88,-.245,portal)
+ }
+ box(.73,.105,.16,quarryWood,0,.88,-.245,portal);
+ box(.77,.038,.18,mat(0x4e4032),0,.947,-.245,portal);
+ const railIron=mat(0x575b58);
+ for(const xx of [-.205,.205]){
+  box(.05,.035,.78,railIron,xx,.21,-.36,portal)
+ }
+ for(const zz of [-.58,-.39,-.20,-.01,.18,.37])
+  box(.51,.025,.075,quarryWood,0,.185,zz,portal);
+ // Open-sided stonecutter shelter, with visible roof and wooden beams.
+ box(.40,.39,.37,quarryWood,-.31,.39,.27,portal);
+ const shedRoof=box(.49,.055,.47,quarryRoof,-.31,.61,.27,portal);
+ shedRoof.rotation.z=.16;
+ for(const xx of [-.49,-.13])for(const zz of [.09,.43])
+  box(.045,.42,.045,quarryWood,xx,.42,zz,portal);
+ box(.18,.16,.15,mat(0x967448),-.36,.27,.53,portal);
+ // Minecart on rails, wheels with iron rims.
+ box(.37,.16,.27,quarryWood,0,.33,.25,portal);
+ box(.30,.035,.21,quarryRoof,0,.425,.25,portal);
+ const wheelMat=mat(0x505c5d),wheelGeo=new THREE.CylinderGeometry(.075,.075,.045,10);
+ for(const xx of [-.19,.19])for(const zz of [.14,.36]){
+  const wheel=new THREE.Mesh(wheelGeo,wheelMat);
+  wheel.position.set(xx,.255,zz);wheel.rotation.z=Math.PI/2;
+  wheel.castShadow=true;portal.add(wheel)
+ }
+ // Broken stone transported out of the hillside opening.
+ for(let i=0;i<10;i++){
+  const px=(i%5-2)*.17+.03,pz=.49+Math.floor(i/5)*.13;
+  const fragment=new THREE.Mesh(mountainRockShape,i%3?quarryStone:quarryOre);
+  fragment.position.set(px,.225,pz);
+  fragment.scale.set(.09+(i%3)*.015,.065+(i%4)*.01,.072);
+  fragment.rotation.y=i*.57;portal.add(fragment)
  }
  quarries.set(k,g);quarryDeposits.set(k,deposit);
  orientQuarryPortal(g,k,deposit);
  save();return true
 }
-
 let food=0,foodElapsed=0;
 
 function addFarm(k){
