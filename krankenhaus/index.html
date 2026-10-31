@@ -32,6 +32,9 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
 #roomBuilder{padding:11px 13px;background:#f5fcf9;border-bottom:1px solid #d1e8dd;display:flex;gap:7px;flex-direction:column}
 #roomBuilder[hidden],#roomBuilder button[hidden]{display:none!important}
 #roomBuilder .builderRow{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+#roomBuilder .builderRow[hidden]{display:none!important}
+#constructionControls button{background:#447989}
+#constructionControls #constructionUndo{background:#5f7383}
 #roomBuilder select{flex:1;min-width:110px;padding:11px 7px;min-height:43px;border:1px solid #9dc9bf;background:white;color:#235d62;border-radius:10px;font-size:13px;font-weight:700}
 #roomBuilder button{min-height:43px;flex:1;border:0;border-radius:10px;padding:10px;background:#327d6d;color:white;font-size:12px;font-weight:800}
 #roomBuilder #roomDelete{background:#b45b50}
@@ -69,7 +72,8 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
  <button id="finishReception" type="button" hidden>✓ Fertig</button>
 </div>
 <div id="roomBuilder" hidden aria-label="Räume bauen und verschieben">
- <div class="builderRow"><select id="roomType" aria-label="Raumtyp">
+ <div class="builderRow"><select id="buildCategory" aria-label="Baumodus"><option value="rooms">🏠 Räume & Größen</option><option value="construction">🧱 Wände, Türen & Fenster</option></select></div>
+ <div class="builderRow" data-room-controls><select id="roomType" aria-label="Raumtyp">
   <option value="treatment">🩺 Behandlungsraum</option>
   <option value="lab">🔬 Labor</option>
   <option value="patient">🛏️ Patientenzimmer</option>
@@ -79,9 +83,10 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
   <option value="medium">Mittel · 4 × 4</option>
   <option value="large">Groß · 5 × 4</option>
  </select></div>
- <div class="builderRow"><button id="roomAdd" type="button">➕ Raum bauen</button>
+ <div class="builderRow" data-room-controls><button id="roomAdd" type="button">➕ Raum bauen</button>
  <button id="roomDelete" type="button" hidden>🗑 Raum entfernen</button>
  <button id="roomFinish" type="button">✓ Fertig</button></div>
+ <div id="constructionControls" class="builderRow" hidden><select id="constructionTool" aria-label="Bauteil"><option value="wall">🧱 Wand ziehen</option><option value="door">🚪 Tür einsetzen</option><option value="window">🪟 Fenster einsetzen</option><option value="floor">🟩 Boden ziehen</option><option value="erase">🧽 Bauteil entfernen</option></select><select id="constructionFacing" aria-label="Richtung"><option value="x">↔ Waagerecht</option><option value="z">↕ Senkrecht</option></select><button id="constructionUndo" type="button">↶ Rückgängig</button><button id="constructionDone" type="button">✓ Fertig</button></div>
  <p id="builderHint" class="builderHint">Raum antippen und ziehen, oder einen Raum auswählen und an einen freien Platz tippen. Zwei Finger: Zoomen und Drehen.</p>
 </div>
 <section>
@@ -92,7 +97,7 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
   <div class="room"><span class="symbol">🪑</span><strong>Wartezimmer</strong><p>Rechts daneben, mit Sitzplätzen und Einrichtung.</p></div>
   <div class="room"><span class="symbol">🩺</span><strong>Behandlungsraum 1</strong><p>Kleiner Raum hinten: Wände, Boden und Tür – noch ohne Einrichtung.</p></div>
  </div>
- <p class="note">Mit „🏗️ Grundriss bearbeiten“ kannst du Zimmer verschieben und neue leere Räume bauen. Mit „🛠️ Anmeldung verschieben“ richtest du den Tresen im Anmeldungsraum aus. Außerhalb des Einrichtungsmodus lässt sich die Ansicht frei verschieben, zoomen und drehen – ohne Kameraknöpfe. Tippe auf einen Bereich, um ihn zu erkunden. Weitere Abteilungen kommen später dazu. Dieses Spiel ist unabhängig von Inselreich.</p>
+ <p class="note">Mit „🏗️ Grundriss bearbeiten“ kannst du Räume verschiedener Größe bauen und verschieben – oder Wände, Türen, Fenster und Böden frei zeichnen. Mit „🛠️ Anmeldung verschieben“ richtest du den Tresen im Anmeldungsraum aus. Außerhalb des Einrichtungsmodus lässt sich die Ansicht frei verschieben, zoomen und drehen – ohne Kameraknöpfe. Tippe auf einen Bereich, um ihn zu erkunden. Weitere Abteilungen kommen später dazu. Dieses Spiel ist unabhängig von Inselreich.</p>
 </section>
 </main>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"}}</script>
@@ -570,6 +575,7 @@ function placeDeskByTap(px,py){
 /* Editable modular blueprint – existing room modules move with all room objects,
    new modules are empty. Store layout under a new independent key. */
 let editingFloorplan=false,selectedRoomId=null;
+let buildCategory='rooms';
 const floorplanToggle=document.getElementById('toggleFloorplan');
 const roomBuilder=document.getElementById('roomBuilder');
 const roomDelete=document.getElementById('roomDelete');
@@ -647,13 +653,15 @@ function showBuilder(){
  floorplanToggle.textContent=editingFloorplan?'🏗️ Grundrissmodus aktiv':'🏗️ Grundriss bearbeiten';
  roomBuilder.hidden=!editingFloorplan;
  roomDelete.hidden=!editingFloorplan||!selectedRoomId||initialRooms.some(r=>r.id===selectedRoomId);
+ for(const element of document.querySelectorAll('[data-room-controls]'))element.hidden=!editingFloorplan||buildCategory!=='rooms';
+ document.getElementById('constructionControls').hidden=!editingFloorplan||buildCategory!=='construction';
  gestureHint.textContent=editingFloorplan
-  ?'☝️ Raum antippen & ziehen · ✌️ Zoomen & Drehen'
+  ?(buildCategory==='construction'?'☝️ Bauen · ✌️ Zoomen & Drehen':'☝️ Raum antippen & ziehen · ✌️ Zoomen & Drehen')
   :editingReception?'☝️ Anmeldung verschieben · ✌️ Zoom & Drehen':'☝️ Verschieben · ✌️ Zoomen & Drehen'
 }
 function finishFloorplan(){
  if(!editingFloorplan)return;
- editingFloorplan=false;selectedRoomId=null;saveFloorplan();storeReception();showBuilder();
+ editingFloorplan=false;selectedRoomId=null;clearConstructionPreview();saveConstruction();saveFloorplan();storeReception();showBuilder();
  document.getElementById('status').textContent='✅ Grundriss gespeichert! Du kannst die Kamera wieder frei bewegen.'
 }
 floorplanToggle.onclick=()=>{
@@ -667,10 +675,27 @@ floorplanToggle.onclick=()=>{
   distance=Math.max(distance,21);
   placeCamera();
   document.getElementById('status').textContent='🏗️ Raum antippen und ziehen, oder neuen Raum bauen.';
- }else{selectedRoomId=null;saveFloorplan();storeReception()}
+ }else{selectedRoomId=null;clearConstructionPreview();saveConstruction();saveFloorplan();storeReception()}
  showBuilder()
 };
 document.getElementById('roomFinish').onclick=finishFloorplan;
+document.getElementById('constructionDone').onclick=finishFloorplan;
+document.getElementById('buildCategory').onchange=e=>{
+ buildCategory=e.target.value==='construction'?'construction':'rooms';
+ selectedRoomId=null;clearConstructionPreview();showBuilder();
+ roomHint.textContent=buildCategory==='construction'
+  ?'🧱 Wand/Boden: mit dem Finger ziehen. 🚪 Tür und 🪟 Fenster: Wand antippen. ✌️ Zwei Finger für Kamera.'
+  :'🏠 Raumgröße wählen, Raum bauen und mit dem Finger verschieben.'
+};
+document.getElementById('constructionTool').onchange=()=>{
+ clearConstructionPreview();
+ const tool=document.getElementById('constructionTool').value;
+ roomHint.textContent=({wall:'🧱 Ziehe von einem Punkt zum anderen: Wandlänge frei festlegen.',
+ door:'🚪 Tippe auf eine selbst gebaute Wand für eine Tür, oder auf freie Fläche.',
+ window:'🪟 Tippe auf eine selbst gebaute Wand für ein Fenster, oder auf freie Fläche.',
+ floor:'🟩 Ziehe ein Rechteck auf: Damit bestimmst du die Bodengröße selbst.',
+ erase:'🧽 Tippe auf eine selbst gebaute Wand, Tür, Fenster oder Bodenfläche.'})[tool]
+};
 document.getElementById('roomAdd').onclick=()=>{
  if(!editingFloorplan)return;
  if(roomSpecs.length>=35){roomHint.textContent='Maximal 35 Räume für eine flüssige iPhone-Ansicht.';return}
