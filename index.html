@@ -21,7 +21,7 @@ import * as THREE from 'three';
 const holder=document.getElementById('game'),status=document.getElementById('notice'),buildButton=document.getElementById('build'),marketButton=document.getElementById('market'),lumberButton=document.getElementById('lumber'),viewButton=document.getElementById('view'),openBuildButton=document.getElementById('openBuild'),farmButton=document.getElementById('farm'),fieldButton=document.getElementById('field'),woodCount=document.getElementById('woodCount'),foodCount=document.getElementById('foodCount');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xc9dfba);
 const camera=new THREE.PerspectiveCamera(45,1,.1,150);const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;holder.prepend(renderer.domElement);
-scene.add(new THREE.HemisphereLight(0xffffff,0x6c865f,2.35));const sun=new THREE.DirectionalLight(0xffffff,2.6);sun.position.set(-6,10,8);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-12;sun.shadow.camera.right=12;sun.shadow.camera.top=12;sun.shadow.camera.bottom=-12;scene.add(sun);
+scene.add(new THREE.HemisphereLight(0xfffaf0,0x719063,2.25));const sun=new THREE.DirectionalLight(0xfff3d9,2.45);sun.position.set(-7,12,8);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.bias=-.0002;sun.shadow.camera.left=-12;sun.shadow.camera.right=12;sun.shadow.camera.top=12;sun.shadow.camera.bottom=-12;scene.add(sun);
 const mat=(hex)=>new THREE.MeshStandardMaterial({color:hex,roughness:0.9});
 const grass=[mat(0x81bd5b),mat(0x8fc767)],soil=mat(0x97704c),wall=mat(0xead1a6),roof=mat(0xac5944),roofSide=mat(0x843f34),door=mat(0x65432e),glass=mat(0x93c6cc),trunk=mat(0x8e653c);
 const land=new THREE.Group();scene.add(land);
@@ -119,6 +119,131 @@ function pineTree(parent,x,z,height=1){
  cone(parent,.155*height,.32*height,pineDeep,x,height*.87,z)
 }
 
+
+/* Inselreich Grafikpaket 2: reusable light-weight decorative meshes, all original game logic kept. */
+const roofAccent=mat(0xcd7855),roofLine=mat(0x82402d),oakAccent=mat(0xb98a55),
+      pebbleLight=mat(0xd4c8a8),pebbleDark=mat(0x9d937e),
+      lampGold=new THREE.MeshStandardMaterial({color:0xeac36f,roughness:.48,emissive:0x5b3105,emissiveIntensity:.16}),
+      flowerBlue=mat(0x779fc9),greenSoft=mat(0x65954d),grassDark=mat(0x58854d);
+function roofDetails(parent,cx,cz,w,d,eave){
+ const half=w*.5,angle=.55,cy=eave+half*Math.tan(angle)/2;
+ const slopeLength=half/Math.cos(angle);
+ for(const side of [-1,1])for(let r=0;r<3;r++)for(let z=0;z<4;z++){
+   const rot=-side*angle,along=(r-1)*slopeLength*.29,
+     x=cx+side*half*.5+along*Math.cos(rot),
+     y=cy+along*Math.sin(rot)+.06,
+     zz=cz+(z-1.5)*d*.233;
+   const shingle=box(slopeLength*.23,.016,d*.215,(r+z)%3===0?roofAccent:roofLine,x,y,zz,parent);
+   shingle.rotation.z=rot;shingle.castShadow=false
+ }
+}
+function faceBricks(parent,cx,cz,width,rows,y0,scale=.8){
+ for(let j=0;j<rows;j++)for(let i=0;i<4;i++){
+  const px=cx+(i-1.5)*width*.23+(j%2?width*.05:0);
+  const block=box(width*.17,.032,.022,(i+j)%3===0?pebbleDark:pebbleLight,px,y0+j*.145,cz,parent);
+  block.castShadow=false
+ }
+}
+function timberX(parent,x,y,z,w,h){
+ const a=box(.028,h+.025,.035,oakAccent,x-w*.22,y,z,parent);
+ a.rotation.z=.45;
+ const b=box(.028,h+.025,.035,oakAccent,x+w*.22,y,z,parent);
+ b.rotation.z=-.45
+}
+function garden(parent,x,z){
+ cylinder(parent,.066,.073,.08,timber,x,.19,z,8);
+ smallBall(parent,.083,greenSoft,x,.28,z);
+ smallBall(parent,.036,flowerRed,x+.033,.34,z+.015);
+ smallBall(parent,.025,flowerBlue,x-.037,.32,z-.028)
+}
+function track(parent,x,z,w=.23,d=.24){
+ for(let i=0;i<3;i++){
+  const p=box(w*.94,.02,d*.22,i===1?pebbleDark:pebbleLight,x,.155,z+(i-1)*d*.31,parent);
+  p.castShadow=false
+ }
+}
+function woodshedDecor(parent){
+ // Lighter end-grain on log storage, so round logs remain recognizable at close zoom.
+ for(const i of [0,1,2])for(const j of [0,1]){
+  const xx=.155+i*.103,yy=.151+j*.088;
+  cylinder(parent,.020,.020,.014,pebbleLight,xx,yy,.43,9).rotation.x=Math.PI/2
+ }
+}
+function embellishHouse(g){
+ roofDetails(g,0,0,.91,.84,.70);
+ timberX(g,-.31,.42,.357,.17,.29);
+ timberX(g,.32,.42,.357,.17,.29);
+ track(g,0,.52,.22,.24);
+ garden(g,.31,.43);
+ // Wooden side trellis and roof ornament
+ for(let i=0;i<3;i++)box(.024,.25,.03,timber,.36,.26,-.16+i*.13,g);
+ box(.22,.025,.035,oakAccent,0,.66,.355,g)
+}
+function embellishFarm(g){
+ roofDetails(g,-.095,-.10,.88,.78,.685);
+ faceBricks(g,.02,.261,.38,2,.38);
+ for(const xx of [-.37,.25])box(.045,.18,.045,oakAccent,xx,.50,.270,g);
+ garden(g,-.39,.18);
+ track(g,0,.43,.25,.21);
+ // A small wooden watering trough and more square hay bundles.
+ box(.24,.06,.09,timber,.29,.17,.38,g);
+ for(const xx of [-.17,-.04])box(.14,.09,.13,hayGold,xx,.17,-.36,g)
+}
+function embellishLumber(g){
+ const roofGroup=new THREE.Group();roofGroup.position.set(-.19,0,-.17);g.add(roofGroup);
+ roofDetails(roofGroup,0,0,.71,.65,.58);
+ woodshedDecor(g);
+ // Front timber slats and chopping-area chips.
+ for(let i=0;i<3;i++)box(.027,.31,.024,timber,-.43+i*.045,.29,-.42,g);
+ box(.26,.03,.12,pebbleDark,-.25,.14,.40,g);
+ garden(g,.0,.39)
+}
+function embellishMarket(g){
+ roofDetails(g,0,-.52,1.35,.88,.65);
+ // Three sets of hanging signs, goods and paving stones.
+ for(const xx of [-.62,0,.62]){
+  box(.20,.11,.025,xx===0?fabricBlue:oakAccent,xx,.62,.84,g);
+  for(const dx of [-.09,.09])smallBall(g,.027,marketProduce[xx===0?1:2],xx+dx,.485,.76)
+ }
+ for(let z=-1;z<=1;z++)for(const xx of [-.45,.45])
+  track(g,xx,z*.25,.20,.18);
+ garden(g,-.82,.28);garden(g,.82,.28);
+ box(.035,.20,.035,timber,0,.86,.47,g)
+}
+function embellishCastle(g){
+ // Stone courses on front walls and the keep.
+ for(const xx of [-.93,.93]){
+  faceBricks(g,xx,1.365,.42,3,.36);
+  faceBricks(g,xx,-1.36,.42,3,.36)
+ }
+ for(const xx of [-.37,.37])faceBricks(g,xx,.35,.29,4,.49);
+ const keepRoof=new THREE.Group();keepRoof.position.set(0,0,-.20);g.add(keepRoof);
+ roofDetails(keepRoof,0,0,1.30,1.18,1.30);
+ // Red and gold heraldic banner over the entrance.
+ box(.29,.29,.035,castleFlag,0,1.48,1.46,g);
+ box(.038,.23,.039,lampGold,0,1.50,1.49,g);
+ for(const xx of [-.56,.56]){
+  box(.064,.19,.06,castleOak,xx,.86,1.44,g);
+  cone(g,.07,.18,lampGold,xx,.99,1.45,6);
+ }
+ for(const xx of [-.68,.68])garden(g,xx,.76);
+ // Short stairway to the keep and an ornamental watch platform.
+ track(g,0,.50,.31,.25);
+ box(.35,.055,.24,castleDark,.69,.44,-.16,g);
+ box(.26,.035,.15,castleLight,.69,.49,-.16,g)
+}
+function embellishField(g){
+ // Fertile strips, corner posts and a narrow harvested edge, all under the wheat.
+ for(const xx of [-.462,.462])for(const zz of [-.462,.462]){
+  box(.038,.12,.038,timber,xx,.13,zz,g);
+  box(.056,.021,.056,pebbleLight,xx,.20,zz,g)
+ }
+ for(const z of [-.45,.45])for(let i=-2;i<=2;i++){
+  const b=box(.073,.013,.028,pebbleDark,i*.17,.080,z,g);
+  b.castShadow=false
+ }
+}
+
 function occupied(k){if(buildings.has(k)||lumberjacks.has(k)||farms.has(k)||fields.has(k))return true;
  for(const anchor of markets.keys()){const [x,z]=pos(anchor),[a,b]=pos(k);if(a>=x&&a<x+2&&b>=z&&b<z+2)return true}
  for(const anchor of castles.keys()){const [x,z]=pos(anchor),[a,b]=pos(k);if(a>=x&&a<x+3&&b>=z&&b<z+3)return true}return false}
@@ -145,6 +270,7 @@ function addHouse(k){
  smallBall(g,.08,leafDark,-.30,.245,.40);
  for(const off of [-.04,.04])smallBall(g,.035,flowerRed,-.30+off,.29,.42);
  box(.27,.035,.14,stoneDetail,0,.15,.48,g);
+ embellishHouse(g);
  buildings.set(k,g);save()
 }
 const marketRoof=mat(0xb54f3c),marketCanvas=mat(0xe7d6b0),marketStone=mat(0xc7b28b),marketWood=mat(0x76543a),marketProduce=[mat(0xc3412b),mat(0xe6b84f),mat(0x69a547)];
@@ -159,8 +285,9 @@ function addMarket(k){
  // Permanent merchant hall behind the stalls
  box(1.10,.52,.72,plaster,0,.38,-.52,g);
  for(const xx of [-.53,.53])box(.06,.54,.065,timber,xx,.38,-.16,g);
- pitchedRoof(g,1.35,.88,.65,tileRed);
- gable(g,.56,.65,1.07,-.15,0xe5c39b);
+ const marketHallRoof=new THREE.Group();marketHallRoof.position.z=-.52;g.add(marketHallRoof);
+ pitchedRoof(marketHallRoof,1.35,.88,.65,tileRed);
+ gable(marketHallRoof,.56,.65,1.07,.36,0xe5c39b);
  door3(g,0,-.125,.20,.30);
  for(const xx of [-.34,.34])window3(g,xx,.40,-.125);
  // Three colorful stalls with timber posts, striped fabric roofs, and produce
@@ -186,6 +313,7 @@ function addMarket(k){
  const pennant=box(.32,.15,.025,fabricBlue,0,.62,-.83,g);
  for(const xx of [-.72,.72])cylinder(g,.055,.065,.13,hayGold,xx,.18,.14,8);
  crate(g,-.77,.21,-.04);barrel(g,.78,.19,-.04);
+ embellishMarket(g);
  markets.set(k,g);save();return true
 }
 
@@ -240,8 +368,9 @@ function addCastle(k){
  box(1.05,1.02,.97,castleLight,0,.78,-.20,g);
  for(const xx of [-.50,.50])for(const zz of [-.46,.46])
   box(.09,1.04,.09,castleStone,xx,.78,zz-.20,g);
- pitchedRoof(g,1.30,1.18,1.30,castleRoof);
- gable(g,.54,1.28,1.68,.33,0xbdb49d);
+ const centralCastleRoof=new THREE.Group();centralCastleRoof.position.z=-.20;g.add(centralCastleRoof);
+ pitchedRoof(centralCastleRoof,1.30,1.18,1.30,castleRoof);
+ gable(centralCastleRoof,.54,1.28,1.68,.50,0xbdb49d);
  box(.29,.52,.06,castleOak,0,.52,.31,g);
  for(const yy of [.75,1.08])for(const xx of [-.32,.32]){
   box(.12,.23,.06,castleDark,xx,yy,.31,g);
@@ -259,6 +388,7 @@ function addCastle(k){
   smallBall(g,.13,leafDark,xx,.36,-.43);
   smallBall(g,.055,flowerRed,xx+.05,.45,-.43)
  }
+ embellishCastle(g);
  castles.set(k,g);save();return true
 }
 
@@ -342,6 +472,7 @@ function addLumberjack(k){
    cone(g,.056,.13,grassClump,gx,.125,gz,5)
  }
  // Das vorhandene Produktions- und Speichersystem bleibt unverändert.
+ embellishLumber(g);
  lumberjacks.set(k,g);save();return true
 }
 const hay=mat(0xddba4c),straw=mat(0x9e8536),barnRed=mat(0xad5343),fieldEarth=mat(0x785637);
@@ -410,6 +541,7 @@ function addFarm(k){
  box(.25,.025,.115,feedGreen,.22,.205,-.08,g);
  const tool=box(.023,.36,.024,timber,-.385,.36,-.19,g);tool.rotation.z=.18;
  box(.16,.045,.035,stoneDetail,-.356,.53,-.19,g);
+ embellishFarm(g);
  farms.set(k,g);save();return true
 }
 function nearFarm(k){const [x,z]=pos(k);return neighbors(x,z).some(([a,b])=>farms.has(key(a,b)))}
@@ -465,6 +597,7 @@ function addField(k){
    plant.instanceMatrix.needsUpdate=true;plant.castShadow=false;plant.receiveShadow=false;g.add(plant)
  }
  ears.instanceColor.needsUpdate=true;
+ embellishField(g);
  fields.set(k,g);save();return true
 }
 function productionFields(){let count=0;for(const k of fields.keys())if(nearFarm(k))count++;return count}
