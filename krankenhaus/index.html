@@ -60,13 +60,14 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
 #rotateReception{background:#497f88!important}
 @media (min-width:760px){#stage{height:72vh;min-height:520px}header{padding:18px 24px}section{padding:20px 24px}#topLegend{left:20px;top:20px}}
 @media (max-width:350px){.rooms{grid-template-columns:1fr 1fr}.room{min-height:90px}#gestureHint{font-size:10px}}
+@media(pointer:coarse){#topLegend{display:none}}
 </style>
 </head>
 <body>
-<header><div><div class="eyebrow">🏥 Eigenes Krankenhaus-Spiel</div><h1>Klinik am Park <span aria-hidden="true">✚</span></h1><p class="subtitle">Krankenhaus 3D · Unser erster Grundriss</p></div><span class="pill">GRUNDRISS-BAU</span></header>
+<header><div><div class="eyebrow">🏥 Eigenes Krankenhaus-Spiel</div><h1>Klinik am Park <span aria-hidden="true">✚</span></h1><p class="subtitle">Krankenhaus 3D · Offener Grundriss mit Hauptflur</p></div><span class="pill">KLINIK BAUEN</span></header>
 <main>
 <div id="stage" aria-label="Interaktive dreidimensionale Ansicht des Krankenhauses">
- <div id="topLegend"><strong>🏥 Unser Krankenhaus</strong><small>🚪 Eingang vorne<br>🧑‍💻 Anmeldung links<br>🪑 Wartezimmer rechts<br>🩺 Behandlungsraum hinten</small></div>
+ <div id="topLegend"><strong>🏥 Klinik am Park</strong><small>🚪 Eingang & Hauptflur<br>🧑‍💻 Anmeldung · 🪑 Warten<br>🩺 2 Behandlungsräume<br>🔬 Diagnose · ☕ Personal · 🚻 WC</small></div>
  <div id="roomInfo" hidden role="status" aria-live="polite"><strong id="roomTitle"></strong><span id="roomDescription"></span></div>
 </div>
 <div id="cameraBar" role="group" aria-label="Kamerasteuerung">
@@ -78,7 +79,7 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
   <button id="camReset" type="button" title="Kamera zurücksetzen" aria-label="Ansicht zurücksetzen">⌂</button>
  </div>
 <div id="gestureHint">☝️ Schieben · ✌️ Zoomen & Drehen</div>
-<div id="status" role="status" aria-live="polite">🏥 Anmeldung ohne Stühle, großes Schild und ein neuer leerer Behandlungsraum.</div>
+<div id="status" role="status" aria-live="polite">🏥 Neuer Klinik-Grundriss: zentraler Flur, sieben Räume und isometrischer Aufbau.</div>
 <div id="layoutTools" aria-label="Einrichtungsmodus">
  <button id="toggleFloorplan" type="button">🏗️ Grundriss bearbeiten</button>
  <button id="editReception" type="button">🛠️ Anmeldung verschieben</button>
@@ -109,9 +110,12 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
   <div class="room"><span class="symbol">🚪</span><strong>Eingang</strong><p>Vorne mittig, mit Glastür und Eingangsweg.</p></div>
   <div class="room"><span class="symbol">🧑‍💻</span><strong>Empfang</strong><p>Jetzt links im Raum, mit verschiebbarem Tresen, PCs und Anmeldungsschild.</p></div>
   <div class="room"><span class="symbol">🪑</span><strong>Wartezimmer</strong><p>Rechts daneben, mit Sitzplätzen und Einrichtung.</p></div>
-  <div class="room"><span class="symbol">🩺</span><strong>Behandlungsraum 1</strong><p>Kleiner Raum hinten: Wände, Boden und Tür – noch ohne Einrichtung.</p></div>
+  <div class="room"><span class="symbol">🩺</span><strong>Behandlungsraum 1 + 2</strong><p>Zwei kleinere Räume am Hauptflur, noch leer.</p></div>
+  <div class="room"><span class="symbol">🔬</span><strong>Diagnoseraum</strong><p>Linke hintere Seite, noch leer.</p></div>
+  <div class="room"><span class="symbol">☕</span><strong>Personalraum</strong><p>Rechts hinten, noch leer.</p></div>
+  <div class="room"><span class="symbol">🚻</span><strong>Toilette</strong><p>Hinten am Hauptflur, noch ohne Einrichtung.</p></div>
  </div>
- <p class="note">Mit „🏗️ Grundriss bearbeiten“ kannst du Räume verschiedener Größe bauen und verschieben – oder Wände, Türen, Fenster und Böden frei zeichnen. Mit „🛠️ Anmeldung verschieben“ richtest du den Tresen im Anmeldungsraum aus. Außerhalb des Einrichtungsmodus lässt sich die Ansicht frei verschieben, zoomen und drehen – ohne Kameraknöpfe. Tippe auf einen Bereich, um ihn zu erkunden. Weitere Abteilungen kommen später dazu. Dieses Spiel ist unabhängig von Inselreich.</p>
+ <p class="note">Der neue Hauptflur verbindet Anmeldung, Wartezimmer, zwei Behandlungsräume, Diagnose, Personalraum und Toilette. Die zusätzlichen Räume sind bewusst noch leer. Mit „🏗️ Grundriss bearbeiten“ verschiebst du Räume, wählst Größen oder ziehst eigene Wände, Türen, Fenster und Böden. Beim Empfang bleibt der verschiebbare Tresen erhalten. Alle Bau- und Kamerasteuerungen liegen unterhalb des 3D-Bildes. Dein alter Grundriss bleibt separat als Sicherung gespeichert; Inselreich ist unabhängig.</p>
 </section>
 </main>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"}}</script>
@@ -401,11 +405,11 @@ plane(1.52,.32,0,1.81,4.50,new THREE.MeshBasicMaterial({map:labelTexture('EINGAN
 // the waiting area, even when viewed on a small iPhone display.
 const receptionDecorStart=group.children.length;
 const receptionFloor=mat(0xe6f3f0);
-box(4.35,.021,3.34,-1.65,.166,1.28,receptionFloor,group,false);
-for(const x of [-3.73,.43]){
- box(.055,.035,3.40,x,.194,1.28,tealLight,group,false)
-}
-box(4.28,.038,.052,-1.65,.194,2.94,tealLight,group,false);
+const receptionRoom=roomSpecs.find(r=>r.id==='reception');
+box(receptionRoom.w-.34,.018,receptionRoom.d-.34,
+ receptionRoom.x,.166,receptionRoom.z,receptionFloor,group,false);
+for(const z of [receptionRoom.z-.95,receptionRoom.z+.98])
+ box(receptionRoom.w-.34,.021,.05,receptionRoom.x,.193,z,tealLight,group,false);
 // All reception furniture is captured in one movable 3D group without altering
 // the room walls/floor. Saved position is independent of the camera and Inselreich.
 const deskStartIndex=group.children.length;
@@ -462,36 +466,36 @@ for(const part of group.children.slice(deskStartIndex)){
  part.position.z-=deskOriginalZ;
  receptionDesk.add(part)
 }
-receptionDesk.position.set(-3.50,0,.90); // Default: registration on the left.
+receptionDesk.position.set(-4.34,0,1.55); // Counter now sits inside the front-left reception room.
 group.add(receptionDesk);
-plant(-4.97,2.85,.80);
-plant(.63,-2.65,.72);
+plant(-6.18,.77,.63);
+plant(-6.06,3.23,.57);
 takeDecorIntoRoom('reception',receptionDecorStart);
 const waitingDecorStart=group.children.length;
-// Waiting room: two neat bench rows, reading corner, water dispenser and TV.
-for(const [x,z,angle] of [[2.38,-1.42,0],[3.32,-1.42,0],[4.26,-1.42,0],
-                           [2.38,1.34,Math.PI],[3.32,1.34,Math.PI],[4.26,1.34,Math.PI]])
- lobbyChair(x,z,angle,(x<3)?chairTeal:chairBlue);
-box(1.04,.12,.67,3.4,.46,-.10,oak);
-for(const x of [2.98,3.82])for(const z of [-.36,.15])
- box(.04,.32,.04,x,.28,z,oakDark);
-box(.44,.015,.30,3.40,.53,-.10,mat(0xf8f4e7));
-box(.35,.01,.22,3.43,.548,-.10,mat(0x91b1ab));
-visitor(4.25,1.39,mat(0xdf9f87),.62,Math.PI);
-visitor(2.4,-1.40,mat(0xe6c67c),.62,0);
-plant(5.72,-2.55,.75);
-plant(5.82,2.96,.7);
-box(.37,.86,.36,5.7,.58,.6,white);box(.27,.32,.025,5.7,.76,.82,screenMat);
-cylinder(.065,.085,.15,5.7,1.07,.63,glass,12);
-box(.96,.70,.09,5.28,1.38,-3.20,black);box(.84,.57,.096,5.28,1.40,-3.13,screenMat);
-// A wall clock, signs and quiet safety details.
-cylinder(.24,.24,.08,-1.4,1.35,-3.24,white,20);
-for(const [xx,zz] of [[-5.4,-1.9],[-4.9,-2.52],[1.9,-2.55],[5.9,3.7]])
- box(.19,.03,.16,xx,.205,zz,mat(0xbad2cf),group,false);
-// The physical ANMELDUNG sign now moves with its desk; no duplicated floating label.
-roomLabel('WARTEZIMMER',3.65,2.18,-2.45,2.75);
-takeDecorIntoRoom('waiting',waitingDecorStart);
+// Front-right waiting room: bright seating, side table, plants and a wall screen.
+for(const [x,z,angle] of [[2.72,.83,0],[3.69,.83,0],[4.66,.83,0],
+                           [2.72,2.93,Math.PI],[3.69,2.93,Math.PI],[4.66,2.93,Math.PI]])
+ lobbyChair(x,z,angle,x<3.2?chairTeal:chairBlue);
+box(.83,.13,.53,4.34,.46,1.84,oak);
+for(const x of [4.04,4.64])for(const z of [1.64,2.03])
+ box(.042,.29,.042,x,.30,z,oakDark);
+box(.54,.012,.28,4.35,.54,1.84,mat(0xf8f4e7),group,false);
+visitor(3.7,2.88,mat(0xdf9f87),.62,Math.PI);
+visitor(2.73,.82,mat(0xe6c67c),.62,0);
+plant(6.15,3.23,.59);
+plant(6.10,.66,.55);
+box(.34,.83,.35,5.84,.60,1.87,white);
+box(.26,.30,.026,5.84,.76,2.06,screenMat);
+cylinder(.065,.078,.13,5.84,1.07,1.87,glass,12);
+box(.96,.67,.09,5.52,1.19,.32,black);
+box(.85,.56,.10,5.52,1.20,.39,screenMat);
+// Static decorative people along the hall hint at the later patient simulation.
+visitor(.24,2.40,mat(0xb0d1e7),.71,.3);
+visitor(-.28,-2.67,mat(0xeca8a2),.65,Math.PI);
+visitor(.28,-6.64,mat(0x77b8ac),.69,0);
+// The room labels belong to the room meshes, which remain independently movable.
 roomLabel('EINGANG',0,2.46,5.24,1.85);
+takeDecorIntoRoom('waiting',waitingDecorStart);
 // Outdoor detail to suggest future expansion, without prematurely adding new departments.
 for(const [x,z] of [[-8,-2],[-8,2],[8,-2],[8,3],[-7,-5.8],[7.4,-5.9]]){
  cylinder(.085,.11,.8,x,.33,z,soil);
@@ -531,11 +535,11 @@ function inspectRoom(px,py){
 }
 // New first-view angle highlights the desk rather than looking through the divider.
 // A slightly wider first-view frame includes the new treatment room at the rear.
-const focus=new THREE.Vector3(-.25,.1,-.22);
-let orbit=-.42,elevation=1.03,distance=19.4;
+const focus=new THREE.Vector3(0,.1,-3.44);
+let orbit=-.41,elevation=1.18,distance=27.3;
 const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 // View version bump applies the better entrance/reception angle once; no town data is reset.
-const storedKey='klinik-am-park-kamera-v2';
+const storedKey='klinik-am-park-kamera-v3'; // Keep older camera setting untouched as backup.
 try{
  const saved=JSON.parse(localStorage.getItem(storedKey)||'null');
  if(saved&&Number.isFinite(saved.orbit)&&Number.isFinite(saved.elevation)&&Number.isFinite(saved.distance)&&
@@ -1117,7 +1121,7 @@ function adjustZoom(ratio,px,py){
 document.getElementById('camZoomIn').onclick=()=>adjustZoom(.84);
 document.getElementById('camZoomOut').onclick=()=>adjustZoom(1.19);
 document.getElementById('camReset').onclick=()=>{
- focus.set(-.25,.1,-.22);orbit=-.42;elevation=1.03;distance=19.4;
+ focus.set(0,.1,-3.44);orbit=-.41;elevation=1.18;distance=27.3;
  placeCamera();storeCamera();
  document.getElementById('status').textContent='🎯 Kamera wieder auf die Übersicht ausgerichtet.'
 };
