@@ -72,6 +72,8 @@ renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=1.42;
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.shadowMap.autoUpdate=false;
+renderer.shadowMap.needsUpdate=true;
 stage.insertBefore(renderer.domElement,stage.firstChild);
 const hemi=new THREE.HemisphereLight(0xe8fbff,0x9caa9c,2.3);scene.add(hemi);
 const sun=new THREE.DirectionalLight(0xfff4d8,3.2);sun.position.set(-9,17,12);
@@ -120,11 +122,11 @@ function tiled(w,d,x,z,base){
 }
 function wallX(x1,x2,z,h=1.65,m=wallWhite){
  box(x2-x1,h,.16,(x1+x2)/2,.17+h/2,z,m);
- box(x2-x1+.03,.06,.24,(x1+x2)/2,.17+h,z,wallTrim,false)
+ box(x2-x1+.03,.06,.24,(x1+x2)/2,.17+h,z,wallTrim,group,false)
 }
 function wallZ(x,z1,z2,h=1.1,m=wallWhite){
  box(.17,h,z2-z1,x,.17+h/2,(z1+z2)/2,m);
- box(.23,.05,z2-z1,x,.17+h,(z1+z2)/2,wallTrim,false)
+ box(.23,.05,z2-z1,x,.17+h,(z1+z2)/2,wallTrim,group,false)
 }
 function plane(w,h,x,y,z,material,rotation=0){
  const o=new THREE.Mesh(new THREE.PlaneGeometry(w,h),material);
@@ -133,7 +135,10 @@ function plane(w,h,x,y,z,material,rotation=0){
 function labelTexture(text,color='#255f69',bg='#fafff2'){
  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=128;
  const c=canvas.getContext('2d');c.fillStyle=bg;
- c.beginPath();c.roundRect(8,8,496,112,30);c.fill();
+ c.beginPath();
+ if(c.roundRect)c.roundRect(8,8,496,112,30);
+ else c.rect(8,8,496,112);
+ c.fill();
  c.strokeStyle='#ffffff';c.lineWidth=7;c.stroke();
  c.fillStyle=color;c.font='bold 47px system-ui';c.textAlign='center';c.textBaseline='middle';
  c.fillText(text,256,66,478);
