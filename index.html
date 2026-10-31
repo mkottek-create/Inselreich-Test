@@ -2,19 +2,19 @@
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Inselreich – Spielbare Testversion</title><style>
 *{box-sizing:border-box}body{margin:0;background:#deebca;font-family:-apple-system,system-ui,sans-serif;color:#263f2e}header{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;background:#f3f8e9}h1{margin:0;font-size:22px}.tag{font-size:12px;background:#e0edd0;padding:8px;border-radius:999px;font-weight:700}#game{height:72dvh;min-height:390px;position:relative;touch-action:none;background:#c5dbae}canvas{display:block;width:100%;height:100%;touch-action:none}#notice{position:absolute;bottom:12px;left:12px;right:12px;background:#fffffff0;border-radius:12px;padding:12px;font-size:13px;text-align:center;pointer-events:none}footer{padding:14px;display:flex;flex-direction:column;gap:9px}.buttons{display:flex;flex-wrap:wrap;gap:9px}.buttons button{min-width:40%;flex:1}button{border:0;border-radius:12px;background:#416d3e;color:white;padding:14px 12px;font-weight:700;flex:1;font-size:14px}button.secondary{background:#fff;color:#31552e}p{font-size:13px;color:#4f6a4c;margin:0;line-height:1.5}
 #buildPanel{background:#f4f8ec;padding:9px;border-radius:13px}#buildPanel[hidden],#placePanel[hidden]{display:none!important}.categoryRow,.itemRow,#placePanel{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px}.categoryRow button,.itemRow button{padding:11px 5px;font-size:12px;flex:1;min-width:42%}.categoryRow button.active{background:#31562d}.itemRow button[hidden]{display:none}#placePanel{align-items:center;background:#eff5dd;padding:9px;border-radius:12px}#placePanel span{flex:1;font-size:13px;font-weight:700}#placePanel button{padding:11px;flex:0 0 auto;font-size:12px}#cancelPlace{background:#7b8e70}.resetButton{width:100%;margin-top:10px}
-#editMenu{position:absolute;z-index:8;top:12px;left:12px;right:12px;padding:12px;background:#fffef5;border:2px solid #7e9d61;border-radius:14px;display:none;box-shadow:0 8px 22px #263b2355;flex-wrap:wrap;gap:7px}#editMenu.show{display:flex}#editMenu strong{width:100%}#editMenu button{padding:10px;font-size:13px}#demolish{background:#a7463f}
+#editMenu{position:absolute;z-index:15;bottom:12px;left:12px;right:12px;padding:15px;background:#fffef5;border:2px solid #638c59;border-radius:18px;display:none;box-shadow:0 12px 36px #1c362d90;flex-wrap:wrap;gap:9px;align-items:stretch}#editMenu.show{display:flex}#editMenu strong{width:100%;font-size:17px}#editMenu p{width:100%;font-size:12px;color:#456044;margin:0 0 3px}#editMenu button{padding:13px;font-size:14px;min-width:36%}#demolish{background:#b34e44}#editClose{background:#829079}canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 #mapTools{position:absolute;top:12px;right:10px;z-index:7;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none}
 #mapTools button{pointer-events:auto;flex:none;min-width:0;max-width:152px;padding:10px 12px;font-size:12px;background:#fffef4;color:#29442c;border:2px solid #74956e;box-shadow:0 3px 11px #21372135}
 #mapTools button.isActive{background:#416d3e;color:#fff;border-color:#416d3e}
 #mapTools .mapHint{pointer-events:none;background:#fffae8dd;color:#29452d;border-radius:8px;padding:4px 7px;font-size:11px;font-weight:800}
 </style></head><body>
 <header><h1>🏝️ Inselreich 3D</h1><span class="tag">🌲 <strong id="woodCount">0</strong> · 🌾 <strong id="foodCount">0</strong></span></header>
-<div id="game"><div id="mapTools"><span class="mapHint">✨ NEU: Karte bewegen</span><button id="panMode">🖐 Karte verschieben</button><button id="centerCamera">⌖ Kartenmitte</button></div><div id="editMenu"><strong id="editTitle">Gebäude</strong><button id="move">↔ Umsetzen</button><button id="demolish">🗑 Abreißen</button><button id="editClose">✕</button></div><div id="notice">👆 Drehen · 🤏 Zoomen · 🖐 Karte verschieben per Knopf oder mit zwei Fingern</div></div>
+<div id="game"><div id="mapTools"><span class="mapHint">✨ NEU: Karte bewegen</span><button id="panMode">🖐 Karte verschieben</button><button id="centerCamera">⌖ Kartenmitte</button></div><div id="editMenu" role="dialog" aria-label="Gebäude bearbeiten"><strong id="editTitle">Gebäude</strong><p>Was möchtest du mit diesem Gebäude machen?</p><button id="move">↔ Verschieben</button><button id="demolish">🗑 Löschen</button><button id="editClose">✕ Abbrechen</button></div><div id="notice">🏠 Gebäude länger gedrückt halten: ↔ Verschieben oder 🗑 Löschen</div></div>
 <footer><div class="buttons"><button id="view">👁️ Anschauen</button><button id="openBuild">🔨 Bauen</button></div>
 
 <div id="buildPanel" hidden><div class="categoryRow"><button data-cat="wohnen">🏠 Wohnen</button><button data-cat="land">🌾 Landwirtschaft</button><button data-cat="prod">🌲 Produktion</button><button data-cat="shop">🛒 Geschäfte</button></div><div class="itemRow"><button id="build">🏠 Haus</button><button id="farm">🚜 Bauernhof</button><button id="field">🌾 Weizenfeld</button><button id="lumber">🪓 Holzfäller</button><button id="market">🛒 Markt 2×2</button></div></div>
 <div id="placePanel" hidden><span id="placeLabel">Gebäude-Vorschau</span><button id="confirmPlace">✅ Bauen</button><button id="cancelPlace">✕ Abbrechen</button></div>
-<p>🔨 Bauen öffnet das Baumenü. Gebäude wählen, Bauplatz antippen und mit ✅ bestätigen. Im Ansichtsmodus wird nichts versehentlich gebaut. Helle Randfelder vergrößern die Insel direkt. Gebäude lange drücken zum Umsetzen oder Abreißen. Zum Erkunden auf „🖐 Karte verschieben“ tippen und die Karte mit einem Finger schieben; 🤏 Zoomen funktioniert gleichzeitig. Mit zwei Fingern kannst du die Karte auch direkt verschieben. Mit „⌖ Kartenmitte“ findest du zurück.</p><button id="reset" class="secondary resetButton">↺ Test zurücksetzen</button></footer>
+<p>🔨 Bauen öffnet das Baumenü. Gebäude wählen, Bauplatz antippen und mit ✅ bestätigen. Im Ansichtsmodus wird nichts versehentlich gebaut. Helle Randfelder vergrößern die Insel direkt. 🏠 Gebäude etwa eine halbe Sekunde gedrückt halten: Dann kannst du Verschieben oder Löschen wählen. Zum Erkunden auf „🖐 Karte verschieben“ tippen und die Karte mit einem Finger schieben; 🤏 Zoomen funktioniert gleichzeitig. Mit zwei Fingern kannst du die Karte auch direkt verschieben. Mit „⌖ Kartenmitte“ findest du zurück.</p><button id="reset" class="secondary resetButton">↺ Test zurücksetzen</button></footer>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"}}</script>
 <script type="module">
 import * as THREE from 'three';
@@ -374,15 +374,36 @@ if(!ray.ray.intersectPlane(plane,point))return undefined;
 const x=Math.round(point.x),z=Math.round(point.z),k=key(x,z);
 if(tileModels.has(k)&&Math.abs(point.x-x)<=.55&&Math.abs(point.z-z)<=.55)return k;
 return undefined}
+// 3D raycast detects the visible roof, walls and other building parts, not only the ground tile.
+// This is essential for long presses on phones with a steep angled camera.
+function buildingAtFinger(e){
+ const p=coords(e),ray=new THREE.Raycaster();
+ ray.setFromCamera(new THREE.Vector2(p.x,p.y),camera);
+ const roots=new Map();
+ for(const [type,items] of [['house',buildings],['farm',farms],['field',fields],['lumber',lumberjacks],['market',markets]]){
+   for(const [anchor,group] of items)roots.set(group,{type,anchor})
+ }
+ if(!roots.size)return null;
+ const intersections=ray.intersectObjects([...roots.keys()],true);
+ for(const intersection of intersections){
+   let target=intersection.object;
+   while(target){
+     const info=roots.get(target);
+     if(info)return info;
+     target=target.parent
+   }
+ }
+ return null
+}
 function at(k){if(buildings.has(k))return {type:'house',anchor:k};if(lumberjacks.has(k))return {type:'lumber',anchor:k};if(farms.has(k))return {type:'farm',anchor:k};if(fields.has(k))return {type:'field',anchor:k};const [a,b]=pos(k);for(const m of markets.keys()){const [x,z]=pos(m);if(a>=x&&a<x+2&&b>=z&&b<z+2)return {type:'market',anchor:m}}return null}
 function cancelHold(){if(holdTimer!==null){clearTimeout(holdTimer);holdTimer=null}}
 function closeEdit(){editMenu.classList.remove('show');selected=null}
-function showEdit(info){moving=null;selected=info;editMenu.classList.add('show');document.getElementById('editTitle').textContent=(info.type==='market'?'🛒 Markt':info.type==='lumber'?'🪓 Holzfäller':info.type==='farm'?'🚜 Bauernhof':info.type==='field'?'🌾 Weizenfeld':'🏠 Haus')+' bearbeiten';status.textContent='↔ Umsetzen oder 🗑 Abreißen auswählen.'}
+function showEdit(info){moving=null;selected=info;clearPreview();editMenu.classList.add('show');document.getElementById('editTitle').textContent=(info.type==='market'?'🛒 Markt':info.type==='lumber'?'🪓 Holzfäller':info.type==='farm'?'🚜 Bauernhof':info.type==='field'?'🌾 Weizenfeld':'🏠 Haus')+' bearbeiten';status.textContent='🏠 Gebäude ausgewählt – Verschieben oder Löschen?';if(navigator.vibrate)navigator.vibrate(35)}
 function mapOf(type){return type==='house'?buildings:type==='market'?markets:type==='lumber'?lumberjacks:type==='farm'?farms:fields}
 function relocate(from,to){const targetCells=from.type==='market'?marketCells(to):[to];if(!targetCells.every(k=>owned.has(k)&&(!at(k)||(at(k).type===from.type&&at(k).anchor===from.anchor)))){status.textContent=from.type==='market'?'❌ Der Markt braucht vier freie Felder (2×2).':'❌ Bitte einen freien Bauplatz wählen.';return false}
-if(from.type==='field'){const [x,z]=pos(to);const touches=neighbors(x,z).some(([a,b])=>farms.has(key(a,b))||(from.type==='farm'&&from.anchor===key(a,b)));if(!touches){status.textContent='🌾 Das Weizenfeld muss neben einem Bauernhof liegen.';return false}}const map=mapOf(from.type),g=map.get(from.anchor);if(!g)return false;map.delete(from.anchor);map.set(to,g);const [x,z]=pos(to);g.position.set(x+(from.type==='market'?.5:0),.16,z+(from.type==='market'?.5:0));save();status.textContent='✅ Gebäude umgesetzt!';return true}
-document.getElementById('move').onclick=()=>{moving=selected;closeEdit();status.textContent='↔ Tippe auf den neuen Standort. Für den Markt brauchst du 2×2 freie Felder.'};
-document.getElementById('demolish').onclick=()=>{if(!selected)return;const t=selected;if(confirm('Dieses Gebäude wirklich abreißen?')){const m=mapOf(t.type),g=m.get(t.anchor);if(g){land.remove(g);m.delete(t.anchor);save();status.textContent='🗑 Gebäude abgerissen!'}}closeEdit()};
+if(from.type==='field'){const [x,z]=pos(to);const touches=neighbors(x,z).some(([a,b])=>farms.has(key(a,b))||(from.type==='farm'&&from.anchor===key(a,b)));if(!touches){status.textContent='🌾 Das Weizenfeld muss neben einem Bauernhof liegen.';return false}}const map=mapOf(from.type),g=map.get(from.anchor);if(!g)return false;map.delete(from.anchor);map.set(to,g);const [x,z]=pos(to);g.position.set(x+(from.type==='market'?.5:0),.16,z+(from.type==='market'?.5:0));save();status.textContent='✅ Gebäude verschoben! Zum Bearbeiten wieder länger gedrückt halten.';return true}
+document.getElementById('move').onclick=()=>{if(!selected)return;moving=selected;closeEdit();modeBuild=false;buildPanel.hidden=true;updateTools();status.textContent='↔ Verschieben: Tippe auf ein FREIES grünes Feld. Der Markt braucht 2×2 freie Felder.'};
+document.getElementById('demolish').onclick=()=>{if(!selected)return;const t=selected;if(confirm('Dieses Gebäude wirklich löschen?')){const m=mapOf(t.type),g=m.get(t.anchor);if(g){land.remove(g);m.delete(t.anchor);save();status.textContent='🗑 Gebäude gelöscht. Der Bauplatz ist wieder frei.'}}closeEdit()};
 document.getElementById('editClose').onclick=closeEdit;
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 
@@ -396,9 +417,9 @@ canvas.addEventListener('pointerdown',e=>{
   down=null;ignoreClick=true
  }else{
   down={id:e.pointerId,x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,moved:false,tile:hit(e)};
-  const k=down.tile,info=k===undefined?null:at(k);
+  const k=down.tile,info=buildingAtFinger(e)||(k===undefined?null:at(k));
   if(info&&!moving){
-   holdTimer=setTimeout(()=>{if(down&&!down.moved&&points.size===1){showEdit(info);down=null;ignoreClick=true}holdTimer=null},650)
+   holdTimer=setTimeout(()=>{if(down&&!down.moved&&points.size===1){showEdit(info);down=null;ignoreClick=true}holdTimer=null},560)
   }
  }
  e.preventDefault()
