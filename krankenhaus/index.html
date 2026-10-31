@@ -48,11 +48,11 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
 <header><div><div class="eyebrow">🏥 Eigenes Krankenhaus-Spiel</div><h1>Klinik am Park <span aria-hidden="true">✚</span></h1><p class="subtitle">Krankenhaus 3D · Unser erster Grundriss</p></div><span class="pill">GRUNDRISS 01</span></header>
 <main>
 <div id="stage" aria-label="Interaktive dreidimensionale Ansicht des Krankenhauses">
- <div id="topLegend"><strong>🏥 Unser Startbereich</strong><small>🚪 Eingang vorne<br>🧑‍💻 Anmeldung dahinter<br>🪑 Wartezimmer rechts</small></div>
+ <div id="topLegend"><strong>🏥 Unser Krankenhaus</strong><small>🚪 Eingang vorne<br>🧑‍💻 Anmeldung links<br>🪑 Wartezimmer rechts<br>🩺 Behandlungsraum hinten</small></div>
  <div id="roomInfo" hidden role="status" aria-live="polite"><strong id="roomTitle"></strong><span id="roomDescription"></span></div>
  <div id="gestureHint">☝️ Verschieben &nbsp;·&nbsp; ✌️ Zoomen & Drehen</div>
 </div>
-<div id="status" role="status" aria-live="polite">🏥 Die Anmeldung steht jetzt links im Raum. Du kannst sie selbst verschieben.</div>
+<div id="status" role="status" aria-live="polite">🏥 Anmeldung ohne Stühle, großes Schild und ein neuer leerer Behandlungsraum.</div>
 <div id="layoutTools" aria-label="Einrichtungsmodus">
  <button id="editReception" type="button">🛠️ Anmeldung verschieben</button>
  <button id="rotateReception" type="button" hidden>🔄 Tresen drehen</button>
@@ -64,6 +64,7 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
   <div class="room"><span class="symbol">🚪</span><strong>Eingang</strong><p>Vorne mittig, mit Glastür und Eingangsweg.</p></div>
   <div class="room"><span class="symbol">🧑‍💻</span><strong>Empfang</strong><p>Jetzt links im Raum, mit verschiebbarem Tresen, PCs und Anmeldungsschild.</p></div>
   <div class="room"><span class="symbol">🪑</span><strong>Wartezimmer</strong><p>Rechts daneben, mit Sitzplätzen und Einrichtung.</p></div>
+  <div class="room"><span class="symbol">🩺</span><strong>Behandlungsraum 1</strong><p>Kleiner Raum hinten: Wände, Boden und Tür – noch ohne Einrichtung.</p></div>
  </div>
  <p class="note">Mit „🛠️ Anmeldung verschieben“ kannst du den Empfang selbst im linken Zimmer platzieren und drehen. Außerhalb des Einrichtungsmodus lässt sich die Ansicht frei verschieben, zoomen und drehen – ohne Kameraknöpfe. Tippe auf einen Bereich, um ihn zu erkunden. Weitere Abteilungen kommen später dazu. Dieses Spiel ist unabhängig von Inselreich.</p>
 </section>
@@ -126,6 +127,7 @@ function tileTexture(background,line,freckles=false){
 const tileBase=tileTexture('#f2ecdc','#dfd8c9',true);
 const tileWaiting=tileTexture('#d7e8e9','#c1dadd',false);
 const tileEntry=tileTexture('#eae1d2','#c9c4ba',true);
+const tileTreatment=tileTexture('#dce8e3','#c3d7d1',false);
 function tiled(w,d,x,z,base){
  const t=base.clone();t.needsUpdate=true;t.repeat.set(w/.75,d/.75);
  const o=new THREE.Mesh(new THREE.PlaneGeometry(w,d),new THREE.MeshStandardMaterial({map:t,roughness:1}));
@@ -143,7 +145,7 @@ function plane(w,h,x,y,z,material,rotation=0){
  const o=new THREE.Mesh(new THREE.PlaneGeometry(w,h),material);
  o.position.set(x,y,z);o.rotation.y=rotation;o.castShadow=false;group.add(o);return o
 }
-function labelTexture(text,color='#255f69',bg='#fafff2'){
+function labelTexture(text,color='#255f69',bg='#fafff2',fontSize=47){
  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=128;
  const c=canvas.getContext('2d');c.fillStyle=bg;
  c.beginPath();
@@ -151,7 +153,7 @@ function labelTexture(text,color='#255f69',bg='#fafff2'){
  else c.rect(8,8,496,112);
  c.fill();
  c.strokeStyle='#ffffff';c.lineWidth=7;c.stroke();
- c.fillStyle=color;c.font='bold 47px system-ui';c.textAlign='center';c.textBaseline='middle';
+ c.fillStyle=color;c.font='900 '+fontSize+'px system-ui';c.textAlign='center';c.textBaseline='middle';
  c.fillText(text,256,66,478);
  const t=new THREE.CanvasTexture(canvas);t.colorSpace=THREE.SRGBColorSpace;return t
 }
@@ -194,6 +196,10 @@ function lightPost(x,z){
 groundRect(36,34,0,1,green,-.15);
 groundRect(22,20,0,1,grassAlt,-.11);
 groundRect(13.55,8.4,0, .48,concrete,.06);
+// Small future treatment room connects to the waiting area at the back.
+// Its interior deliberately stays completely empty.
+groundRect(4.12,3.32,4.0,-4.99,concrete,.06);
+tiled(3.79,3.06,4.0,-4.99,tileTreatment);
 tiled(7.45,7.4,-2.7,.47,tileBase); // Reception occupies left and central portion.
 tiled(5.4,7.4,3.75,.47,tileWaiting); // Waiting room is on the right.
 groundRect(1.85,4.2,0,6.4,walk,.065);
@@ -213,7 +219,9 @@ for(const x of [-4.9,-3.7,4.5,5.5]){
 }
 lightPost(-1.6,7.1);lightPost(1.6,7.1);
 // Walls: roof is deliberately removed, so all departments are readable from above.
-wallX(-6.55,6.55,-3.35,1.85);
+// Shared back wall has a real door opening into treatment room #1.
+wallX(-6.55,3.25,-3.35,1.85);
+wallX(4.45,6.55,-3.35,1.85);
 wallZ(-6.55,-3.35,4.35,1.32);
 wallZ(6.55,-3.35,4.35,1.15);
 wallX(-6.55,-1.12,4.35,.35);
@@ -224,6 +232,19 @@ wallZ(1.35,2.20,4.33,1.02);
 // Glass cutaway partitions around the interior opening.
 box(.035,1.13,1.4,1.35,.77,-1.2,tealLight);
 const glassDivider=box(.025,.83,1.40,1.39,.96,-1.2,glass,group,false);
+// Treatment room 1: 3.8 × 3.1 m, directly behind the waiting room.
+// Only floor, three new walls and an entrance: no bed, equipment or furniture.
+wallX(2.10,5.90,-6.56,1.70);
+wallZ(2.10,-6.56,-3.35,1.22);
+wallZ(5.90,-6.56,-3.35,1.22);
+// Doorway in the shared wall. Hinged glass door stands open against the jamb.
+for(const x of [3.25,4.45])box(.085,1.73,.14,x,1.03,-3.35,teal);
+box(1.29,.13,.21,3.85,1.87,-3.35,teal);
+const treatmentDoor=box(.76,1.54,.055,3.29,.94,-3.73,glass,group,false);
+treatmentDoor.rotation.y=Math.PI/2;
+box(.09,.14,.09,3.33,1.02,-3.76,teal);
+const treatmentDoorLabel=plane(1.14,.32,3.85,1.98,-3.22,
+ new THREE.MeshBasicMaterial({map:labelTexture('BEHANDLUNG 1','#176779','#ffffff',59),transparent:true,depthWrite:false,side:THREE.DoubleSide}),0);
 // Entrance threshold: real sliding-glass doors, low frame and teal canopy.
 box(2.45,.11,.8,.03,.24,4.23,concrete);
 for(const x of [-1.14,1.16])box(.08,1.73,.1,x,1.02,4.38,teal);
@@ -281,18 +302,17 @@ for(let i=0;i<3;i++)
  box(.30,.013,.022,-.15,1.108,1.98+(i-1)*.055,tealLight,group,false);
 cylinder(.10,.10,.06,-.05,1.12,2.26,trimBrass,16);
 sphere(.07,-.05,1.18,2.26,trimBrass);
-// Overhead registration board (not a huge roof), visible from all camera angles.
-for(const x of [-2.94,.14])box(.055,.78,.055,x,1.52,2.00,oakDark);
-box(3.26,.50,.12,-1.40,1.98,2.03,deepTeal);
-box(3.11,.38,.015,-1.40,1.99,2.114,white,group,false);
-plane(2.82,.33,-1.40,2.005,2.132,
- new THREE.MeshBasicMaterial({map:labelTexture('ANMELDUNG'),transparent:true,depthWrite:false}),0);
-for(const x of [-2.91,.11])box(.052,.55,.14,x,1.96,2.06,trimBrass);
+// Extra-large, high-contrast ANMELDUNG board moves with the reception desk.
+for(const x of [-2.94,.14])box(.075,1.09,.085,x,1.63,2.01,oakDark);
+box(3.42,.86,.17,-1.40,2.15,2.03,deepTeal);
+box(3.27,.70,.022,-1.40,2.15,2.13,creamCounter,group,false);
+plane(3.15,.64,-1.40,2.15,2.15,
+ new THREE.MeshBasicMaterial({map:labelTexture('ANMELDUNG','#12434d','#ffffff',72),transparent:true,depthWrite:false,side:THREE.DoubleSide}),0);
+for(const x of [-3.05,.25])box(.08,.91,.18,x,2.15,2.07,trimBrass);
 // Front queue markers, small and unobtrusive.
 for(const z of [3.12,3.70])
  box(.48,.014,.035,-1.40,.184,z,tealLight,group,false);
-// Two visitor chairs behind the desk and one visible receptionist.
-for(const x of [-2.12,-.72])lobbyChair(x,.75,Math.PI,chairTeal);
+// No chairs at registration: keep desk, computers and receptionist only.
 visitor(-1.53,.88,mat(0x78bcb3),.78,Math.PI);
 // Reparent existing desk, signs, chairs and receptionist as a single movable unit.
 const receptionDesk=new THREE.Group();
@@ -329,6 +349,7 @@ for(const [xx,zz] of [[-5.4,-1.9],[-4.9,-2.52],[1.9,-2.55],[5.9,3.7]])
  box(.19,.03,.16,xx,.205,zz,mat(0xbad2cf),group,false);
 // The physical ANMELDUNG sign now moves with its desk; no duplicated floating label.
 roomLabel('WARTEZIMMER',3.65,2.18,-2.45,2.75);
+roomLabel('BEHANDLUNG 1',4.02,2.02,-5.65,2.26);
 roomLabel('EINGANG',0,2.46,5.24,1.85);
 // Outdoor detail to suggest future expansion, without prematurely adding new departments.
 for(const [x,z] of [[-8,-2],[-8,2],[8,-2],[8,3],[-7,-5.8],[7.4,-5.9]]){
@@ -338,7 +359,8 @@ for(const [x,z] of [[-8,-2],[-8,2],[8,-2],[8,3],[-7,-5.8],[7.4,-5.9]]){
 const bounds=[
  {id:'entry',name:'🚪 Eingang',details:'Unten in der Mitte: Glas-Schiebetüren und ein direkter Weg zur Anmeldung.',x1:-1.15,x2:1.15,z1:3.9,z2:8.1},
  {id:'reception',name:'🧑‍💻 Empfang / Anmeldung',details:'Direkt hinter dem Eingang: großer beschrifteter Tresen, zwei Computer, Empfangsperson und Wartebereich.',x1:-6.55,x2:1.35,z1:-3.35,z2:3.9},
- {id:'waiting',name:'🪑 Wartezimmer',details:'Rechts neben dem Empfang: Sitzplätze, Pflanzen, Wasserspender und Bildschirm.',x1:1.35,x2:6.55,z1:-3.35,z2:4.35}
+ {id:'waiting',name:'🪑 Wartezimmer',details:'Rechts neben dem Empfang: Sitzplätze, Pflanzen, Wasserspender und Bildschirm.',x1:1.35,x2:6.55,z1:-3.35,z2:4.35},
+ {id:'treatment',name:'🩺 Behandlungsraum 1',details:'Kleiner, noch vollständig leerer Behandlungsraum hinter dem Wartezimmer. Nur Boden, Wände und eine Tür.',x1:2.10,x2:5.90,z1:-6.56,z2:-3.35}
 ];
 const raycaster=new THREE.Raycaster();
 const onGround=new THREE.Plane(new THREE.Vector3(0,1,0),-.13);
@@ -360,8 +382,9 @@ function inspectRoom(px,py){
  document.getElementById('status').textContent='✓ '+room.name+' – dieser Bereich steht schon.';
 }
 // New first-view angle highlights the desk rather than looking through the divider.
-const focus=new THREE.Vector3(-.45,.1,.72);
-let orbit=-.42,elevation=1.03,distance=17.9;
+// A slightly wider first-view frame includes the new treatment room at the rear.
+const focus=new THREE.Vector3(-.25,.1,-.22);
+let orbit=-.42,elevation=1.03,distance=19.4;
 const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 // View version bump applies the better entrance/reception angle once; no town data is reset.
 const storedKey='klinik-am-park-kamera-v2';
