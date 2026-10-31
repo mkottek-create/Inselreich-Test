@@ -92,7 +92,7 @@ button.secondary{background:linear-gradient(180deg,#fffef7,#ecefdd);color:#35563
  <p id="peopleGoal">Erstes Ziel: 40 Einwohner – auf dem Weg zur Burgenzeit!</p>
 </section>
 
-<div id="buildPanel" hidden><div class="categoryRow"><button data-cat="wohnen">🏠 Wohnen</button><button data-cat="land">🌾 Landwirtschaft</button><button data-cat="prod">🌲 Produktion</button><button data-cat="shop">🛒 Geschäfte</button><button data-cat="burg">🏰 Burgen</button><button data-cat="wege">🛤️ Straßen</button></div><div class="itemRow"><button id="build">🏠 Haus</button><button id="farm">🚜 Getreidefarm</button><button id="field">🌾 Weizenfeld</button><button id="lumber">🪓 Holzfäller</button><button id="quarry">⛏️ Steinbruch</button><button id="market">🛒 Markt 2×2</button><button id="castle">🏰 Burg 3×3</button><button id="road">🪨 Steinweg verlegen</button><button id="roadErase">🧹 Straße entfernen</button></div><p class="buildCostHint">🛤️ Baue durchgehende Straßen zwischen Markt und Gebäuden, damit Holz, Stein und Nahrung geliefert werden. Vor dem ersten Markt produzieren die Betriebe normal. 🌲 Der erste Holzfäller bleibt kostenlos.</p></div>
+<div id="buildPanel" hidden><div class="categoryRow"><button data-cat="wohnen">🏠 Wohnen</button><button data-cat="land">🌾 Landwirtschaft</button><button data-cat="prod">🌲 Produktion</button><button data-cat="shop">🛒 Geschäfte</button><button data-cat="burg">🏰 Burgen</button><button data-cat="wege">🛤️ Straßen</button></div><div class="itemRow"><button id="build">🏠 Haus</button><button id="farm">🚜 Getreidefarm</button><button id="field">🌾 Weizenfeld</button><button id="mill">🌬️ Windmühle</button><button id="lumber">🪓 Holzfäller</button><button id="quarry">⛏️ Steinbruch</button><button id="market">🛒 Markt 2×2</button><button id="castle">🏰 Burg 3×3</button><button id="road">🪨 Steinweg verlegen</button><button id="roadErase">🧹 Straße entfernen</button></div><p class="buildCostHint">🛤️ Baue durchgehende Straßen zwischen Markt und Gebäuden, damit Holz, Stein und Nahrung geliefert werden. Vor dem ersten Markt produzieren die Betriebe normal. 🌲 Der erste Holzfäller bleibt kostenlos.</p></div>
 <p>🔨 Bauen öffnet das Baumenü. Gebäude wählen und auf freie Felder tippen – jedes Gebäude wird sofort gebaut, verbraucht die angezeigten Holz-Baukosten und du bleibst im Baumodus, bis du 👁️ Anschauen wählst. Der erste Holzfäller ist kostenlos. Nach der Inselerweiterung entstehen Felsvorkommen: ⛏️ Steinbruch direkt daneben bauen, um 🪨 Stein zu gewinnen. 🛤️ Sobald ein Markt steht, müssen Holzfäller, Steinbruch und Getreidefarm über durchgehende Straßen mit einem Markt verbunden sein, sonst kommt keine neue Ware ins Lager. Burg und Markt benötigen außerdem Stein. Falls du dich vertippst, kannst du die letzte Platzierung 10 Sekunden lang mit ↶ Rückgängig rückgängig machen. 🏰 Burg: 3×3 freie Felder erforderlich. Im Ansichtsmodus wird nichts versehentlich gebaut. Mit 🌿 Insel erweitern wächst deine Insel auf Knopfdruck gleich rundherum um einen ganzen Streifen – ohne einzelne Randfelder anzutippen. 🏠 Gebäude kurz antippen zeigt seine Infos (Bewohner, Produktion und Zustand). Etwa eine halbe Sekunde gedrückt halten öffnet Verschieben oder Löschen. Kartensteuerung: ☝️ Mit einem Finger die Karte ohne Anschlag frei verschieben; mit „⌖ Kartenmitte“ jederzeit zurück. ✌️ Mit zwei Fingern drehen (die Finger gegeneinander verdrehen), durch Auseinanderziehen zoomen und gemeinsam verschieben. Mit „⌖ Kartenmitte“ findest du zurück. Mit „🔎 Weit raus“ bekommst du die Gesamtansicht deiner Insel. 👥 Häuser bekommen Bewohner: Nahrung lässt neue Bewohner einziehen, Straßen verbessern ihre Zufriedenheit. Deine Einwohner und Fortschritte werden gespeichert. 🛤️ Straßen: Im Baumenü auf „Straßen“ gehen, „Steinweg verlegen“ wählen und auf freie Felder tippen oder mit einem Finger darüberstreichen. Kurven, Kreuzungen und Zugänge zu Gebäuden entstehen automatisch. Mit „Straße entfernen“ kannst du Wege wieder abtragen.</p><button id="reset" class="secondary resetButton">↺ Test zurücksetzen</button></footer>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"}}</script>
 <script type="module">
@@ -154,14 +154,14 @@ ocean.frustumCulled=false;scene.add(ocean);
 const mat=(hex)=>new THREE.MeshStandardMaterial({color:hex,roughness:0.9});
 const grass=[mat(0x77a85a),mat(0x94b76c),mat(0x709a54)],soil=mat(0x82694d),wall=mat(0xead1a6),roof=mat(0xac5944),roofSide=mat(0x843f34),door=mat(0x65432e),glass=mat(0x93c6cc),trunk=mat(0x8e653c);
 const land=new THREE.Group();scene.add(land);
-const tiles=[],tileModels=new Map(),buildings=new Map(),markets=new Map(),castles=new Map(),lumberjacks=new Map(),farms=new Map(),fields=new Map(),owned=new Set(),roads=new Set(),roadModels=new Map();
+const tiles=[],tileModels=new Map(),buildings=new Map(),markets=new Map(),castles=new Map(),lumberjacks=new Map(),farms=new Map(),fields=new Map(),mills=new Map(),owned=new Set(),roads=new Set(),roadModels=new Map();
 const citizens=new Map(),rockSites=new Set(),rockModels=new Map(),quarries=new Map(),quarryDeposits=new Map();let citizenElapsed=0,infoSelection=null,starterWoodGranted=false;
 // Preserve simulation updates while deferring synchronous storage and UI recalculation
 // until a gesture finishes (saves during game startup still work normally).
 let gesturePointerCount=0,pendingGestureSave=false;
 const HOME_CAPACITY=6,CITIZEN_TICK_MS=30000,START_WOOD=10;
-const WOOD_BUILD_COST={house:5,farm:8,field:3,lumber:6,quarry:10,market:14,castle:30};
-const STONE_BUILD_COST={market:4,castle:15},STONE_TICK_MS=15000;
+const WOOD_BUILD_COST={house:5,farm:8,field:3,mill:10,lumber:6,quarry:10,market:14,castle:30};
+const STONE_BUILD_COST={mill:2,market:4,castle:15},STONE_TICK_MS=15000;
 const LIMIT=8,KEY='inselreich-pages-test-01',OLD_KEY='inselreich-3d-test-01';
 const key=(x,z)=>x+','+z;
 const pos=k=>k.split(',').map(Number);
@@ -754,6 +754,12 @@ function finishBuilding(type,g,k){
   }
   addWarmLantern(g,-.39,.55,.27);
   for(const xx of [-.33,-.20,-.07])box(.02,.26,.03,darkIron,xx,.35,-.448,g).castShadow=false
+ }else if(type==='mill'){
+  // Soft glow at the entry, carved stone trim and grain baskets.
+  addWarmLantern(g,.225,.66,.356);
+  for(const yy of [.61,1.00]){
+   box(.18,.02,.024,millTrim,0,yy,.301,g).castShadow=false
+  }
  }else if(type==='field'){
   // A small scarecrow at the back of the wheat plot.
   box(.035,.59,.038,warmTimber,.34,.37,-.34,g).castShadow=false;
@@ -777,7 +783,7 @@ function finishBuilding(type,g,k){
   }
  }
 }
-function occupied(k){if(rockSites.has(k)||quarries.has(k)||roads.has(k)||buildings.has(k)||lumberjacks.has(k)||farms.has(k)||fields.has(k))return true;
+function occupied(k){if(rockSites.has(k)||quarries.has(k)||roads.has(k)||buildings.has(k)||lumberjacks.has(k)||farms.has(k)||fields.has(k)||mills.has(k))return true;
  for(const anchor of markets.keys()){const [x,z]=pos(anchor),[a,b]=pos(k);if(a>=x&&a<x+2&&b>=z&&b<z+2)return true}
  for(const anchor of castles.keys()){const [x,z]=pos(anchor),[a,b]=pos(k);if(a>=x&&a<x+3&&b>=z&&b<z+3)return true}return false}
 
@@ -1233,6 +1239,84 @@ function addFarm(k){
  finishBuilding('farm',g,k);
  worldShadowsDirty=true;farms.set(k,g);save();return true
 }
+/* Windmühle 1.0: a tile-sized grain mill linked to its neighboring Getreidefarm.
+   The rotor is the only animated group; its sails never cast dynamic shadows.
+   The existing island grid, camera and all previous building meshes stay intact. */
+const millPlaster=mat(0xf4e3bf),millStone=mat(0xb4aca0),
+ millStoneDark=mat(0x8d877d),millWood=mat(0x785039),
+ millRoof=mat(0xa65140),millSail=mat(0xece2c6),millTrim=mat(0xc89e62),
+ millGlass=mat(0x91b9be),millBag=mat(0xdfc69a);
+function nearMillFarm(k){
+ const [x,z]=pos(k);
+ return neighbors(x,z).some(([a,b])=>farms.has(key(a,b)))
+}
+function addMill(k){
+ if(!owned.has(k)||occupied(k)||!nearMillFarm(k))return false;
+ const [x,z]=pos(k),g=new THREE.Group();
+ g.position.set(x,.025,z);land.add(g);
+ // Yard, sandstone stairs, circular plinth and tapered masonry tower.
+ box(.94,.045,.94,millStone,0,.15,0,g);
+ cylinder(g,.36,.43,.15,millStoneDark,0,.24,-.03,10);
+ const tower=cylinder(g,.245,.355,1.12,millPlaster,0,.84,-.03,12);
+ tower.receiveShadow=true;
+ // Individual masonry accents follow the curving base.
+ for(let i=0;i<12;i++){
+  const a=i*Math.PI/6;
+  const stone=box(.14,.07,.035,i%3?millStone:millStoneDark,
+    Math.sin(a)*.352,.35,Math.cos(a)*.352-.03,g);
+  stone.rotation.y=a;stone.castShadow=false
+ }
+ cylinder(g,.290,.264,.10,millWood,0,1.43,-.03,12);
+ cone(g,.36,.55,millRoof,0,1.75,-.03,12);
+ cylinder(g,.025,.025,.12,millWood,0,2.07,-.03,7);
+ // Curved entrance, timber door and iron hinges face the village street.
+ box(.25,.39,.078,millStoneDark,0,.42,.317,g);
+ box(.20,.34,.082,millWood,0,.41,.376,g);
+ for(const xx of [-.06,.06])
+  box(.016,.34,.088,millTrim,xx,.41,.386,g).castShadow=false;
+ for(const yy of [.34,.47])
+  box(.20,.022,.09,millStoneDark,0,yy,.423,g).castShadow=false;
+ box(.32,.05,.18,millStone,0,.181,.435,g);
+ box(.27,.035,.135,millStone,0,.148,.52,g);
+ // Three tiny windows, oak shutters and a mill sign.
+ for(const [xx,yy,zz,ry] of [[0,1.18,.251,0],[-.255,.87,-.035,-Math.PI/2],[.255,.88,-.035,Math.PI/2]]){
+  const w=new THREE.Group();w.position.set(xx,yy,zz);w.rotation.y=ry;g.add(w);
+  box(.145,.20,.036,millWood,0,0,.012,w);
+  box(.10,.15,.04,millGlass,0,0,.043,w);
+  box(.016,.18,.047,millTrim,0,0,.071,w)
+ }
+ box(.31,.13,.04,millWood,0,.85,.345,g);
+ box(.26,.085,.045,millTrim,0,.85,.369,g);
+ // Grain sacks and stacked baskets; independent silhouettes help at phone zoom.
+ for(const [bx,bz] of [[-.31,.31],[-.20,.38],[.31,.37]]){
+  const bag=new THREE.Mesh(new THREE.DodecahedronGeometry(1,0),millBag);
+  bag.scale.set(.105,.13,.12);bag.position.set(bx,.26,bz);
+  bag.rotation.z=(bx<0?-.12:.12);bag.castShadow=true;g.add(bag)
+ }
+ crate(g,.32,.205,-.31);
+ for(let i=0;i<3;i++)box(.12,.035,.17,hayGold,.24-i*.125,.335,-.31,g);
+ // A horizontal axle toward the viewer; wooden cross and cloth sails in the XY plane.
+ // Its pivot is above the door and overlaps the tower, like a real windmill.
+ const rotor=new THREE.Group();rotor.name='millRotor';
+ rotor.position.set(0,1.26,.33);g.add(rotor);
+ cylinder(rotor,.065,.075,.16,millWood,0,0,.025,12).rotation.x=Math.PI/2;
+ for(let i=0;i<4;i++){
+  const blade=new THREE.Group();blade.rotation.z=i*Math.PI/2;rotor.add(blade);
+  box(.075,.83,.055,millWood,0,.50,.034,blade).castShadow=false;
+  const sail=box(.285,.58,.018,millSail,.105,.53,.065,blade);
+  sail.rotation.z=-.13;sail.castShadow=false;
+  for(let n=0;n<4;n++){
+   box(.29,.013,.023,millTrim,.105,.30+n*.14,.077,blade).castShadow=false
+  }
+  box(.075,.045,.055,millWood,0,.88,.034,blade).castShadow=false
+ }
+ rotor.rotation.z=(terrainRand(x,z,290)*Math.PI*2);
+ g.userData.millRotor=rotor;
+ // The static shadow map must never freeze an animated sail's shadow.
+ g.traverse(part=>{if(part.parent===rotor||part.parent?.parent===rotor)part.castShadow=false});
+ finishBuilding('mill',g,k);
+ worldShadowsDirty=true;mills.set(k,g);save();return true
+}
 function nearFarm(k){const [x,z]=pos(k);return neighbors(x,z).some(([a,b])=>farms.has(key(a,b)))}
 
 function addField(k){
@@ -1306,9 +1390,9 @@ function woodBuildLabel(type){
  return cost?('🌲 '+cost+' Holz'):'🆓 Kostenlos'
 }
 function refreshBuildCostLabels(){
- const labels={house:'🏠 Haus',farm:'🚜 Getreidefarm',field:'🌾 Weizenfeld',
+ const labels={house:'🏠 Haus',farm:'🚜 Getreidefarm',field:'🌾 Weizenfeld',mill:'🌬️ Windmühle',
   lumber:'🪓 Holzfäller',quarry:'⛏️ Steinbruch',market:'🛒 Markt 2×2',castle:'🏰 Burg 3×3'};
- const ids={house:'build',farm:'farm',field:'field',lumber:'lumber',quarry:'quarry',market:'market',castle:'castle'};
+ const ids={house:'build',farm:'farm',field:'field',mill:'mill',lumber:'lumber',quarry:'quarry',market:'market',castle:'castle'};
  for(const [type,label] of Object.entries(labels)){
   const btn=document.getElementById(ids[type]);
   const cost=buildingWoodCost(type);
