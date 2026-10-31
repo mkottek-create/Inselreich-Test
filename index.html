@@ -1442,7 +1442,8 @@ function closeEdit(){editMenu.classList.remove('show');selected=null}
 function showEdit(info){closeBuildingInfo();moving=null;selected=info;clearPreview();editMenu.classList.add('show');document.getElementById('editTitle').textContent=(info.type==='castle'?'🏰 Burg':info.type==='market'?'🛒 Markt':info.type==='lumber'?'🪓 Holzfäller':info.type==='quarry'?'⛏️ Steinbruch':info.type==='farm'?'🚜 Bauernhof':info.type==='field'?'🌾 Weizenfeld':'🏠 Haus')+' bearbeiten';status.textContent='🏠 Gebäude ausgewählt – Verschieben oder Löschen?';if(navigator.vibrate)navigator.vibrate(35)}
 function mapOf(type){return type==='house'?buildings:type==='market'?markets:type==='castle'?castles:type==='lumber'?lumberjacks:type==='quarry'?quarries:type==='farm'?farms:fields}
 function relocate(from,to){const targetCells=from.type==='castle'?castleCells(to):from.type==='market'?marketCells(to):[to];if(!targetCells.every(k=>owned.has(k)&&!rockSites.has(k)&&!roads.has(k)&&(!at(k)||(at(k).type===from.type&&at(k).anchor===from.anchor)))){status.textContent=from.type==='castle'?'❌ Burg braucht 3×3 freie Felder.':from.type==='market'?'❌ Der Markt braucht vier freie Felder (2×2).':'❌ Bitte einen freien Bauplatz wählen.';return false}
-if(from.type==='quarry'&&!quarryDepositFor(to,from.anchor)){status.textContent='🏔️ Steinbruch kann nur direkt neben einem freien Berg stehen.';return false}
+const quarryTarget=from.type==='quarry'?quarryDepositFor(to,from.anchor):null;
+if(from.type==='quarry'&&!quarryTarget){status.textContent='🏔️ Steinbruch kann nur direkt neben einem freien Berg stehen.';return false}
 if(from.type==='field'){const [x,z]=pos(to);const touches=neighbors(x,z).some(([a,b])=>farms.has(key(a,b))||(from.type==='farm'&&from.anchor===key(a,b)));if(!touches){status.textContent='🌾 Das Weizenfeld muss neben einem Bauernhof liegen.';return false}}const map=mapOf(from.type),g=map.get(from.anchor);if(!g)return false;map.delete(from.anchor);map.set(to,g);
 if(from.type==='house'){
  const count=citizens.get(from.anchor)??2;
@@ -1450,9 +1451,8 @@ if(from.type==='house'){
 }
 if(from.type==='quarry'){
  quarryDeposits.delete(from.anchor);
- const deposit=quarryDepositFor(to,from.anchor);
- quarryDeposits.set(to,deposit);
- orientQuarryPortal(g,to,deposit)
+ quarryDeposits.set(to,quarryTarget);
+ orientQuarryPortal(g,to,quarryTarget)
 }
 const [x,z]=pos(to);const by={house:.025,market:.025,lumber:.035,quarry:.03,farm:.015,castle:.16,field:.16};g.position.set(x+(from.type==='castle'?1:from.type==='market'?.5:0),by[from.type]??.16,z+(from.type==='castle'?1:from.type==='market'?.5:0));save();status.textContent='✅ Gebäude verschoben! Zum Bearbeiten wieder länger gedrückt halten.';return true}
 document.getElementById('move').onclick=()=>{if(!selected)return;moving=selected;closeEdit();modeBuild=false;buildPanel.hidden=true;updateTools();status.textContent='↔ Verschieben: Tippe auf ein FREIES grünes Feld. Markt braucht 2×2, Burg braucht 3×3 freie Felder.'};
