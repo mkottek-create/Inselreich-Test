@@ -34,7 +34,7 @@
 #peopleProgress{background:#719d53;height:100%;width:0%;transition:width .25s}
 #peopleGoal{font-size:12px}
 </style></head><body>
-<header><h1>🏝️ Inselreich 3D</h1><span class="tag">🌲 <strong id="woodCount">0</strong> · 🌾 <strong id="foodCount">0</strong></span></header>
+<header><h1>🏝️ Inselreich 3D</h1><span class="tag">🌲 <strong id="woodCount">0</strong> · 🌾 <strong id="foodCount">0</strong> · 🪨 <strong id="stoneCount">0</strong></span></header>
 <div id="cityPulse"><span>👥 <strong id="peopleCount">0</strong> Einwohner</span><span>😊 <strong id="happyCount">0</strong>% zufrieden</span><span>🏡 Dorfzeit</span></div>
 <div id="game"><div id="buildUndo" hidden role="status" aria-live="polite"><span id="buildUndoText">🏠 Gebäude gebaut!</span><button id="undoLastBuild" type="button">↶ Rückgängig</button></div><div id="mapTools"><span class="mapHint">☝️ Frei schieben · ✌️ Drehen & Zoom</span><button id="centerCamera">⌖ Kartenmitte</button><button id="overviewCamera">🔎 Weit raus</button></div><div id="buildingInfo" role="dialog" aria-label="Gebäudeinformationen" hidden>
   <div class="infoHeading"><strong id="infoTitle">🏠 Gebäude</strong><button id="infoClose" aria-label="Gebäudeinformationen schließen">✕</button></div>
@@ -56,8 +56,8 @@
  <p id="peopleGoal">Erstes Ziel: 40 Einwohner – auf dem Weg zur Burgenzeit!</p>
 </section>
 
-<div id="buildPanel" hidden><div class="categoryRow"><button data-cat="wohnen">🏠 Wohnen</button><button data-cat="land">🌾 Landwirtschaft</button><button data-cat="prod">🌲 Produktion</button><button data-cat="shop">🛒 Geschäfte</button><button data-cat="burg">🏰 Burgen</button><button data-cat="wege">🛤️ Straßen</button></div><div class="itemRow"><button id="build">🏠 Haus</button><button id="farm">🚜 Bauernhof</button><button id="field">🌾 Weizenfeld</button><button id="lumber">🪓 Holzfäller</button><button id="market">🛒 Markt 2×2</button><button id="castle">🏰 Burg 3×3</button><button id="road">🪨 Steinweg verlegen</button><button id="roadErase">🧹 Straße entfernen</button></div><p class="buildCostHint">🌲 Gebäude kosten Holz. 🪓 Der erste Holzfäller ist kostenlos und produziert regelmäßig Nachschub.</p></div>
-<p>🔨 Bauen öffnet das Baumenü. Gebäude wählen und auf freie Felder tippen – jedes Gebäude wird sofort gebaut, verbraucht die angezeigten Holz-Baukosten und du bleibst im Baumodus, bis du 👁️ Anschauen wählst. Der erste Holzfäller ist kostenlos. Falls du dich vertippst, kannst du die letzte Platzierung 10 Sekunden lang mit ↶ Rückgängig rückgängig machen. 🏰 Burg: 3×3 freie Felder erforderlich. Im Ansichtsmodus wird nichts versehentlich gebaut. Mit 🌿 Insel erweitern wächst deine Insel auf Knopfdruck gleich rundherum um einen ganzen Streifen – ohne einzelne Randfelder anzutippen. 🏠 Gebäude kurz antippen zeigt seine Infos (Bewohner, Produktion und Zustand). Etwa eine halbe Sekunde gedrückt halten öffnet Verschieben oder Löschen. Kartensteuerung: ☝️ Mit einem Finger die Karte ohne Anschlag frei verschieben; mit „⌖ Kartenmitte“ jederzeit zurück. ✌️ Mit zwei Fingern drehen (die Finger gegeneinander verdrehen), durch Auseinanderziehen zoomen und gemeinsam verschieben. Mit „⌖ Kartenmitte“ findest du zurück. Mit „🔎 Weit raus“ bekommst du die Gesamtansicht deiner Insel. 👥 Häuser bekommen Bewohner: Nahrung lässt neue Bewohner einziehen, Straßen verbessern ihre Zufriedenheit. Deine Einwohner und Fortschritte werden gespeichert. 🛤️ Straßen: Im Baumenü auf „Straßen“ gehen, „Steinweg verlegen“ wählen und auf freie Felder tippen oder mit einem Finger darüberstreichen. Kurven, Kreuzungen und Zugänge zu Gebäuden entstehen automatisch. Mit „Straße entfernen“ kannst du Wege wieder abtragen.</p><button id="reset" class="secondary resetButton">↺ Test zurücksetzen</button></footer>
+<div id="buildPanel" hidden><div class="categoryRow"><button data-cat="wohnen">🏠 Wohnen</button><button data-cat="land">🌾 Landwirtschaft</button><button data-cat="prod">🌲 Produktion</button><button data-cat="shop">🛒 Geschäfte</button><button data-cat="burg">🏰 Burgen</button><button data-cat="wege">🛤️ Straßen</button></div><div class="itemRow"><button id="build">🏠 Haus</button><button id="farm">🚜 Bauernhof</button><button id="field">🌾 Weizenfeld</button><button id="lumber">🪓 Holzfäller</button><button id="quarry">⛏️ Steinbruch</button><button id="market">🛒 Markt 2×2</button><button id="castle">🏰 Burg 3×3</button><button id="road">🪨 Steinweg verlegen</button><button id="roadErase">🧹 Straße entfernen</button></div><p class="buildCostHint">🌲 Gebäude brauchen Holz, größere Bauten außerdem 🪨 Stein. 🏔️ Steinbrüche funktionieren nur direkt neben einem Berg. Der erste Holzfäller bleibt kostenlos.</p></div>
+<p>🔨 Bauen öffnet das Baumenü. Gebäude wählen und auf freie Felder tippen – jedes Gebäude wird sofort gebaut, verbraucht die angezeigten Holz-Baukosten und du bleibst im Baumodus, bis du 👁️ Anschauen wählst. Der erste Holzfäller ist kostenlos. Nach der Inselerweiterung entstehen Felsvorkommen: ⛏️ Steinbruch direkt daneben bauen, um 🪨 Stein zu gewinnen. Burg und Markt benötigen außerdem Stein. Falls du dich vertippst, kannst du die letzte Platzierung 10 Sekunden lang mit ↶ Rückgängig rückgängig machen. 🏰 Burg: 3×3 freie Felder erforderlich. Im Ansichtsmodus wird nichts versehentlich gebaut. Mit 🌿 Insel erweitern wächst deine Insel auf Knopfdruck gleich rundherum um einen ganzen Streifen – ohne einzelne Randfelder anzutippen. 🏠 Gebäude kurz antippen zeigt seine Infos (Bewohner, Produktion und Zustand). Etwa eine halbe Sekunde gedrückt halten öffnet Verschieben oder Löschen. Kartensteuerung: ☝️ Mit einem Finger die Karte ohne Anschlag frei verschieben; mit „⌖ Kartenmitte“ jederzeit zurück. ✌️ Mit zwei Fingern drehen (die Finger gegeneinander verdrehen), durch Auseinanderziehen zoomen und gemeinsam verschieben. Mit „⌖ Kartenmitte“ findest du zurück. Mit „🔎 Weit raus“ bekommst du die Gesamtansicht deiner Insel. 👥 Häuser bekommen Bewohner: Nahrung lässt neue Bewohner einziehen, Straßen verbessern ihre Zufriedenheit. Deine Einwohner und Fortschritte werden gespeichert. 🛤️ Straßen: Im Baumenü auf „Straßen“ gehen, „Steinweg verlegen“ wählen und auf freie Felder tippen oder mit einem Finger darüberstreichen. Kurven, Kreuzungen und Zugänge zu Gebäuden entstehen automatisch. Mit „Straße entfernen“ kannst du Wege wieder abtragen.</p><button id="reset" class="secondary resetButton">↺ Test zurücksetzen</button></footer>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"}}</script>
 <script type="module">
 import * as THREE from 'three';
@@ -71,7 +71,8 @@ const land=new THREE.Group();scene.add(land);
 const tiles=[],tileModels=new Map(),buildings=new Map(),markets=new Map(),castles=new Map(),lumberjacks=new Map(),farms=new Map(),fields=new Map(),owned=new Set(),roads=new Set(),roadModels=new Map();
 const citizens=new Map(),rockSites=new Set(),rockModels=new Map(),quarries=new Map(),quarryDeposits=new Map();let citizenElapsed=0,infoSelection=null,starterWoodGranted=false;
 const HOME_CAPACITY=6,CITIZEN_TICK_MS=30000,START_WOOD=10;
-const WOOD_BUILD_COST={house:5,farm:8,field:3,lumber:6,market:14,castle:30};
+const WOOD_BUILD_COST={house:5,farm:8,field:3,lumber:6,quarry:10,market:14,castle:30};
+const STONE_BUILD_COST={market:4,castle:15},STONE_TICK_MS=15000;
 const LIMIT=8,KEY='inselreich-pages-test-01',OLD_KEY='inselreich-3d-test-01';
 const key=(x,z)=>x+','+z;
 const pos=k=>k.split(',').map(Number);
@@ -732,7 +733,8 @@ function addCastle(k){
 }
 
 const pine=mat(0x397e44),pineLight=mat(0x4c9950),logWood=mat(0xad7744);
-let wood=0,woodElapsed=0;
+let wood=0,woodElapsed=0,stone=0,stoneElapsed=0;
+const stoneCount=document.getElementById('stoneCount');
 
 function addLumberjack(k){
  if(!owned.has(k)||occupied(k))return false;
@@ -817,6 +819,60 @@ function addLumberjack(k){
  lumberjacks.set(k,g);save();return true
 }
 const hay=mat(0xddba4c),straw=mat(0x9e8536),barnRed=mat(0xad5343),fieldEarth=mat(0x785637);
+
+/* Stone production: a quarry must touch an actual mountain site.
+   Only one quarry can claim each mountain, and claims are saved with the town. */
+const quarryStone=mat(0x858d88),quarryPale=mat(0xb6bab0),quarryWood=mat(0x805938),
+      quarryRoof=mat(0x996747),quarryOre=mat(0xa0a7a0);
+function quarryDepositFor(k,ignoreAnchor=null,preferred=null){
+ if(!owned.has(k)||rockSites.has(k))return null;
+ if(occupied(k)&&k!==ignoreAnchor)return null;
+ const [x,z]=pos(k);
+ const options=neighbors(x,z).map(([a,b])=>key(a,b)).filter(site=>rockSites.has(site));
+ if(preferred)options.sort((a,b)=>(a===preferred?-1:0)-(b===preferred?-1:0));
+ for(const site of options){
+  if([...quarryDeposits].some(([anchor,claim])=>anchor!==ignoreAnchor&&claim===site))continue;
+  return site
+ }
+ return null
+}
+function orientQuarryPortal(g,k,deposit){
+ const portal=g.getObjectByName('quarryPortal');
+ if(!portal||!deposit)return;
+ const [x,z]=pos(k),[rx,rz]=pos(deposit);
+ portal.rotation.y=Math.atan2(rx-x,-(rz-z))
+}
+function addQuarry(k,preferredDeposit=null){
+ const deposit=quarryDepositFor(k,null,preferredDeposit);
+ if(!deposit)return false;
+ const [x,z]=pos(k),g=new THREE.Group();g.position.set(x,.03,z);land.add(g);
+ // Pale quarry yard / sorting surface, flush with village roads.
+ box(.89,.04,.88,quarryStone,0,.145,0,g);
+ box(.65,.02,.62,quarryPale,0,.177,.015,g);
+ // Stone-cutters' covered wooden workshop.
+ box(.43,.32,.32,quarryWood,-.18,.33,.13,g);
+ const roof=box(.54,.055,.43,quarryRoof,-.18,.53,.13,g);roof.rotation.z=-.16;
+ for(const xx of [-.4,.02])for(const zz of [-.015,.27])box(.035,.43,.035,quarryWood,xx,.41,zz,g);
+ // Mining entrance: timbers and pitch-black cut shaft facing the rock deposit.
+ const portal=new THREE.Group();portal.name='quarryPortal';g.add(portal);
+ box(.41,.45,.05,quarryStone,0,.41,-.29,portal);
+ box(.30,.34,.065,mat(0x41484a),0,.39,-.325,portal);
+ box(.055,.47,.072,quarryWood,-.18,.40,-.343,portal);
+ box(.055,.47,.072,quarryWood,.18,.40,-.343,portal);
+ box(.46,.065,.092,quarryWood,0,.64,-.343,portal);
+ // A minecart, iron-bound wheels and a clear trail of broken stone.
+ box(.29,.13,.20,quarryWood,.22,.30,.30,g);
+ for(const xx of [.12,.32])for(const zz of [.235,.37])cylinder(g,.055,.055,.035,mat(0x4d5754),xx,.215,zz,8).rotation.z=Math.PI/2;
+ for(let i=0;i<7;i++){
+  const px=-.4+(i%4)*.21,pz=-.32+Math.floor(i/4)*.23;
+  const rock=new THREE.Mesh(mountainRockShape,i%3?quarryStone:quarryOre);
+  rock.position.set(px,.22,pz);rock.scale.set(.065+i%2*.02,.05+(i%3)*.016,.07);g.add(rock)
+ }
+ quarries.set(k,g);quarryDeposits.set(k,deposit);
+ orientQuarryPortal(g,k,deposit);
+ save();return true
+}
+
 let food=0,foodElapsed=0;
 
 function addFarm(k){
@@ -946,6 +1002,9 @@ function addField(k){
 function productionFields(){let count=0;for(const k of fields.keys())if(nearFarm(k))count++;return count}
 function refreshFood(){foodCount.textContent=food.toLocaleString('de-DE')}
 function refreshWood(){woodCount.textContent=wood.toLocaleString('de-DE');refreshBuildCostLabels()}
+function refreshStone(){stoneCount.textContent=stone.toLocaleString('de-DE');refreshBuildCostLabels()}
+function buildingStoneCost(type){return STONE_BUILD_COST[type]??0}
+function stoneBuildLabel(type){const cost=buildingStoneCost(type);return cost?'🪨 '+cost+' Stein':''}
 function buildingWoodCost(type){
  // First lumberjack is free so even a town with no wood can get back to work.
  if(type==='lumber'&&lumberjacks.size===0)return 0;
@@ -957,14 +1016,16 @@ function woodBuildLabel(type){
 }
 function refreshBuildCostLabels(){
  const labels={house:'🏠 Haus',farm:'🚜 Bauernhof',field:'🌾 Weizenfeld',
-  lumber:'🪓 Holzfäller',market:'🛒 Markt 2×2',castle:'🏰 Burg 3×3'};
- const ids={house:'build',farm:'farm',field:'field',lumber:'lumber',market:'market',castle:'castle'};
+  lumber:'🪓 Holzfäller',quarry:'⛏️ Steinbruch',market:'🛒 Markt 2×2',castle:'🏰 Burg 3×3'};
+ const ids={house:'build',farm:'farm',field:'field',lumber:'lumber',quarry:'quarry',market:'market',castle:'castle'};
  for(const [type,label] of Object.entries(labels)){
   const btn=document.getElementById(ids[type]);
   const cost=buildingWoodCost(type);
-  btn.textContent=label+' · '+woodBuildLabel(type);
-  btn.classList.toggle('cannotAfford',wood<cost);
-  btn.setAttribute('aria-label',label+'. Baukosten: '+woodBuildLabel(type))
+  const stoneCost=buildingStoneCost(type);
+  const price=woodBuildLabel(type)+(stoneCost?' + '+stoneBuildLabel(type):'');
+  btn.textContent=label+' · '+price;
+  btn.classList.toggle('cannotAfford',wood<cost||stone<stoneCost);
+  btn.setAttribute('aria-label',label+'. Baukosten: '+price)
  }
 }
 
@@ -1182,10 +1243,10 @@ function hideBuildUndo(){
  lastBuildUndo=null;
  document.getElementById('buildUndo').hidden=true
 }
-function showBuildUndo(type,k,group,woodCost=0){
+function showBuildUndo(type,k,group,woodCost=0,stoneCost=0){
  hideBuildUndo();
- lastBuildUndo={type,k,group,woodCost};
- const names={house:'🏠 Haus',lumber:'🪓 Holzfäller',farm:'🚜 Bauernhof',field:'🌾 Weizenfeld',market:'🛒 Markt',castle:'🏰 Burg'};
+ lastBuildUndo={type,k,group,woodCost,stoneCost};
+ const names={house:'🏠 Haus',lumber:'🪓 Holzfäller',quarry:'⛏️ Steinbruch',farm:'🚜 Bauernhof',field:'🌾 Weizenfeld',market:'🛒 Markt',castle:'🏰 Burg'};
  document.getElementById('buildUndoText').textContent='✅ '+(names[type]||'Gebäude')+' gebaut!';
  document.getElementById('buildUndo').hidden=false;
  buildUndoTimer=setTimeout(hideBuildUndo,10000)
@@ -1201,44 +1262,52 @@ document.getElementById('undoLastBuild').onclick=()=>{
  land.remove(entry.group);
  map.delete(entry.k);
  if(entry.type==='house')citizens.delete(entry.k);
- wood+=entry.woodCost||0;
- refreshWood();save();
- status.textContent='↶ Bau rückgängig gemacht. '+(entry.woodCost?'🌲 '+entry.woodCost+' Holz zurückerstattet.':'Kostenloser Bauplatz wieder frei.')
+ if(entry.type==='quarry')quarryDeposits.delete(entry.k);
+ wood+=entry.woodCost||0;stone+=entry.stoneCost||0;
+ refreshWood();refreshStone();save();
+ status.textContent='↶ Bau rückgängig gemacht. Holz und Stein wurden zurückerstattet.'
 };
-function canPlace(type,k){if(!owned.has(k))return false;if(type==='road')return !occupied(k);if(type==='roadErase')return roads.has(k);if(type==='market')return canMarket(k);if(type==='castle')return canCastle(k);if(occupied(k))return false;if(type==='field')return nearFarm(k);return true}
+function canPlace(type,k){if(!owned.has(k))return false;if(type==='quarry')return !!quarryDepositFor(k);if(type==='road')return !occupied(k);if(type==='roadErase')return roads.has(k);if(type==='market')return canMarket(k);if(type==='castle')return canCastle(k);if(occupied(k))return false;if(type==='field')return nearFarm(k);return true}
 function clearPreview(){} // No second confirmation: one tap builds immediately.
 function placeBuildingNow(k){
  const type=buildType;
  if(!canPlace(type,k)){
   status.textContent=type==='castle'?'🏰 Die Burg braucht 3×3 freie Felder.'
    :type==='market'?'🛒 Der Markt braucht 2×2 freie Felder.'
+   :type==='quarry'?'🏔️ Steinbruch nur direkt neben einem freien Steinvorkommen bauen! Jeder Berg kann einen Steinbruch versorgen.'
    :type==='field'&&!nearFarm(k)?'🌾 Das Weizenfeld muss neben einem Bauernhof liegen.'
    :roads.has(k)?'🪨 Hier liegt eine Straße. Entferne sie zuerst.'
    :'❌ Dieser Platz ist bereits belegt oder nicht zum Bauen geeignet.';
   return false
  }
- const cost=buildingWoodCost(type);
+ const cost=buildingWoodCost(type),stoneCost=buildingStoneCost(type);
  if(wood<cost){
   status.textContent='❌ Zu wenig Holz! Für '+woodBuildLabel(type)+
    ' fehlen dir noch 🌲 '+(cost-wood)+'. Baue einen Holzfäller oder sammle dessen Holzproduktion.';
   return false
  }
+ if(stone<stoneCost){
+  status.textContent='❌ Zu wenig Stein! '+stoneBuildLabel(type)+' benötigt, du hast 🪨 '+stone+'. Baue einen Steinbruch am Berg.';
+  return false
+ }
  // Deduct before addX(), because addX saves the town immediately.
  // If a building fails despite the free-site check, restore the resources.
- wood-=cost;
+ wood-=cost;stone-=stoneCost;
  const ok=type==='castle'?addCastle(k)
   :type==='market'?addMarket(k)
   :type==='lumber'?addLumberjack(k)
+  :type==='quarry'?addQuarry(k)
   :type==='farm'?addFarm(k)
   :type==='field'?addField(k)
   :type==='house'?(addHouse(k),buildings.has(k)):false;
- if(!ok){wood+=cost;refreshWood();return false}
- refreshWood();save();
+ if(!ok){wood+=cost;stone+=stoneCost;refreshWood();refreshStone();return false}
+ refreshWood();refreshStone();save();
  const group=mapOf(type).get(k);
  // Keep the selected building active for placing multiple buildings in a row.
  // Only the explicit "👁️ Anschauen" button ends building mode.
- status.textContent='✅ Gebäude gebaut'+(cost?' (🌲 −'+cost+' Holz)':' (kostenlos)')+'! Nächstes Feld antippen oder 👁️ Anschauen. ↶ Rückgängig möglich.';
- if(group)showBuildUndo(type,k,group,cost);
+ status.textContent='✅ Gebäude gebaut'+(cost?' (🌲 −'+cost+' Holz)':' (kostenlos)')+
+ (stoneCost?' (🪨 −'+stoneCost+' Stein)':'')+'! Nächstes Feld antippen oder 👁️ Anschauen. ↶ Rückgängig möglich.';
+ if(group)showBuildUndo(type,k,group,cost,stoneCost);
  return true
 }
 function coords(e){let r=canvas.getBoundingClientRect();return {x:(e.clientX-r.left)/r.width*2-1,y:-(e.clientY-r.top)/r.height*2+1}}
@@ -1485,11 +1554,12 @@ function chooseType(type){
  if(type==='road'||type==='roadErase')status.textContent=type==='road'
   ?'🪨 Straßenmodus: Auf freie Felder tippen oder mit dem Finger einen ganzen Weg ziehen. Die Kamera bleibt dabei still.'
   :'🧹 Straßen entfernen: Auf einen Weg tippen oder darüberziehen. Mit 👁️ Anschauen beenden.';
- else status.textContent='🔨 '+({house:'Haus',farm:'Bauernhof',field:'Weizenfeld',lumber:'Holzfäller',market:'Markt 2×2',castle:'Burg 3×3'}[type])+
- ' · '+woodBuildLabel(type)+' · Vorrat: 🌲 '+wood+'. Freies Feld antippen, um direkt zu bauen.'
+ else status.textContent='🔨 '+({house:'Haus',farm:'Bauernhof',field:'Weizenfeld',lumber:'Holzfäller',quarry:'Steinbruch',market:'Markt 2×2',castle:'Burg 3×3'}[type])+
+ ' · '+woodBuildLabel(type)+(buildingStoneCost(type)?' + '+stoneBuildLabel(type):'')+
+ ' · Vorrat: 🌲 '+wood+' / 🪨 '+stone+'. Freies Feld antippen, um direkt zu bauen.'
 }
-const typeButtons={house:buildButton,farm:farmButton,field:fieldButton,lumber:lumberButton,market:marketButton,castle:document.getElementById('castle'),road:document.getElementById('road'),roadErase:document.getElementById('roadErase')};for(const [name,btn] of Object.entries(typeButtons))btn.onclick=()=>chooseType(name);
-const categoryTypes={wohnen:['house'],land:['farm','field'],prod:['lumber'],shop:['market'],burg:['castle'],wege:['road','roadErase']};
+const typeButtons={house:buildButton,farm:farmButton,field:fieldButton,lumber:lumberButton,quarry:document.getElementById('quarry'),market:marketButton,castle:document.getElementById('castle'),road:document.getElementById('road'),roadErase:document.getElementById('roadErase')};for(const [name,btn] of Object.entries(typeButtons))btn.onclick=()=>chooseType(name);
+const categoryTypes={wohnen:['house'],land:['farm','field'],prod:['lumber','quarry'],shop:['market'],burg:['castle'],wege:['road','roadErase']};
 function category(cat){for(const [name,btn] of Object.entries(typeButtons))btn.hidden=!categoryTypes[cat].includes(name);for(const btn of document.querySelectorAll('[data-cat]'))btn.classList.toggle('active',btn.dataset.cat===cat)}
 for(const btn of document.querySelectorAll('[data-cat]'))btn.onclick=()=>category(btn.dataset.cat);
 viewButton.onclick=viewMode;openBuildButton.onclick=()=>{closeBuildingInfo();modeBuild=false;moving=null;closeEdit();clearPreview();buildPanel.hidden=!buildPanel.hidden;updateTools();status.textContent=buildPanel.hidden?'👁️ Ansichtsmodus':'🔨 Wähle eine Kategorie und dann dein Gebäude.'};
