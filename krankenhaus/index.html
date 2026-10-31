@@ -1498,7 +1498,7 @@ function startTouch(e){
  if(e.touches.length===1){
   const t=e.touches[0];
   touchState=(cameraMode==='build'
-   ?constructionPointerStart(t.clientX,t.clientY)||roomPointerStart(t.clientX,t.clientY)||startDeskDrag(t.clientX,t.clientY)
+   ?furnitureEditor.pointerStart(t.clientX,t.clientY)||constructionPointerStart(t.clientX,t.clientY)||roomPointerStart(t.clientX,t.clientY)||startDeskDrag(t.clientX,t.clientY)
    :null)||
    {mode:1,kind:cameraMode==='rotate'?'rotate':'pan',
     x:t.clientX,y:t.clientY,startX:t.clientX,startY:t.clientY,moved:false}
@@ -1509,6 +1509,7 @@ function moveTouch(e){
  if(!touchState)return;
  if(e.touches.length>=2){
   if(touchState.mode==='construction')clearConstructionPreview();
+  if(touchState.mode==='furnitureMove')furnitureEditor.pointerEnd(n.midX,n.midY,touchState);
   const n=snapshot(e.touches);
   if(touchState.mode===2){
    // First calculate the scene point under the old gesture midpoint.
@@ -1528,7 +1529,9 @@ function moveTouch(e){
   touchState={mode:2,...n};
  }else if(e.touches.length===1){
   const t=e.touches[0];
-  if(touchState.mode==='construction'){
+  if(touchState.mode==='furnitureMove'||touchState.mode==='furniturePlace'){
+   furnitureEditor.pointerMove(t.clientX,t.clientY,touchState)
+  }else if(touchState.mode==='construction'){
    constructionPointerMove(t.clientX,t.clientY,touchState)
   }else if(touchState.mode==='room'||touchState.mode==='roomTap'){
    roomPointerMove(t.clientX,t.clientY,touchState)
@@ -1549,12 +1552,19 @@ function moveTouch(e){
 }
 function endTouch(e){
  e.preventDefault();
- if(e.type==='touchcancel'){clearConstructionPreview();touchState=null;storeCamera();return}
+ if(e.type==='touchcancel'){
+  if(touchState?.mode==='furnitureMove')furnitureEditor.pointerEnd(0,0,touchState);
+  clearConstructionPreview();touchState=null;storeCamera();return
+ }
  if(e.touches.length>=2){touchState={mode:2,...snapshot(e.touches)};return}
  if(e.touches.length===1){
   const t=e.touches[0];touchState={mode:1,kind:'pan',x:t.clientX,y:t.clientY,startX:t.clientX,startY:t.clientY,moved:true};return
  }
- if(touchState?.mode==='construction'&&e.changedTouches.length===1){
+ if((touchState?.mode==='furnitureMove'||touchState?.mode==='furniturePlace')&&e.changedTouches.length===1){
+  const t=e.changedTouches[0];
+  furnitureEditor.pointerMove(t.clientX,t.clientY,touchState);
+  furnitureEditor.pointerEnd(t.clientX,t.clientY,touchState)
+ }else if(touchState?.mode==='construction'&&e.changedTouches.length===1){
   const t=e.changedTouches[0];
   constructionPointerMove(t.clientX,t.clientY,touchState);
   constructionPointerEnd(t.clientX,t.clientY,touchState)
@@ -1580,7 +1590,7 @@ let pointer=null;
 canvas.addEventListener('pointerdown',e=>{
  if(e.pointerType==='touch')return;
  pointer=(e.button===0&&cameraMode==='build'
-  ?constructionPointerStart(e.clientX,e.clientY)||roomPointerStart(e.clientX,e.clientY)||startDeskDrag(e.clientX,e.clientY)
+  ?furnitureEditor.pointerStart(e.clientX,e.clientY)||constructionPointerStart(e.clientX,e.clientY)||roomPointerStart(e.clientX,e.clientY)||startDeskDrag(e.clientX,e.clientY)
   :null)||
  {id:e.pointerId,x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,
   moved:false,kind:e.button===2||cameraMode==='rotate'?'rotate':'pan'};
@@ -1591,7 +1601,9 @@ canvas.addEventListener('pointermove',e=>{
  if(e.pointerType==='touch'||!pointer||pointer.id!==e.pointerId)return;
  const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;
  if(Math.hypot(e.clientX-pointer.startX,e.clientY-pointer.startY)>6)pointer.moved=true;
- if(pointer.mode==='construction')constructionPointerMove(e.clientX,e.clientY,pointer);
+ if(pointer.mode==='furnitureMove'||pointer.mode==='furniturePlace')
+  furnitureEditor.pointerMove(e.clientX,e.clientY,pointer);
+ else if(pointer.mode==='construction')constructionPointerMove(e.clientX,e.clientY,pointer);
  else if(pointer.mode==='room'||pointer.mode==='roomTap')roomPointerMove(e.clientX,e.clientY,pointer);
  else if(pointer.mode==='desk')moveDeskDrag(e.clientX,e.clientY,pointer);
  else if(pointer.kind==='rotate')rotateFinger(dx,dy);
@@ -1600,7 +1612,10 @@ canvas.addEventListener('pointermove',e=>{
 });
 canvas.addEventListener('pointerup',e=>{
  if(e.pointerType==='touch'||!pointer||pointer.id!==e.pointerId)return;
- if(pointer.mode==='construction'){
+ if(pointer.mode==='furnitureMove'||pointer.mode==='furniturePlace'){
+  furnitureEditor.pointerMove(e.clientX,e.clientY,pointer);
+  furnitureEditor.pointerEnd(e.clientX,e.clientY,pointer)
+ }else if(pointer.mode==='construction'){
   constructionPointerMove(e.clientX,e.clientY,pointer);
   constructionPointerEnd(e.clientX,e.clientY,pointer)
  }else if(pointer.mode==='room'||pointer.mode==='roomTap'){
@@ -1613,6 +1628,7 @@ canvas.addEventListener('pointerup',e=>{
 });
 canvas.addEventListener('pointercancel',e=>{if(e.pointerType!=='touch'){
  if(pointer?.mode==='desk')storeReception();
+ if(pointer?.mode==='furnitureMove')furnitureEditor.pointerEnd(pointer.x,pointer.y,pointer);
  if(pointer?.mode==='construction')clearConstructionPreview();
  if(pointer?.mode==='room'||pointer?.mode==='roomTap'){
   saveFloorplan();
