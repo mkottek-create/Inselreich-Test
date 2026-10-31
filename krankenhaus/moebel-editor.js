@@ -30,6 +30,10 @@ export function setupFurniture(ctx){
  let open=false,category='alltag',chosen='stuhl',selected=null,nextId=0;
  const panel=document.getElementById('furniturePanel');
  const toggle=document.getElementById('toggleFurniture');
+ // Put the furniture button and compact menu ABOVE the 3D scene.
+ // Players can choose an item and tap the clinic without a long up/down scroll.
+ stage.parentNode.insertBefore(toggle,stage);
+ stage.parentNode.insertBefore(panel,stage);
  const hint=document.getElementById('furnitureHint');
  const display=document.getElementById('status');
  const items=document.getElementById('furnitureItems');
