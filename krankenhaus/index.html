@@ -125,7 +125,7 @@ const stage=document.getElementById('stage');
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0xd2e9e8);
 scene.fog=new THREE.Fog(0xd2e9e8,30,75);
-const camera=new THREE.PerspectiveCamera(46,1,.1,130);
+const camera=new THREE.PerspectiveCamera(52,1,.1,130);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,matchMedia('(pointer:coarse)').matches?1.25:1.7));
 renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -348,10 +348,25 @@ function makeRoomShell(r){
   // Bright arrow tile leads from the hallway through the opening.
   box(.29,.012,1.06,x+(side==='right'?.19:-.19),.193,middle,accent,group,false)
  }
+ function wallWithWindow(x){
+  const halfOpening=Math.min(.73,(r.d-1.30)/2);
+  const middle=r.z;
+  wallVertical(x,back,middle-halfOpening,1.12);
+  wallVertical(x,middle+halfOpening,front,1.12);
+  const span=halfOpening*2;
+  // Brown brick sill below, pale lintel above and a true glazed cutout.
+  box(.18,.40,span,x,.38,middle,brickLower,group,false);
+  box(.18,.15,span,x,1.24,middle,wallWhite,group,false);
+  box(.055,.59,span-.14,x,.91,middle,glass,group,false);
+  for(const z of [middle-halfOpening,middle+halfOpening])
+   box(.21,.67,.08,x,.89,z,accent,group,false);
+  box(.215,.05,span,x,1.24,middle,accent,group,false);
+  box(.215,.05,span,x,.58,middle,accent,group,false);
+ }
  if(side==='left')framedDoorOnSide(left);
- else wallVertical(left,back,front,1.12);
+ else wallWithWindow(left);
  if(side==='right')framedDoorOnSide(right);
- else wallVertical(right,back,front,1.12);
+ else wallWithWindow(right);
  if(side==='front'){
   const door=clampRoomDoor(left,right,r.x+off);
   wallHorizontal(left,door-.65,front,.72);
@@ -360,9 +375,10 @@ function makeRoomShell(r){
   box(1.37,.12,.18,door,1.53,front,accent)
  }else wallHorizontal(left,right,front,.68);
  // Window strip on outward wall: gives every room recognizable cutaway windows.
+ // Windows use actual gaps in the exterior walls, with tinted glass.
+ // (The room walls face the central corridor through their doorways.)
  const windowX=side==='right'?left:right;
- box(.19,.12,Math.min(r.d-.9,1.30),windowX,1.00,r.z+.15,deepTeal,group,false);
- box(.21,.42,Math.min(r.d-.95,1.18),windowX,1.17,r.z+.15,glass,group,false);
+ // See wallWithWindow() above; the glass is not a sticker on a solid wall.
  // Department signage hangs over back wall in the 3D world.
  const sign=new THREE.Mesh(new THREE.PlaneGeometry(Math.min(r.w-1.0,2.72),.40),
   new THREE.MeshBasicMaterial({map:labelTexture(r.name.replace(/^\S+\s/,''),'#174e56','#fffef2',42),
@@ -535,7 +551,7 @@ function inspectRoom(px,py){
 // New first-view angle highlights the desk rather than looking through the divider.
 // A slightly wider first-view frame includes the new treatment room at the rear.
 const focus=new THREE.Vector3(0,.1,-3.44);
-let orbit=-.41,elevation=1.18,distance=27.3;
+let orbit=-.32,elevation=1.18,distance=32.0;
 const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 // View version bump applies the better entrance/reception angle once; no town data is reset.
 const storedKey='klinik-am-park-kamera-v3'; // Keep older camera setting untouched as backup.
@@ -1146,7 +1162,7 @@ function adjustZoom(ratio,px,py){
 document.getElementById('camZoomIn').onclick=()=>adjustZoom(.84);
 document.getElementById('camZoomOut').onclick=()=>adjustZoom(1.19);
 document.getElementById('camReset').onclick=()=>{
- focus.set(0,.1,-3.44);orbit=-.41;elevation=1.18;distance=27.3;
+ focus.set(0,.1,-3.44);orbit=-.32;elevation=1.18;distance=32.0;
  placeCamera();storeCamera();
  document.getElementById('status').textContent='🎯 Kamera wieder auf die Übersicht ausgerichtet.'
 };
