@@ -137,7 +137,7 @@ body.furniture-active #stage{height:53dvh;min-height:275px;max-height:520px}
  <div class="builderRow" data-room-controls><button id="roomAdd" type="button">➕ Raum bauen</button>
  <button id="roomDelete" type="button" hidden>🗑 Raum entfernen</button>
  <button id="roomFinish" type="button">✓ Fertig</button></div>
- <div id="constructionControls" class="builderRow" hidden><select id="constructionTool" aria-label="Bauteil"><option value="wall">🧱 Wand ziehen</option><option value="door">🚪 Tür einsetzen</option><option value="window">🪟 Fenster einsetzen</option><option value="floor">🟩 Boden ziehen</option><option value="erase">🧽 Bauteil entfernen</option></select><select id="constructionFacing" aria-label="Richtung"><option value="x">↔ Waagerecht</option><option value="z">↕ Senkrecht</option></select><button id="constructionUndo" type="button">↶ Rückgängig</button><button id="importOldConstruction" type="button" hidden>📦 Frühere Bauteile</button><button id="constructionDone" type="button">✓ Fertig</button></div>
+ <div id="constructionControls" class="builderRow" hidden><select id="constructionTool" aria-label="Bauteil"><option value="pan">✋ Karte verschieben</option><option value="wall">🧱 Wand ziehen</option><option value="door">🚪 Tür einsetzen</option><option value="window">🪟 Fenster einsetzen</option><option value="floor">🟩 Boden ziehen</option><option value="erase">🧽 Bauteil entfernen</option></select><select id="constructionFacing" aria-label="Richtung"><option value="x">↔ Waagerecht</option><option value="z">↕ Senkrecht</option></select><button id="constructionUndo" type="button">↶ Rückgängig</button><button id="importOldConstruction" type="button" hidden>📦 Frühere Bauteile</button><button id="constructionDone" type="button">✓ Fertig</button></div>
  <p id="builderHint" class="builderHint">Raum antippen und ziehen, oder einen Raum auswählen und an einen freien Platz tippen. Zwei Finger: Zoomen und Drehen.</p>
 </div>
 <section>
@@ -164,7 +164,7 @@ import * as THREE from 'three';
 function setupFurniture(ctx){
  const {THREE,roomSpecs,roomGroups,roomAt,groundHit,renderer,scene,stage,
   mat,box,cylinder,sphere,white,black,teal,tealLight,oak,oakDark,soil,
-  gold,leaf,leaf2,glass,chairBlue,screenMat,setCameraMode,stopOther}=ctx;
+  gold,leaf,leaf2,glass,chairBlue,screenMat,setCameraMode,stopOther,panFinger}=ctx;
  const catalog=[
   ['stuhl','alltag','🪑','Stuhl',.55,.55],
   ['bank','alltag','🛋️','Sitzbank',1.35,.60],
@@ -499,7 +499,8 @@ function setupFurniture(ctx){
  function pointerStart(px,py){
   if(!open)return null;
   const item=pick(px,py),hit=groundHit(px,py);
-  if(!item)return {mode:'furniturePlace',startX:px,startY:py,moved:false};
+  if(!item)return {mode:'furniturePlace',startX:px,startY:py,
+   lastX:px,lastY:py,moved:false};
   select(item.id);status('🪑 Möbel ausgewählt. Ziehen, drehen oder entfernen.');
   const room=roomSpecs.find(r=>r.id===item.roomId);
   return {mode:'furnitureMove',id:item.id,startX:px,startY:py,moved:false,
@@ -508,7 +509,12 @@ function setupFurniture(ctx){
  }
  function pointerMove(px,py,state){
   if(state.mode==='furniturePlace'){
-   if(Math.hypot(px-state.startX,py-state.startY)>16)state.moved=true;
+   // A tap places an item. Dragging empty space always pans the map.
+   if(Math.hypot(px-state.startX,py-state.startY)>7){
+    if(state.moved)panFinger(state.lastX,state.lastY,px,py);
+    state.moved=true
+   }
+   state.lastX=px;state.lastY=py;
    return
   }
   if(state.mode!=='furnitureMove'||Math.hypot(px-state.startX,py-state.startY)<6)return;
@@ -524,7 +530,7 @@ function setupFurniture(ctx){
  function pointerEnd(px,py,state){
   if(state.mode==='furniturePlace'){
    if(!state.moved)place(px,py);
-   else status('🪑 Kurz auf eine freie Stelle tippen, um zu platzieren.')
+   // A drag deliberately moves the camera, so do not place furniture.
   }else if(state.mode==='furnitureMove'&&state.moved){
    const item=records.get(state.id),before=state.before.find(x=>x.id===state.id);
    if(item&&before&&(item.x!==before.x||item.z!==before.z)){
@@ -1476,13 +1482,13 @@ document.getElementById('buildCategory').onchange=e=>{
  buildCategory=e.target.value==='construction'?'construction':'rooms';
  selectedRoomId=null;clearConstructionPreview();showBuilder();
  roomHint.textContent=buildCategory==='construction'
-  ?'🧱 Wand/Boden: mit dem Finger ziehen. 🚪 Tür und 🪟 Fenster: Wand antippen. ✌️ Zwei Finger für Kamera.'
-  :'🏠 Raumgröße wählen, Raum bauen und mit dem Finger verschieben.'
+  ?'✋ Standard: Karte mit einem Finger schieben. Für Wände/Böden das passende Werkzeug wählen.'
+  :'🏠 Raum ziehen · Freie Fläche wischen: Karte schieben · Freie Fläche kurz tippen: Raum setzen.'
 };
 document.getElementById('constructionTool').onchange=()=>{
  clearConstructionPreview();
  const tool=document.getElementById('constructionTool').value;
- roomHint.textContent=({wall:'🧱 Ziehe von einem Punkt zum anderen: Wandlänge frei festlegen.',
+ roomHint.textContent=({pan:'✋ Mit einem Finger die Karte verschieben. Wähle Wand oder Boden, um zu bauen.',wall:'🧱 Ziehe von einem Punkt zum anderen: Wandlänge frei festlegen.',
  door:'🚪 Tippe auf eine selbst gebaute Wand für eine Tür, oder auf freie Fläche.',
  window:'🪟 Tippe auf eine selbst gebaute Wand für ein Fenster, oder auf freie Fläche.',
  floor:'🟩 Ziehe ein Rechteck auf: Damit bestimmst du die Bodengröße selbst.',
@@ -1541,11 +1547,20 @@ function roomPointerStart(px,py){
  }
  if(selectedRoomId){
   // Allow taps on open land to position the selected room.
-  return {mode:'roomTap',id:selectedRoomId,startX:px,startY:py,moved:false}
+  return {mode:'roomTap',id:selectedRoomId,startX:px,startY:py,
+   lastX:px,lastY:py,moved:false}
  }
  return null
 }
 function roomPointerMove(px,py,state){
+ if(state.mode==='roomTap'){
+  // A tap places the chosen room, but swiping empty land pans the camera.
+  if(Math.hypot(px-state.startX,py-state.startY)>7){
+   if(state.moved)panFinger(state.lastX,state.lastY,px,py);
+   state.moved=true
+  }
+  state.lastX=px;state.lastY=py;return
+ }
  if(state.mode!=='room')return;
  if(Math.hypot(px-state.startX,py-state.startY)<5)return;
  state.moved=true;
@@ -1556,7 +1571,7 @@ function roomPointerMove(px,py,state){
  }
 }
 function roomPointerEnd(px,py,state){
- if(state.mode==='roomTap'||(state.mode==='room'&&!state.moved)){
+ if((state.mode==='roomTap'&&!state.moved)||(state.mode==='room'&&!state.moved)){
   const hit=groundHit(px,py);
   if(hit&&state.mode==='roomTap'&&moveRoomTo(state.id,hit.x,hit.z)){
    roomHint.textContent='✓ Raum an neuer Stelle platziert.'
@@ -1719,11 +1734,21 @@ function constructionPointerStart(px,py){
  if(!editingFloorplan||buildCategory!=='construction')return null;
  const hit=groundHit(px,py);if(!hit)return null;
  const a=buildSnap(hit),tool=document.getElementById('constructionTool').value;
- const state={mode:'construction',tool,a,b:a,startX:px,startY:py};
+ const state={mode:'construction',tool,a,b:a,startX:px,startY:py,
+  lastX:px,lastY:py,panning:false};
  drawConstructionPreview(state);return state
 }
 function constructionPointerMove(px,py,state){
  if(state.mode!=='construction')return;
+ // For tap-only tools and the dedicated movement tool, dragging pans the map.
+ // Wall and floor tools keep their original draw-by-drag behavior.
+ if(['pan','door','window','erase'].includes(state.tool)){
+  if(Math.hypot(px-state.startX,py-state.startY)>7){
+   if(state.panning)panFinger(state.lastX,state.lastY,px,py);
+   state.panning=true
+  }
+  state.lastX=px;state.lastY=py;return
+ }
  const hit=groundHit(px,py);if(!hit)return;
  const b=buildSnap(hit);
  if(b.x===state.b.x&&b.z===state.b.z)return;
@@ -1731,6 +1756,7 @@ function constructionPointerMove(px,py,state){
 }
 function constructionPointerEnd(px,py,state){
  clearConstructionPreview();
+ if(state.panning||state.tool==='pan')return;
  const hit=groundHit(px,py);
  if(!hit)return;
  const tool=state.tool;
@@ -1802,6 +1828,7 @@ const furnitureEditor=setupFurniture({
  THREE,roomSpecs,roomGroups,roomAt,groundHit,renderer,scene,stage,camera,
  mat,box,cylinder,sphere,white,black,teal,tealLight,oak,oakDark,soil,
  gold,leaf,leaf2,glass,chairBlue,screenMat,
+ panFinger:(x1,y1,x2,y2)=>panFinger(x1,y1,x2,y2),
  setCameraMode:(mode)=>setCameraMode(mode),
  stopOther:()=>{
   if(editingFloorplan)finishFloorplan();
@@ -1816,7 +1843,7 @@ function setCameraMode(mode){
  hideRoomInfo();
  cameraMode=mode==='build'&&cameraActiveEditor()?'build':'pan';
  clearConstructionPreview();
- const gestures='✌️ Links/rechts drehen · ✌️ Hoch/runter neigen · ✌️ Spreizen zoomen';
+ const gestures='☝️ Freie Fläche wischen: Karte bewegen · ✌️ Drehen/Neigen/Zoomen';
  gestureHint.textContent=cameraMode==='build'
   ?(furnitureEditor.editing?'☝️ Möbel antippen/ziehen · '+gestures
     :editingFloorplan?'☝️ Raum/Bauteil bearbeiten · '+gestures
