@@ -28,7 +28,16 @@ main{max-width:1100px;margin:auto}
 #status{padding:11px 15px;background:#d8f0e7;color:#326d64;text-align:center;font-size:12px;font-weight:750}
 section{padding:15px 15px 20px}
 section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
-.rooms{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.rooms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+#roomBuilder{padding:11px 13px;background:#f5fcf9;border-bottom:1px solid #d1e8dd;display:flex;gap:7px;flex-direction:column}
+#roomBuilder[hidden],#roomBuilder button[hidden]{display:none!important}
+#roomBuilder .builderRow{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+#roomBuilder select{flex:1;min-width:110px;padding:11px 7px;min-height:43px;border:1px solid #9dc9bf;background:white;color:#235d62;border-radius:10px;font-size:13px;font-weight:700}
+#roomBuilder button{min-height:43px;flex:1;border:0;border-radius:10px;padding:10px;background:#327d6d;color:white;font-size:12px;font-weight:800}
+#roomBuilder #roomDelete{background:#b45b50}
+#roomBuilder #roomFinish{background:#667987}
+#roomBuilder .builderHint{margin:0;color:#406a66;font-size:11px;line-height:1.4}
+#toggleFloorplan.active{background:#c28b37!important}
 .room{background:#fffdf8;border:1px solid #d8e8e6;border-radius:14px;padding:11px 10px;min-height:106px;box-shadow:0 3px 12px #234c4d0b}
 .room .symbol{font-size:24px;display:block;margin-bottom:6px}
 .room strong{font-size:12px;display:block}
@@ -45,7 +54,7 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
 </style>
 </head>
 <body>
-<header><div><div class="eyebrow">🏥 Eigenes Krankenhaus-Spiel</div><h1>Klinik am Park <span aria-hidden="true">✚</span></h1><p class="subtitle">Krankenhaus 3D · Unser erster Grundriss</p></div><span class="pill">GRUNDRISS 01</span></header>
+<header><div><div class="eyebrow">🏥 Eigenes Krankenhaus-Spiel</div><h1>Klinik am Park <span aria-hidden="true">✚</span></h1><p class="subtitle">Krankenhaus 3D · Unser erster Grundriss</p></div><span class="pill">GRUNDRISS-BAU</span></header>
 <main>
 <div id="stage" aria-label="Interaktive dreidimensionale Ansicht des Krankenhauses">
  <div id="topLegend"><strong>🏥 Unser Krankenhaus</strong><small>🚪 Eingang vorne<br>🧑‍💻 Anmeldung links<br>🪑 Wartezimmer rechts<br>🩺 Behandlungsraum hinten</small></div>
@@ -54,9 +63,26 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
 </div>
 <div id="status" role="status" aria-live="polite">🏥 Anmeldung ohne Stühle, großes Schild und ein neuer leerer Behandlungsraum.</div>
 <div id="layoutTools" aria-label="Einrichtungsmodus">
+ <button id="toggleFloorplan" type="button">🏗️ Grundriss bearbeiten</button>
  <button id="editReception" type="button">🛠️ Anmeldung verschieben</button>
  <button id="rotateReception" type="button" hidden>🔄 Tresen drehen</button>
  <button id="finishReception" type="button" hidden>✓ Fertig</button>
+</div>
+<div id="roomBuilder" hidden aria-label="Räume bauen und verschieben">
+ <div class="builderRow"><select id="roomType" aria-label="Raumtyp">
+  <option value="treatment">🩺 Behandlungsraum</option>
+  <option value="lab">🔬 Labor</option>
+  <option value="patient">🛏️ Patientenzimmer</option>
+  <option value="empty">🏠 Freier Raum</option>
+ </select><select id="roomSize" aria-label="Raumgröße">
+  <option value="small">Klein · 3 × 3</option>
+  <option value="medium">Mittel · 4 × 4</option>
+  <option value="large">Groß · 5 × 4</option>
+ </select></div>
+ <div class="builderRow"><button id="roomAdd" type="button">➕ Raum bauen</button>
+ <button id="roomDelete" type="button" hidden>🗑 Raum entfernen</button>
+ <button id="roomFinish" type="button">✓ Fertig</button></div>
+ <p id="builderHint" class="builderHint">Raum antippen und ziehen, oder einen Raum auswählen und an einen freien Platz tippen. Zwei Finger: Zoomen und Drehen.</p>
 </div>
 <section>
  <h2>Das ist bereits gebaut</h2>
@@ -66,7 +92,7 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
   <div class="room"><span class="symbol">🪑</span><strong>Wartezimmer</strong><p>Rechts daneben, mit Sitzplätzen und Einrichtung.</p></div>
   <div class="room"><span class="symbol">🩺</span><strong>Behandlungsraum 1</strong><p>Kleiner Raum hinten: Wände, Boden und Tür – noch ohne Einrichtung.</p></div>
  </div>
- <p class="note">Mit „🛠️ Anmeldung verschieben“ kannst du den Empfang selbst im linken Zimmer platzieren und drehen. Außerhalb des Einrichtungsmodus lässt sich die Ansicht frei verschieben, zoomen und drehen – ohne Kameraknöpfe. Tippe auf einen Bereich, um ihn zu erkunden. Weitere Abteilungen kommen später dazu. Dieses Spiel ist unabhängig von Inselreich.</p>
+ <p class="note">Mit „🏗️ Grundriss bearbeiten“ kannst du Zimmer verschieben und neue leere Räume bauen. Mit „🛠️ Anmeldung verschieben“ richtest du den Tresen im Anmeldungsraum aus. Außerhalb des Einrichtungsmodus lässt sich die Ansicht frei verschieben, zoomen und drehen – ohne Kameraknöpfe. Tippe auf einen Bereich, um ihn zu erkunden. Weitere Abteilungen kommen später dazu. Dieses Spiel ist unabhängig von Inselreich.</p>
 </section>
 </main>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"}}</script>
@@ -195,13 +221,7 @@ function lightPost(x,z){
 // The hospital footprint is kept small so it can be comfortably viewed on an iPhone.
 groundRect(36,34,0,1,green,-.15);
 groundRect(22,20,0,1,grassAlt,-.11);
-groundRect(13.55,8.4,0, .48,concrete,.06);
-// Small future treatment room connects to the waiting area at the back.
-// Its interior deliberately stays completely empty.
-groundRect(4.12,3.32,4.0,-4.99,concrete,.06);
-tiled(3.79,3.06,4.0,-4.99,tileTreatment);
-tiled(7.45,7.4,-2.7,.47,tileBase); // Reception occupies left and central portion.
-tiled(5.4,7.4,3.75,.47,tileWaiting); // Waiting room is on the right.
+// Modular rooms have their own movable floors and walls; broad grass stays empty for expansions.
 groundRect(1.85,4.2,0,6.4,walk,.065);
 tiled(1.85,4.2,0,6.4,tileEntry);
 // Approach with benches, hedges, flower beds and tree line.
@@ -218,33 +238,60 @@ for(const x of [-4.9,-3.7,4.5,5.5]){
  }
 }
 lightPost(-1.6,7.1);lightPost(1.6,7.1);
-// Walls: roof is deliberately removed, so all departments are readable from above.
-// Shared back wall has a real door opening into treatment room #1.
-wallX(-6.55,3.25,-3.35,1.85);
-wallX(4.45,6.55,-3.35,1.85);
-wallZ(-6.55,-3.35,4.35,1.32);
-wallZ(6.55,-3.35,4.35,1.15);
-wallX(-6.55,-1.12,4.35,.35);
-wallX(1.18,6.55,4.35,.77);
-// Reception and waiting room divide, with a broad accessible opening.
-wallZ(1.35,-3.3,.10,1.33);
-wallZ(1.35,2.20,4.33,1.02);
-// Glass cutaway partitions around the interior opening.
-box(.035,1.13,1.4,1.35,.77,-1.2,tealLight);
-const glassDivider=box(.025,.83,1.40,1.39,.96,-1.2,glass,group,false);
-// Treatment room 1: 3.8 × 3.1 m, directly behind the waiting room.
-// Only floor, three new walls and an entrance: no bed, equipment or furniture.
-wallX(2.10,5.90,-6.56,1.70);
-wallZ(2.10,-6.56,-3.35,1.22);
-wallZ(5.90,-6.56,-3.35,1.22);
-// Doorway in the shared wall. Hinged glass door stands open against the jamb.
-for(const x of [3.25,4.45])box(.085,1.73,.14,x,1.03,-3.35,teal);
-box(1.29,.13,.21,3.85,1.87,-3.35,teal);
-const treatmentDoor=box(.76,1.54,.055,3.29,.94,-3.73,glass,group,false);
-treatmentDoor.rotation.y=Math.PI/2;
-box(.09,.14,.09,3.33,1.02,-3.76,teal);
-const treatmentDoorLabel=plane(1.14,.32,3.85,1.98,-3.22,
- new THREE.MeshBasicMaterial({map:labelTexture('BEHANDLUNG 1','#176779','#ffffff',59),transparent:true,depthWrite:false,side:THREE.DoubleSide}),0);
+// Rooms are now standalone, movable modules, no longer fused by shared walls.
+const floorplanKey='klinik-am-park-grundriss-v1';
+const initialRooms=[
+ {id:'reception',name:'🧑‍💻 Anmeldung',kind:'reception',x:-2.65,z:.47,w:7.7,d:7.7,doorOffset:2.45},
+ {id:'waiting',name:'🪑 Wartezimmer',kind:'waiting',x:3.75,z:.47,w:5.3,d:7.7,doorOffset:-.25},
+ {id:'treatment',name:'🩺 Behandlungsraum 1',kind:'treatment',x:4,z:-5.00,w:3.8,d:3.2,doorOffset:-.2}
+];
+const roomSpecs=initialRooms.map(r=>({...r}));
+const roomGroups=new Map();
+const roomColors={reception:tileBase,waiting:tileWaiting,treatment:tileTreatment,lab:tileWaiting,patient:tileTreatment,empty:tileBase};
+let extraRoomNumber=2;
+let nextRoomId=0;
+function makeRoomShell(r){
+ const begin=group.children.length;
+ const left=r.x-r.w/2,right=r.x+r.w/2,back=r.z-r.d/2,front=r.z+r.d/2;
+ groundRect(r.w+.23,r.d+.23,r.x,r.z,concrete,.06);
+ tiled(r.w-.14,r.d-.14,r.x,r.z,roomColors[r.kind]||tileTreatment);
+ wallX(left,right,back,1.38);
+ wallZ(left,back,front,1.06);
+ wallZ(right,back,front,1.06);
+ // Wide open doorway at the front of every room.
+ const door=clampRoomDoor(left,right,r.x+(r.doorOffset||0));
+ if(door-.66>left+.09)wallX(left,door-.64,front,.85);
+ if(door+.66<right-.09)wallX(door+.64,right,front,.85);
+ for(const px of [door-.63,door+.63])box(.073,1.35,.13,px,.84,front,teal);
+ box(1.34,.11,.22,door,1.56,front,teal);
+ const sign=new THREE.Mesh(new THREE.PlaneGeometry(Math.min(r.w-1.2,2.3),.33),
+  new THREE.MeshBasicMaterial({map:labelTexture(r.name.replace(/^\S+\s/,''),'#165b61','#ffffff',36),transparent:true,side:THREE.DoubleSide,depthWrite:false}));
+ sign.position.set(r.x,1.85,back+.38);
+ group.add(sign);
+ const root=new THREE.Group();
+ root.name='room-'+r.id;
+ for(const part of group.children.slice(begin)){
+  group.remove(part);
+  part.position.x-=r.x;part.position.z-=r.z;
+  root.add(part)
+ }
+ root.position.set(r.x,0,r.z);
+ group.add(root);
+ roomGroups.set(r.id,root);
+ return root
+}
+function clampRoomDoor(left,right,x){return Math.min(right-.76,Math.max(left+.76,x))}
+function takeDecorIntoRoom(id,start){
+ const r=roomSpecs.find(r=>r.id===id),root=roomGroups.get(id);
+ if(!r||!root)return;
+ for(const part of group.children.slice(start)){
+  if(part===receptionDesk)continue;
+  group.remove(part);
+  part.position.x-=r.x;part.position.z-=r.z;
+  root.add(part)
+ }
+}
+for(const r of roomSpecs)makeRoomShell(r);
 // Entrance threshold: real sliding-glass doors, low frame and teal canopy.
 box(2.45,.11,.8,.03,.24,4.23,concrete);
 for(const x of [-1.14,1.16])box(.08,1.73,.1,x,1.02,4.38,teal);
@@ -261,6 +308,7 @@ plane(1.52,.32,0,1.81,4.50,new THREE.MeshBasicMaterial({map:labelTexture('EINGAN
 // RECEPTION 2.0: bring registration into the direct line of sight from the entrance.
 // A pale-blue zone, tall contrast-rich front and floating sign distinguish it from
 // the waiting area, even when viewed on a small iPhone display.
+const receptionDecorStart=group.children.length;
 const receptionFloor=mat(0xe6f3f0);
 box(4.35,.021,3.34,-1.65,.166,1.28,receptionFloor,group,false);
 for(const x of [-3.73,.43]){
@@ -327,6 +375,8 @@ receptionDesk.position.set(-3.50,0,.90); // Default: registration on the left.
 group.add(receptionDesk);
 plant(-4.97,2.85,.80);
 plant(.63,-2.65,.72);
+takeDecorIntoRoom('reception',receptionDecorStart);
+const waitingDecorStart=group.children.length;
 // Waiting room: two neat bench rows, reading corner, water dispenser and TV.
 for(const [x,z,angle] of [[2.38,-1.42,0],[3.32,-1.42,0],[4.26,-1.42,0],
                            [2.38,1.34,Math.PI],[3.32,1.34,Math.PI],[4.26,1.34,Math.PI]])
@@ -349,19 +399,25 @@ for(const [xx,zz] of [[-5.4,-1.9],[-4.9,-2.52],[1.9,-2.55],[5.9,3.7]])
  box(.19,.03,.16,xx,.205,zz,mat(0xbad2cf),group,false);
 // The physical ANMELDUNG sign now moves with its desk; no duplicated floating label.
 roomLabel('WARTEZIMMER',3.65,2.18,-2.45,2.75);
-roomLabel('BEHANDLUNG 1',4.02,2.02,-5.65,2.26);
+takeDecorIntoRoom('waiting',waitingDecorStart);
 roomLabel('EINGANG',0,2.46,5.24,1.85);
 // Outdoor detail to suggest future expansion, without prematurely adding new departments.
 for(const [x,z] of [[-8,-2],[-8,2],[8,-2],[8,3],[-7,-5.8],[7.4,-5.9]]){
  cylinder(.085,.11,.8,x,.33,z,soil);
  sphere(.42,x,.87,z,leaf);sphere(.28,x+.24,.8,z+.12,leaf2)
 }
-const bounds=[
- {id:'entry',name:'🚪 Eingang',details:'Unten in der Mitte: Glas-Schiebetüren und ein direkter Weg zur Anmeldung.',x1:-1.15,x2:1.15,z1:3.9,z2:8.1},
- {id:'reception',name:'🧑‍💻 Empfang / Anmeldung',details:'Direkt hinter dem Eingang: großer beschrifteter Tresen, zwei Computer, Empfangsperson und Wartebereich.',x1:-6.55,x2:1.35,z1:-3.35,z2:3.9},
- {id:'waiting',name:'🪑 Wartezimmer',details:'Rechts neben dem Empfang: Sitzplätze, Pflanzen, Wasserspender und Bildschirm.',x1:1.35,x2:6.55,z1:-3.35,z2:4.35},
- {id:'treatment',name:'🩺 Behandlungsraum 1',details:'Kleiner, noch vollständig leerer Behandlungsraum hinter dem Wartezimmer. Nur Boden, Wände und eine Tür.',x1:2.10,x2:5.90,z1:-6.56,z2:-3.35}
-];
+const entryBounds={id:'entry',name:'🚪 Eingang',details:'Vorne in der Mitte: Glastüren und ein Eingangsweg.',x1:-1.15,x2:1.15,z1:3.9,z2:8.1};
+function roomAt(x,z){
+ for(let i=roomSpecs.length-1;i>=0;i--){
+  const r=roomSpecs[i];
+  if(Math.abs(x-r.x)<=r.w/2&&Math.abs(z-r.z)<=r.d/2)return r
+ }
+ return null
+}
+function hitRoom(x,z){
+ if(!Number.isFinite(x)||!Number.isFinite(z))return null;
+ return roomAt(x,z)
+}
 const raycaster=new THREE.Raycaster();
 const onGround=new THREE.Plane(new THREE.Vector3(0,1,0),-.13);
 function groundHit(px,py){
@@ -374,10 +430,11 @@ function groundHit(px,py){
 function inspectRoom(px,py){
  const hit=groundHit(px,py);
  if(!hit)return;
- const room=bounds.find(r=>hit.x>=r.x1&&hit.x<=r.x2&&hit.z>=r.z1&&hit.z<=r.z2);
+ const room=roomAt(hit.x,hit.z)||((hit.x>=entryBounds.x1&&hit.x<=entryBounds.x2&&hit.z>=entryBounds.z1&&hit.z<=entryBounds.z2)?entryBounds:null);
  if(!room)return;
  document.getElementById('roomTitle').textContent=room.name;
- document.getElementById('roomDescription').textContent=room.details;
+ document.getElementById('roomDescription').textContent=room.details||
+  'Der Raum gehört jetzt zu deinem Krankenhaus. Du kannst ihn im Grundrissmodus verschieben.';
  document.getElementById('roomInfo').hidden=false;
  document.getElementById('status').textContent='✓ '+room.name+' – dieser Bereich steht schon.';
 }
@@ -418,9 +475,16 @@ function pan(dx,dy){
    All layout data use a separate save key, never the Inselreich save. */
 const receptionStorageKey='klinik-am-park-anmeldung-v1';
 const deskLimits={minX:-4.60,maxX:-.65,minZ:-1.10,maxZ:2.0};
+function syncDeskLimits(){
+ const rec=roomSpecs.find(r=>r.id==='reception');
+ const dx=rec.x-initialRooms[0].x,dz=rec.z-initialRooms[0].z;
+ deskLimits.minX=-4.60+dx;deskLimits.maxX=-.65+dx;
+ deskLimits.minZ=-1.10+dz;deskLimits.maxZ=2.0+dz
+}
 let editingReception=false;
 function deskWithinRoom(hit){
- return hit&&hit.x>-6.55&&hit.x<1.35&&hit.z>-3.35&&hit.z<4.30
+ const rec=roomSpecs.find(r=>r.id==='reception');
+ return hit&&Math.abs(hit.x-rec.x)<rec.w/2&&Math.abs(hit.z-rec.z)<rec.d/2
 }
 function moveReceptionTo(x,z){
  if(!Number.isFinite(x)||!Number.isFinite(z))return;
@@ -454,11 +518,13 @@ function updateReceptionEditor(){
   :'☝️ Verschieben · ✌️ Zoomen & Drehen';
 }
 editReceptionBtn.onclick=()=>{
+ if(editingFloorplan)finishFloorplan();
  editingReception=!editingReception;
  if(editingReception){
   document.getElementById('roomInfo').hidden=true;
   document.getElementById('status').textContent='🛠️ Tippe im linken Raum auf den Wunschplatz oder ziehe den Tresen dorthin.';
-  focus.set(-2.4,.1,.6);
+  const rec=roomSpecs.find(r=>r.id==='reception');
+  focus.set(rec.x,.1,rec.z);
   distance=Math.min(distance,15.7);
   placeCamera()
  }else{
@@ -498,6 +564,193 @@ function placeDeskByTap(px,py){
  if(deskWithinRoom(hit))moveReceptionTo(hit.x,hit.z)
 }
 
+
+/* Editable modular blueprint – existing room modules move with all room objects,
+   new modules are empty. Store layout under a new independent key. */
+let editingFloorplan=false,selectedRoomId=null;
+const floorplanToggle=document.getElementById('toggleFloorplan');
+const roomBuilder=document.getElementById('roomBuilder');
+const roomDelete=document.getElementById('roomDelete');
+const roomHint=document.getElementById('builderHint');
+function snapRoom(v){return Math.round(v*2)/2}
+function validRoomSpot(id,x,z){
+ const r=roomSpecs.find(r=>r.id===id);
+ if(!r||!Number.isFinite(x)||!Number.isFinite(z))return false;
+ const halfW=r.w/2,halfD=r.d/2;
+ if(x-halfW<-15.5||x+halfW>15.5||z-halfD<-14.5||z+halfD>15.5)return false;
+ for(const other of roomSpecs){
+  if(other.id===id)continue;
+  if(Math.abs(x-other.x)<(r.w+other.w)/2+.15 &&
+     Math.abs(z-other.z)<(r.d+other.d)/2+.15)return false
+ }
+ // Keep the fixed entrance open except when it is the reception itself.
+ if(id!=='reception' && Math.abs(x)<halfW+1.0 && Math.abs(z-6.2)<halfD+1.6)return false;
+ return true
+}
+function moveRoomTo(id,x,z,force=false,relocateContents=true){
+ const r=roomSpecs.find(r=>r.id===id),root=roomGroups.get(id);
+ if(!r||!root)return false;
+ x=snapRoom(x);z=snapRoom(z);
+ if(!force&&!validRoomSpot(id,x,z))return false;
+ const dx=x-r.x,dz=z-r.z;
+ r.x=x;r.z=z;root.position.set(x,0,z);
+ // The registration counter remains independently movable, but follows its room.
+ if(id==='reception'&&relocateContents){
+  receptionDesk.position.x+=dx;receptionDesk.position.z+=dz;
+  syncDeskLimits();storeReception()
+ }
+ renderer.shadowMap.needsUpdate=true;
+ return true
+}
+function saveFloorplan(){
+ try{
+  localStorage.setItem(floorplanKey,JSON.stringify(roomSpecs.map(r=>({
+   id:r.id,name:r.name,kind:r.kind,x:r.x,z:r.z,w:r.w,d:r.d,doorOffset:r.doorOffset||0
+  }))))
+ }catch(e){}
+}
+function applyFloorplanFromStorage(){
+ try{
+  const raw=JSON.parse(localStorage.getItem(floorplanKey)||'null');
+  if(!Array.isArray(raw))return;
+  // Restoring positions must NOT translate the reception desk again; its old
+  // position is already saved separately under the original reception key.
+  for(const data of raw){
+   if(!data||typeof data.id!=='string'||typeof data.x!=='number'||typeof data.z!=='number')continue;
+   const id=data.id;
+   if(initialRooms.some(r=>r.id===id)){
+    moveRoomTo(id,data.x,data.z,true,false)
+   }
+  }
+  let added=0;
+  for(const data of raw){
+   if(!data||typeof data.id!=='string'||initialRooms.some(r=>r.id===data.id))continue;
+   if(added>=32||!/^extra-[0-9]+$/.test(data.id)||
+    !['treatment','lab','patient','empty'].includes(data.kind)||typeof data.name!=='string'||data.name.length>48||
+    !Number.isFinite(data.x)||!Number.isFinite(data.z)||!Number.isFinite(data.w)||!Number.isFinite(data.d)||
+    data.w<2.9||data.w>5.1||data.d<2.9||data.d>4.1||roomSpecs.some(r=>r.id===data.id))continue;
+   const r={id:data.id,kind:data.kind,name:data.name,x:data.x,z:data.z,w:data.w,d:data.d,doorOffset:0};
+   roomSpecs.push(r);
+   if(validRoomSpot(r.id,r.x,r.z)){
+    makeRoomShell(r);added++;
+    const n=Number(r.id.slice(6));nextRoomId=Math.max(nextRoomId,n)
+   }else roomSpecs.pop()
+  }
+  extraRoomNumber=2+added
+ }catch(e){console.warn('Grundriss konnte nicht geladen werden',e)}
+ syncDeskLimits()
+}
+function showBuilder(){
+ floorplanToggle.classList.toggle('active',editingFloorplan);
+ floorplanToggle.textContent=editingFloorplan?'🏗️ Grundrissmodus aktiv':'🏗️ Grundriss bearbeiten';
+ roomBuilder.hidden=!editingFloorplan;
+ roomDelete.hidden=!editingFloorplan||!selectedRoomId||initialRooms.some(r=>r.id===selectedRoomId);
+ gestureHint.textContent=editingFloorplan
+  ?'☝️ Raum antippen & ziehen · ✌️ Zoomen & Drehen'
+  :editingReception?'☝️ Anmeldung verschieben · ✌️ Zoom & Drehen':'☝️ Verschieben · ✌️ Zoomen & Drehen'
+}
+function finishFloorplan(){
+ if(!editingFloorplan)return;
+ editingFloorplan=false;selectedRoomId=null;saveFloorplan();showBuilder();
+ document.getElementById('status').textContent='✅ Grundriss gespeichert! Du kannst die Kamera wieder frei bewegen.'
+}
+floorplanToggle.onclick=()=>{
+ if(!editingFloorplan&&editingReception){
+  editingReception=false;storeReception();updateReceptionEditor()
+ }
+ editingFloorplan=!editingFloorplan;
+ if(editingFloorplan){
+  selectedRoomId=null;
+  focus.set(0,.1,0);
+  distance=Math.max(distance,21);
+  placeCamera();
+  document.getElementById('status').textContent='🏗️ Raum antippen und ziehen, oder neuen Raum bauen.';
+ }else{selectedRoomId=null;saveFloorplan()}
+ showBuilder()
+};
+document.getElementById('roomFinish').onclick=finishFloorplan;
+document.getElementById('roomAdd').onclick=()=>{
+ if(!editingFloorplan)return;
+ if(roomSpecs.length>=35){roomHint.textContent='Maximal 35 Räume für eine flüssige iPhone-Ansicht.';return}
+ const kind=document.getElementById('roomType').value||'treatment';
+ const size=document.getElementById('roomSize').value||'small';
+ const dimensions={small:[3,3],medium:[4,4],large:[5,4]};
+ const [w,d]=dimensions[size]||dimensions.small;
+ const titles={treatment:'🩺 Behandlungsraum',lab:'🔬 Labor',patient:'🛏️ Patientenzimmer',empty:'🏠 Freier Raum'};
+ const num=extraRoomNumber;
+ const id='extra-'+(++nextRoomId);
+ const r={id,kind,name:(titles[kind]||titles.treatment)+' '+num,x:0,z:0,w,d,doorOffset:0};
+ roomSpecs.push(r);
+ let where=null;
+ // Deterministic free-site discovery. Search close to the existing hospital.
+ for(let ring=0;ring<24&&!where;ring++){
+  for(let zi=-ring;zi<=ring&&!where;zi++)for(let xi=-ring;xi<=ring;xi++){
+   if(Math.max(Math.abs(xi),Math.abs(zi))!==ring)continue;
+   const x=xi*2,z=zi*2-1;
+   if(validRoomSpot(id,x,z)){where={x,z};break}
+  }
+ }
+ if(!where){roomSpecs.pop();roomHint.textContent='Kein Platz: zuerst Raum verschieben oder kleinere Größe wählen.';return}
+ r.x=where.x;r.z=where.z;
+ makeRoomShell(r);extraRoomNumber++;
+ selectedRoomId=id;saveFloorplan();showBuilder();
+ focus.set(r.x,.1,r.z);placeCamera();
+ renderer.shadowMap.needsUpdate=true;
+ roomHint.textContent=r.name+' gebaut. Du kannst ihn jetzt mit einem Finger ziehen.';
+ document.getElementById('status').textContent='✅ '+r.name+' ist fertig – noch ohne Einrichtung.'
+};
+roomDelete.onclick=()=>{
+ if(!editingFloorplan||!selectedRoomId||initialRooms.some(r=>r.id===selectedRoomId))return;
+ const i=roomSpecs.findIndex(r=>r.id===selectedRoomId);
+ if(i<0)return;
+ const r=roomSpecs[i],root=roomGroups.get(r.id);
+ if(root){group.remove(root);root.traverse?.(part=>{part.geometry?.dispose?.();if(part.material){
+   for(const material of Array.isArray(part.material)?part.material:[part.material])material.dispose?.()
+  }});}
+ roomSpecs.splice(i,1);roomGroups.delete(r.id);selectedRoomId=null;
+ renderer.shadowMap.needsUpdate=true;saveFloorplan();showBuilder();
+ document.getElementById('status').textContent='🗑 '+r.name+' entfernt.'
+};
+function roomPointerStart(px,py){
+ if(!editingFloorplan)return null;
+ const hit=groundHit(px,py);if(!hit)return null;
+ const room=hitRoom(hit.x,hit.z);
+ if(room){
+  selectedRoomId=room.id;showBuilder();
+  roomHint.textContent=room.name+' ausgewählt – mit einem Finger bewegen.';
+  return {mode:'room',id:room.id,startX:px,startY:py,moved:false,
+   offsetX:room.x-hit.x,offsetZ:room.z-hit.z}
+ }
+ if(selectedRoomId){
+  // Allow taps on open land to position the selected room.
+  return {mode:'roomTap',id:selectedRoomId,startX:px,startY:py,moved:false}
+ }
+ return null
+}
+function roomPointerMove(px,py,state){
+ if(state.mode!=='room')return;
+ if(Math.hypot(px-state.startX,py-state.startY)<5)return;
+ state.moved=true;
+ const hit=groundHit(px,py);if(!hit)return;
+ const x=snapRoom(hit.x+state.offsetX),z=snapRoom(hit.z+state.offsetZ);
+ if(moveRoomTo(state.id,x,z)){
+  roomHint.textContent='✓ '+roomSpecs.find(r=>r.id===state.id)?.name+' verschoben. Loslassen zum Speichern.'
+ }
+}
+function roomPointerEnd(px,py,state){
+ if(state.mode==='roomTap'||(state.mode==='room'&&!state.moved)){
+  const hit=groundHit(px,py);
+  if(hit&&state.mode==='roomTap'&&moveRoomTo(state.id,hit.x,hit.z)){
+   roomHint.textContent='✓ Raum an neuer Stelle platziert.'
+  }else if(hit&&state.mode==='roomTap'){
+   roomHint.textContent='🚫 Hier ist zu wenig Platz. Freie Stelle suchen.'
+  }
+ }
+ saveFloorplan()
+}
+applyFloorplanFromStorage();
+showBuilder();
+
 function snapshot(touches){
  const a=touches[0],b=touches[1];
  return {midX:(a.clientX+b.clientX)/2,midY:(a.clientY+b.clientY)/2,
@@ -510,7 +763,7 @@ function startTouch(e){
  if(e.touches.length>=2){touchState={mode:2,...snapshot(e.touches)}}
  else if(e.touches.length===1){
   const t=e.touches[0];
-  touchState=startDeskDrag(t.clientX,t.clientY)||
+  touchState=roomPointerStart(t.clientX,t.clientY)||startDeskDrag(t.clientX,t.clientY)||
    {mode:1,x:t.clientX,y:t.clientY,startX:t.clientX,startY:t.clientY,moved:false}
  }
 }
@@ -528,7 +781,9 @@ function moveTouch(e){
   touchState={mode:2,...n};placeCamera();
  }else if(e.touches.length===1){
   const t=e.touches[0];
-  if(touchState.mode==='desk'){
+  if(touchState.mode==='room'||touchState.mode==='roomTap'){
+   roomPointerMove(t.clientX,t.clientY,touchState)
+  }else if(touchState.mode==='desk'){
    if(Math.hypot(t.clientX-touchState.startX,t.clientY-touchState.startY)>6)touchState.moved=true;
    if(touchState.moved)moveDeskDrag(t.clientX,t.clientY,touchState)
   }else if(touchState.mode===1){
@@ -546,7 +801,10 @@ function endTouch(e){
  if(e.touches.length===1){
   const t=e.touches[0];touchState={mode:1,x:t.clientX,y:t.clientY,startX:t.clientX,startY:t.clientY,moved:true};return
  }
- if(touchState?.mode==='desk'&&e.changedTouches.length===1){
+ if((touchState?.mode==='room'||touchState?.mode==='roomTap')&&e.changedTouches.length===1){
+  const t=e.changedTouches[0];
+  roomPointerEnd(t.clientX,t.clientY,touchState)
+ }else if(touchState?.mode==='desk'&&e.changedTouches.length===1){
   if(!touchState.moved){
    const t=e.changedTouches[0];placeDeskByTap(t.clientX,t.clientY)
   }
@@ -564,7 +822,7 @@ canvas.addEventListener('touchcancel',endTouch,{passive:false});
 let pointer=null;
 canvas.addEventListener('pointerdown',e=>{
  if(e.pointerType==='touch')return;
- pointer=(e.button===0?startDeskDrag(e.clientX,e.clientY):null)||
+ pointer=(e.button===0?(roomPointerStart(e.clientX,e.clientY)||startDeskDrag(e.clientX,e.clientY)):null)||
  {id:e.pointerId,x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,
           moved:false,rotate:e.button===2};
  pointer.id=e.pointerId;
@@ -574,14 +832,17 @@ canvas.addEventListener('pointermove',e=>{
  if(e.pointerType==='touch'||!pointer||pointer.id!==e.pointerId)return;
  const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;
  if(Math.hypot(e.clientX-pointer.startX,e.clientY-pointer.startY)>6)pointer.moved=true;
- if(pointer.mode==='desk')moveDeskDrag(e.clientX,e.clientY,pointer);
+ if(pointer.mode==='room'||pointer.mode==='roomTap')roomPointerMove(e.clientX,e.clientY,pointer);
+ else if(pointer.mode==='desk')moveDeskDrag(e.clientX,e.clientY,pointer);
  else if(pointer.rotate){orbit-=dx*.009;elevation=clamp(elevation+dy*.007,.55,1.28);placeCamera()}
  else pan(dx,dy);
  pointer.x=e.clientX;pointer.y=e.clientY
 });
 canvas.addEventListener('pointerup',e=>{
  if(e.pointerType==='touch'||!pointer||pointer.id!==e.pointerId)return;
- if(pointer.mode==='desk'){
+ if(pointer.mode==='room'||pointer.mode==='roomTap'){
+  roomPointerEnd(e.clientX,e.clientY,pointer)
+ }else if(pointer.mode==='desk'){
   if(!pointer.moved)placeDeskByTap(e.clientX,e.clientY);
   storeReception()
  }else if(!pointer.moved)inspectRoom(e.clientX,e.clientY);
@@ -589,6 +850,7 @@ canvas.addEventListener('pointerup',e=>{
 });
 canvas.addEventListener('pointercancel',e=>{if(e.pointerType!=='touch'){
  if(pointer?.mode==='desk')storeReception();
+ if(pointer?.mode==='room'||pointer?.mode==='roomTap')saveFloorplan();
  pointer=null;storeCamera()
 }});
 canvas.addEventListener('wheel',e=>{
