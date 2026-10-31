@@ -99,9 +99,15 @@ scene.background=new THREE.Color(0xc3dcd5);
 scene.fog=new THREE.Fog(0xc3dcd5,28,98);
 const camera=new THREE.PerspectiveCamera(45,1,.1,180);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));
+// The game now includes much more geometry; render at a modest phone resolution.
+const touchDevice=navigator.maxTouchPoints>0||matchMedia('(pointer:coarse)').matches;
+renderer.setPixelRatio(Math.min(devicePixelRatio,touchDevice?1.25:1.65));
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+// Most of the island is static: don't rebuild the costly shadow map on every frame.
+// Rebuild after actual world edits, not every time the user rotates the camera.
+renderer.shadowMap.autoUpdate=false;
+renderer.shadowMap.needsUpdate=true;
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=1.20;
@@ -110,7 +116,7 @@ scene.add(new THREE.HemisphereLight(0xfff5df,0x738d78,1.90));
 const sun=new THREE.DirectionalLight(0xffe6b3,2.35);
 sun.position.set(-9,15,10);
 sun.castShadow=true;
-sun.shadow.mapSize.set(1024,1024);
+sun.shadow.mapSize.set(touchDevice?768:1024,touchDevice?768:1024);
 sun.shadow.bias=-.00016;
 sun.shadow.normalBias=.025;
 sun.shadow.camera.left=-20;sun.shadow.camera.right=20;
@@ -144,6 +150,9 @@ const grass=[mat(0x77a85a),mat(0x94b76c),mat(0x709a54)],soil=mat(0x82694d),wall=
 const land=new THREE.Group();scene.add(land);
 const tiles=[],tileModels=new Map(),buildings=new Map(),markets=new Map(),castles=new Map(),lumberjacks=new Map(),farms=new Map(),fields=new Map(),owned=new Set(),roads=new Set(),roadModels=new Map();
 const citizens=new Map(),rockSites=new Set(),rockModels=new Map(),quarries=new Map(),quarryDeposits=new Map();let citizenElapsed=0,infoSelection=null,starterWoodGranted=false;
+// Preserve simulation updates while deferring synchronous storage and UI recalculation
+// until a gesture finishes (saves during game startup still work normally).
+let gesturePointerCount=0,pendingGestureSave=false;
 const HOME_CAPACITY=6,CITIZEN_TICK_MS=30000,START_WOOD=10;
 const WOOD_BUILD_COST={house:5,farm:8,field:3,lumber:6,quarry:10,market:14,castle:30};
 const STONE_BUILD_COST={market:4,castle:15},STONE_TICK_MS=15000;
@@ -1475,7 +1484,12 @@ function citizenCycle(){
  refreshFood();save()
 }
 
-function save(){refreshRoadNetworks();syncGroundDetailsVisibility();updateCitizenUI();refreshBuildingInfo();refreshBuildCostLabels();try{localStorage.setItem(KEY,JSON.stringify({land:[...owned],houses:[...buildings.keys()],markets:[...markets.keys()],castles:[...castles.keys()],lumberjacks:[...lumberjacks.keys()],farms:[...farms.keys()],fields:[...fields.keys()],quarries:[...quarries.keys()],quarryDeposits:[...quarryDeposits],roads:[...roads],rockSites:[...rockSites],citizens:[...citizens],citizenElapsed,food,foodElapsed,wood,woodElapsed,stone,stoneElapsed,starterWoodGranted,lastUpdate:Date.now()}))}catch(e){}}
+function save(){
+ if(gesturePointerCount>0){pendingGestureSave=true;return}
+ refreshRoadNetworks();syncGroundDetailsVisibility();
+ updateCitizenUI();refreshBuildingInfo();refreshBuildCostLabels();
+ renderer.shadowMap.needsUpdate=true;
+ try{localStorage.setItem(KEY,JSON.stringify({land:[...owned],houses:[...buildings.keys()],markets:[...markets.keys()],castles:[...castles.keys()],lumberjacks:[...lumberjacks.keys()],farms:[...farms.keys()],fields:[...fields.keys()],quarries:[...quarries.keys()],quarryDeposits:[...quarryDeposits],roads:[...roads],rockSites:[...rockSites],citizens:[...citizens],citizenElapsed,food,foodElapsed,wood,woodElapsed,stone,stoneElapsed,starterWoodGranted,lastUpdate:Date.now()}))}catch(e){}}
 let restored=false;try{let data=JSON.parse(localStorage.getItem(KEY)||'null');if(data&&Array.isArray(data.land)&&Array.isArray(data.houses)){for(const k of data.land){const [x,z]=pos(k);if(inside(x,z))owned.add(k)}if(owned.size){
 if(Array.isArray(data.rockSites))for(const k of data.rockSites)if(typeof k==='string'&&owned.has(k))rockSites.add(k);
 refreshEdge();data.houses.forEach(k=>{if(owned.has(k))addHouse(k)});if(Array.isArray(data.markets))data.markets.forEach(k=>{if(typeof k==="string")addMarket(k)});if(Array.isArray(data.castles))data.castles.forEach(k=>{if(typeof k==='string')addCastle(k)});if(Array.isArray(data.lumberjacks))data.lumberjacks.forEach(k=>{if(typeof k==="string")addLumberjack(k)});if(Array.isArray(data.farms))data.farms.forEach(k=>{if(typeof k==='string')addFarm(k)});if(Array.isArray(data.fields))data.fields.forEach(k=>{if(typeof k==='string')addField(k)});
@@ -1508,7 +1522,28 @@ if(!restored){for(let x=-1;x<=1;x++)for(let z=-1;z<=1;z++)owned.add(key(x,z));re
  }
 refreshWood();refreshFood();refreshStone();save();
 const MAX_ZOOM_DISTANCE=38;let orbit=0.72,elevation=.84,distance=8,modeBuild=false,buildType='house';const focus=new THREE.Vector3(0,.2,0);
-function placeCamera(){camera.position.set(focus.x+Math.sin(orbit)*Math.cos(elevation)*distance,Math.sin(elevation)*distance+focus.y,focus.z+Math.cos(orbit)*Math.cos(elevation)*distance);camera.lookAt(focus)}
+// Desired camera values are updated from pointer events; only the animation frame
+// touches the real camera. Exponential damping evens out uneven iOS touch events.
+const cameraGoal=new THREE.Vector3(),cameraLookAt=new THREE.Vector3();
+let cameraReady=false;
+function placeCamera(){
+ cameraGoal.set(
+  focus.x+Math.sin(orbit)*Math.cos(elevation)*distance,
+  Math.sin(elevation)*distance+focus.y,
+  focus.z+Math.cos(orbit)*Math.cos(elevation)*distance
+ );
+ if(!cameraReady){
+  camera.position.copy(cameraGoal);cameraLookAt.copy(focus);
+  camera.lookAt(cameraLookAt);cameraReady=true
+ }
+}
+function settleCamera(dt){
+ placeCamera();
+ const alpha=1-Math.exp(-Math.min(.05,Math.max(0,dt))*27);
+ camera.position.lerp(cameraGoal,alpha);
+ cameraLookAt.lerp(focus,alpha);
+ camera.lookAt(cameraLookAt)
+}
 function panCameraPixels(dx,dy){
  const worldPerPixel=2*distance*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))/Math.max(200,holder.clientHeight);
  const vertical=worldPerPixel/Math.max(.39,Math.sin(elevation));
@@ -1753,7 +1788,8 @@ function shortestAngleDelta(a,b){
 }
 canvas.addEventListener('pointerdown',e=>{
  points.set(e.pointerId,{x:e.clientX,y:e.clientY});
- canvas.setPointerCapture(e.pointerId);cancelHold();
+ gesturePointerCount=points.size;
+ if(canvas.setPointerCapture)canvas.setPointerCapture(e.pointerId);cancelHold();
  if(points.size>=2){
   pinch=twoFingerSnapshot();
   down=null;ignoreClick=true
@@ -1786,7 +1822,7 @@ canvas.addEventListener('pointermove',e=>{
   e.preventDefault();return
  }
  if(!down||down.id!==e.pointerId||pinch)return;
- if(Math.hypot(e.clientX-down.x,e.clientY-down.y)>14){down.moved=true;cancelHold()}
+ if(Math.hypot(e.clientX-down.x,e.clientY-down.y)>6){down.moved=true;cancelHold()}
  if(down.moved){
   const dx=e.clientX-down.lastX,dy=e.clientY-down.lastY;
   if(roadModeActive()&&!moving){
@@ -1803,6 +1839,8 @@ canvas.addEventListener('pointermove',e=>{
 });
 canvas.addEventListener('pointerup',e=>{
  cancelHold();points.delete(e.pointerId);
+ gesturePointerCount=points.size;
+ if(gesturePointerCount===0&&pendingGestureSave){pendingGestureSave=false;save()}
  if(pinch){if(points.size<2)pinch=null;down=null;if(roadStrokeDirty){save();roadStrokeDirty=false}return}
  if(down?.id===e.pointerId&&!down.moved&&!ignoreClick){
   const i=down.tile??hit(e);
@@ -1822,7 +1860,12 @@ canvas.addEventListener('pointerup',e=>{
  if(roadStrokeDirty){save();roadStrokeDirty=false}
  down=null;if(points.size===0)ignoreClick=false
 });
-canvas.addEventListener('pointercancel',e=>{cancelHold();points.delete(e.pointerId);pinch=null;down=null;ignoreClick=false;if(roadStrokeDirty){save();roadStrokeDirty=false}});
+canvas.addEventListener('pointercancel',e=>{
+ cancelHold();points.delete(e.pointerId);
+ gesturePointerCount=points.size;pinch=null;down=null;ignoreClick=false;
+ if(roadStrokeDirty){roadStrokeDirty=false;save()}
+ if(gesturePointerCount===0&&pendingGestureSave){pendingGestureSave=false;save()}
+});
 function updateTools(){
  viewButton.style.background=!modeBuild?'#416d3e':'#879c79';
  openBuildButton.style.background=modeBuild?'#416d3e':'#879c79'
@@ -1877,5 +1920,6 @@ if(productionFields()){foodElapsed+=dt*1000;if(foodElapsed>=12000){const batches
  }
 }
 autosave+=dt;if(autosave>10){autosave=0;save()}oceanClock.value=now*.001;
+ settleCamera(dt);
  renderer.render(scene,camera)}placeCamera();requestAnimationFrame(animate);
 </script></body></html>
