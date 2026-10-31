@@ -64,6 +64,7 @@ button.secondary{background:linear-gradient(180deg,#fffef7,#ecefdd);color:#35563
 #buildingInfo,#editMenu,#buildUndo{background:#fffbef;border-color:#9fbb93}
 #citizenPanel{background:#fffaea;border:1px solid #d1d3b3;box-shadow:0 3px 13px #394b3518}
 .needsRow span,.infoStats>div{background:#ebefd9}
+#transportStatus{background:#fff7e1;border:1px solid #dfd6b0;border-radius:10px;padding:9px 11px;color:#455b3e;font-size:12px;line-height:1.45;font-weight:650}
 .expansionButton{background:linear-gradient(180deg,#668e56,#416d43);border-color:#3e6743}
 @media(max-width:400px){header{padding:13px 10px}h1{font-size:19px}.tag{font-size:11px;padding:7px 8px}#cityPulse{gap:5px}#cityPulse span{padding:6px 7px;font-size:11px}}
 
@@ -86,12 +87,13 @@ button.secondary{background:linear-gradient(180deg,#fffef7,#ecefdd);color:#35563
   <span id="needHome">🏠 Wohnraum</span>
   <span id="needRoad">🛤️ Straßen</span>
  </div>
+ <p id="transportStatus" role="status" aria-live="polite">🚚 Warenlieferung: Straßen zum Markt werden geprüft.</p>
  <div class="progressTrack"><div id="peopleProgress"></div></div>
  <p id="peopleGoal">Erstes Ziel: 40 Einwohner – auf dem Weg zur Burgenzeit!</p>
 </section>
 
-<div id="buildPanel" hidden><div class="categoryRow"><button data-cat="wohnen">🏠 Wohnen</button><button data-cat="land">🌾 Landwirtschaft</button><button data-cat="prod">🌲 Produktion</button><button data-cat="shop">🛒 Geschäfte</button><button data-cat="burg">🏰 Burgen</button><button data-cat="wege">🛤️ Straßen</button></div><div class="itemRow"><button id="build">🏠 Haus</button><button id="farm">🚜 Bauernhof</button><button id="field">🌾 Weizenfeld</button><button id="lumber">🪓 Holzfäller</button><button id="quarry">⛏️ Steinbruch</button><button id="market">🛒 Markt 2×2</button><button id="castle">🏰 Burg 3×3</button><button id="road">🪨 Steinweg verlegen</button><button id="roadErase">🧹 Straße entfernen</button></div><p class="buildCostHint">🌲 Gebäude brauchen Holz, größere Bauten außerdem 🪨 Stein. 🏔️ Steinbrüche funktionieren nur direkt neben einem Berg. Der erste Holzfäller bleibt kostenlos.</p></div>
-<p>🔨 Bauen öffnet das Baumenü. Gebäude wählen und auf freie Felder tippen – jedes Gebäude wird sofort gebaut, verbraucht die angezeigten Holz-Baukosten und du bleibst im Baumodus, bis du 👁️ Anschauen wählst. Der erste Holzfäller ist kostenlos. Nach der Inselerweiterung entstehen Felsvorkommen: ⛏️ Steinbruch direkt daneben bauen, um 🪨 Stein zu gewinnen. Burg und Markt benötigen außerdem Stein. Falls du dich vertippst, kannst du die letzte Platzierung 10 Sekunden lang mit ↶ Rückgängig rückgängig machen. 🏰 Burg: 3×3 freie Felder erforderlich. Im Ansichtsmodus wird nichts versehentlich gebaut. Mit 🌿 Insel erweitern wächst deine Insel auf Knopfdruck gleich rundherum um einen ganzen Streifen – ohne einzelne Randfelder anzutippen. 🏠 Gebäude kurz antippen zeigt seine Infos (Bewohner, Produktion und Zustand). Etwa eine halbe Sekunde gedrückt halten öffnet Verschieben oder Löschen. Kartensteuerung: ☝️ Mit einem Finger die Karte ohne Anschlag frei verschieben; mit „⌖ Kartenmitte“ jederzeit zurück. ✌️ Mit zwei Fingern drehen (die Finger gegeneinander verdrehen), durch Auseinanderziehen zoomen und gemeinsam verschieben. Mit „⌖ Kartenmitte“ findest du zurück. Mit „🔎 Weit raus“ bekommst du die Gesamtansicht deiner Insel. 👥 Häuser bekommen Bewohner: Nahrung lässt neue Bewohner einziehen, Straßen verbessern ihre Zufriedenheit. Deine Einwohner und Fortschritte werden gespeichert. 🛤️ Straßen: Im Baumenü auf „Straßen“ gehen, „Steinweg verlegen“ wählen und auf freie Felder tippen oder mit einem Finger darüberstreichen. Kurven, Kreuzungen und Zugänge zu Gebäuden entstehen automatisch. Mit „Straße entfernen“ kannst du Wege wieder abtragen.</p><button id="reset" class="secondary resetButton">↺ Test zurücksetzen</button></footer>
+<div id="buildPanel" hidden><div class="categoryRow"><button data-cat="wohnen">🏠 Wohnen</button><button data-cat="land">🌾 Landwirtschaft</button><button data-cat="prod">🌲 Produktion</button><button data-cat="shop">🛒 Geschäfte</button><button data-cat="burg">🏰 Burgen</button><button data-cat="wege">🛤️ Straßen</button></div><div class="itemRow"><button id="build">🏠 Haus</button><button id="farm">🚜 Bauernhof</button><button id="field">🌾 Weizenfeld</button><button id="lumber">🪓 Holzfäller</button><button id="quarry">⛏️ Steinbruch</button><button id="market">🛒 Markt 2×2</button><button id="castle">🏰 Burg 3×3</button><button id="road">🪨 Steinweg verlegen</button><button id="roadErase">🧹 Straße entfernen</button></div><p class="buildCostHint">🛤️ Baue durchgehende Straßen zwischen Markt und Gebäuden, damit Holz, Stein und Nahrung geliefert werden. Vor dem ersten Markt produzieren die Betriebe normal. 🌲 Der erste Holzfäller bleibt kostenlos.</p></div>
+<p>🔨 Bauen öffnet das Baumenü. Gebäude wählen und auf freie Felder tippen – jedes Gebäude wird sofort gebaut, verbraucht die angezeigten Holz-Baukosten und du bleibst im Baumodus, bis du 👁️ Anschauen wählst. Der erste Holzfäller ist kostenlos. Nach der Inselerweiterung entstehen Felsvorkommen: ⛏️ Steinbruch direkt daneben bauen, um 🪨 Stein zu gewinnen. 🛤️ Sobald ein Markt steht, müssen Holzfäller, Steinbruch und Bauernhof über durchgehende Straßen mit einem Markt verbunden sein, sonst kommt keine neue Ware ins Lager. Burg und Markt benötigen außerdem Stein. Falls du dich vertippst, kannst du die letzte Platzierung 10 Sekunden lang mit ↶ Rückgängig rückgängig machen. 🏰 Burg: 3×3 freie Felder erforderlich. Im Ansichtsmodus wird nichts versehentlich gebaut. Mit 🌿 Insel erweitern wächst deine Insel auf Knopfdruck gleich rundherum um einen ganzen Streifen – ohne einzelne Randfelder anzutippen. 🏠 Gebäude kurz antippen zeigt seine Infos (Bewohner, Produktion und Zustand). Etwa eine halbe Sekunde gedrückt halten öffnet Verschieben oder Löschen. Kartensteuerung: ☝️ Mit einem Finger die Karte ohne Anschlag frei verschieben; mit „⌖ Kartenmitte“ jederzeit zurück. ✌️ Mit zwei Fingern drehen (die Finger gegeneinander verdrehen), durch Auseinanderziehen zoomen und gemeinsam verschieben. Mit „⌖ Kartenmitte“ findest du zurück. Mit „🔎 Weit raus“ bekommst du die Gesamtansicht deiner Insel. 👥 Häuser bekommen Bewohner: Nahrung lässt neue Bewohner einziehen, Straßen verbessern ihre Zufriedenheit. Deine Einwohner und Fortschritte werden gespeichert. 🛤️ Straßen: Im Baumenü auf „Straßen“ gehen, „Steinweg verlegen“ wählen und auf freie Felder tippen oder mit einem Finger darüberstreichen. Kurven, Kreuzungen und Zugänge zu Gebäuden entstehen automatisch. Mit „Straße entfernen“ kannst du Wege wieder abtragen.</p><button id="reset" class="secondary resetButton">↺ Test zurücksetzen</button></footer>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"}}</script>
 <script type="module">
 import * as THREE from 'three';
@@ -850,7 +852,7 @@ function addMarket(k){
  groundedEntrance(g,0,.085,.31,.172,marketStone);
  embellishMarket(g);
  finishBuilding('market',g,k);
- worldShadowsDirty=true;markets.set(k,g);save();return true
+ worldShadowsDirty=true;markets.set(k,g);invalidateMarketRoads();save();return true
 }
 
 const castleStone=mat(0xa7a99b),castleLight=mat(0xc8c3b1),castleDark=mat(0x73786f),
@@ -1288,7 +1290,7 @@ function addField(k){
  finishBuilding('field',g,k);
  worldShadowsDirty=true;fields.set(k,g);save();return true
 }
-function productionFields(){let count=0;for(const k of fields.keys())if(nearFarm(k))count++;return count}
+function productionFields(){let count=0;for(const k of fields.keys())if(fieldHasMarketDelivery(k))count++;return count}
 function refreshFood(){foodCount.textContent=food.toLocaleString('de-DE')}
 function refreshWood(){woodCount.textContent=wood.toLocaleString('de-DE');refreshBuildCostLabels()}
 function refreshStone(){stoneCount.textContent=stone.toLocaleString('de-DE');refreshBuildCostLabels()}
@@ -1406,7 +1408,7 @@ function refreshRoadNetworks(){
  }
  for(const k of roads){
   // Remove stale data if a tile is no longer owned.
-  if(!owned.has(k)){roads.delete(k);continue}
+  if(!owned.has(k)){roads.delete(k);invalidateMarketRoads();continue}
   const mask=getRoadMask(k);
   const oldModel=roadModels.get(k);
   if(!oldModel||oldModel.userData.connectMask!==mask){
@@ -1414,6 +1416,104 @@ function refreshRoadNetworks(){
    drawRoad(k,mask)
   }
  }
+}
+/* Warenwege: The market is the delivery hub. Every producer/habitable building
+   must join one of its road networks by an ORTHOGONAL adjacent road tile.
+   Road connectivity is cached; iPhone animation frames never run a fresh BFS
+   unless roads or market locations actually change. */
+const marketRoads=new Set();
+let marketRoadsDirty=true;
+function invalidateMarketRoads(){marketRoadsDirty=true}
+function buildingRoadFootprint(type,k){
+ if(type==='market')return marketCells(k);
+ if(type==='castle')return castleCells(k);
+ return [k]
+}
+function adjacentRoadsFor(type,k){
+ const adjacent=new Set();
+ for(const cell of buildingRoadFootprint(type,k)){
+  const [x,z]=pos(cell);
+  for(const [a,b] of neighbors(x,z)){
+   const road=key(a,b);
+   if(roads.has(road))adjacent.add(road)
+  }
+ }
+ return adjacent
+}
+function reachableMarketRoads(){
+ if(!marketRoadsDirty)return marketRoads;
+ marketRoadsDirty=false;marketRoads.clear();
+ if(!markets.size||!roads.size)return marketRoads;
+ const queue=[];
+ for(const market of markets.keys()){
+  for(const r of adjacentRoadsFor('market',market)){
+   if(!marketRoads.has(r)){marketRoads.add(r);queue.push(r)}
+  }
+ }
+ for(let i=0;i<queue.length;i++){
+  const [x,z]=pos(queue[i]);
+  for(const [a,b] of neighbors(x,z)){
+   const candidate=key(a,b);
+   if(roads.has(candidate)&&!marketRoads.has(candidate)){
+    marketRoads.add(candidate);queue.push(candidate)
+   }
+  }
+ }
+ return marketRoads
+}
+function connectsToMarket(type,k){
+ if(!markets.size)return false;
+ const reachable=reachableMarketRoads();
+ for(const r of adjacentRoadsFor(type,k))if(reachable.has(r))return true;
+ return false
+}
+function hasDeliveryRoute(type,k){
+ // No market yet: bootstrap economy still works so the first market is affordable.
+ return !markets.size||connectsToMarket(type,k)
+}
+function transportMessage(type,k){
+ if(!markets.size)return '🛒 Noch kein Markt: Die Dorfproduktion läuft vorerst ohne Lieferwege.';
+ if(type==='market')
+  return adjacentRoadsFor('market',k).size
+   ?'✅ An das Straßennetz angeschlossen: Rohstoffe können angeliefert werden.'
+   :'⚠️ Dem Markt fehlt eine Straße. Baue einen Weg direkt an den Marktrand.';
+ if(!adjacentRoadsFor(type,k).size)
+  return '⚠️ Keine Straße am Gebäude. Baue einen Weg direkt daneben und verbinde ihn mit dem Markt.';
+ return connectsToMarket(type,k)
+  ?'✅ Durchgehende Straße zum Markt: Waren und Bewohner erreichen den Marktplatz.'
+  :'⚠️ Straße vorhanden, aber sie führt nicht bis zum Markt. Verbinde die Wege miteinander.';
+}
+function activeLumberjackCount(){
+ let count=0;for(const k of lumberjacks.keys())if(hasDeliveryRoute('lumber',k))count++;
+ return count
+}
+function activeQuarryCount(){
+ let count=0;for(const k of quarries.keys())if(hasDeliveryRoute('quarry',k))count++;
+ return count
+}
+function fieldHasMarketDelivery(k){
+ const [x,z]=pos(k);
+ return neighbors(x,z).some(([a,b])=>{
+  const farm=key(a,b);
+  return farms.has(farm)&&hasDeliveryRoute('farm',farm)
+ })
+}
+function refreshTransportSummary(){
+ const target=document.getElementById('transportStatus');
+ if(!target)return;
+ const total=lumberjacks.size+quarries.size+farms.size;
+ const active=activeLumberjackCount()+activeQuarryCount()+
+  [...farms.keys()].filter(k=>hasDeliveryRoute('farm',k)).length;
+ if(!markets.size){
+  target.textContent='🛒 Noch kein Markt: Produktion läuft. Später brauchen Betriebe einen Straßenweg zum Markt.';
+  return
+ }
+ if(!total){
+  target.textContent='🛤️ Verbinde Gebäude und Markt mit zusammenhängenden Straßen.';
+  return
+ }
+ target.textContent='🚚 Lieferwege: '+active+'/'+total+' Betriebe mit Markt verbunden'+
+  (active<total?' · ⚠️ '+(total-active)+' ohne Warenlieferung':' · ✅ Alle Warenwege frei')
 }
 function roadModeActive(){return modeBuild&&(buildType==='road'||buildType==='roadErase')}
 function paintRoadAt(k){
@@ -1425,7 +1525,7 @@ function paintRoadAt(k){
   if(!roads.has(k))return false;
   roads.delete(k)
  }else return false;
- roadStrokeDirty=true;
+ roadStrokeDirty=true;invalidateMarketRoads();
  refreshRoadNetworks();syncGroundDetailsVisibility();
  status.textContent=buildType==='road'?'🪨 Steinweg verlegt! Tippe oder ziehe für weitere Straßen.':'🧹 Straße entfernt. Du kannst weitere Felder freimachen.';
  return true
@@ -1449,12 +1549,8 @@ function residentHappiness(){
  if(!buildings.size)return 0;
  let total=0;
  for(const k of buildings.keys()){
-  const roadsBonus=residentNearRoad(k)?12:0;
-  const [x,z]=pos(k);let marketBonus=0;
-  for(const mk of markets.keys()){
-   const [mx,mz]=pos(mk);
-   if(Math.abs(mx+.5-x)+Math.abs(mz+.5-z)<=3){marketBonus=5;break}
-  }
+  const roadsBonus=residentNearRoad(k)?7:0;
+  const marketBonus=connectsToMarket('house',k)?10:0;
   total+=Math.min(100,(food>0?80:38)+roadsBonus+marketBonus)
  }
  return Math.round(total/buildings.size)
@@ -1468,7 +1564,10 @@ function updateCitizenUI(){
  document.getElementById('needFood').textContent=food>0?'🌾 Nahrung: vorhanden':'🌾 Nahrung: fehlt';
  document.getElementById('needHome').textContent=capacity>population?'🏠 Wohnraum: frei':'🏠 Wohnraum: voll';
  const roadHomes=[...buildings.keys()].filter(residentNearRoad).length;
- document.getElementById('needRoad').textContent='🛤️ Straßen: '+roadHomes+'/'+buildings.size+' Häuser';
+ document.getElementById('needRoad').textContent=markets.size
+  ?'🛒 Marktweg: '+[...buildings.keys()].filter(k=>connectsToMarket('house',k)).length+'/'+buildings.size+' Häuser'
+  :'🛤️ Straßen: '+roadHomes+'/'+buildings.size+' Häuser';
+ refreshTransportSummary();
  document.getElementById('peopleProgress').style.width=Math.min(100,population/40*100)+'%';
  document.getElementById('peopleGoal').textContent=population>=40
   ?'🏰 Meilenstein erreicht: 40 Einwohner! Weitere Zeitalter und Gebäude folgen.'
@@ -1482,7 +1581,7 @@ function citizenCycle(){
   food-=need;
   for(const k of buildings.keys()){
    const n=citizens.get(k)||2;
-   if(n<HOME_CAPACITY)citizens.set(k,n+1)
+   if(n<HOME_CAPACITY&&hasDeliveryRoute('house',k))citizens.set(k,n+1)
   }
  }
  refreshFood();save()
@@ -1501,7 +1600,7 @@ if(Array.isArray(data.quarries)){
  const savedClaims=new Map(Array.isArray(data.quarryDeposits)?data.quarryDeposits:[]);
  data.quarries.forEach(k=>{if(typeof k==='string')addQuarry(k,savedClaims.get(k)||null)})
 }
-if(Array.isArray(data.roads))data.roads.forEach(k=>{if(typeof k==='string'&&owned.has(k)&&!occupied(k))roads.add(k)});refreshRoadNetworks();
+if(Array.isArray(data.roads))data.roads.forEach(k=>{if(typeof k==='string'&&owned.has(k)&&!occupied(k))roads.add(k)});invalidateMarketRoads();refreshRoadNetworks();
 if(Array.isArray(data.citizens))for(const entry of data.citizens){
  if(Array.isArray(entry)&&entry.length===2&&buildings.has(entry[0])){
   const value=Number(entry[1]);
@@ -1511,9 +1610,9 @@ if(Array.isArray(data.citizens))for(const entry of data.citizens){
 citizenElapsed=Math.max(0,Math.min(CITIZEN_TICK_MS-1,Number(data.citizenElapsed)||0));
 starterWoodGranted=data.starterWoodGranted===true;
 food=Math.max(0,Math.floor(Number(data.food)||0));foodElapsed=Math.max(0,Math.min(9999,Number(data.foodElapsed)||0));wood=Math.max(0,Math.floor(Number(data.wood)||0));woodElapsed=Math.max(0,Math.min(9999,Number(data.woodElapsed)||0));
-stone=Math.max(0,Math.floor(Number(data.stone)||0));stoneElapsed=Math.max(0,Math.min(STONE_TICK_MS-1,Number(data.stoneElapsed)||0));const away=Math.max(0,Math.min(21600000,Date.now()-(Number(data.lastUpdate)||Date.now())));const total=woodElapsed+away;if(lumberjacks.size){wood+=Math.floor(total/15000)*lumberjacks.size;woodElapsed=total%15000}else woodElapsed=0;
+stone=Math.max(0,Math.floor(Number(data.stone)||0));stoneElapsed=Math.max(0,Math.min(STONE_TICK_MS-1,Number(data.stoneElapsed)||0));const away=Math.max(0,Math.min(21600000,Date.now()-(Number(data.lastUpdate)||Date.now())));const total=woodElapsed+away;const activeLumber=activeLumberjackCount();if(activeLumber){wood+=Math.floor(total/15000)*activeLumber;woodElapsed=total%15000}else woodElapsed=0;
 const stoneTotal=stoneElapsed+away;
-if(quarries.size){stone+=Math.floor(stoneTotal/STONE_TICK_MS)*quarries.size;stoneElapsed=stoneTotal%STONE_TICK_MS}else stoneElapsed=0;
+const activeStone=activeQuarryCount();if(activeStone){stone+=Math.floor(stoneTotal/STONE_TICK_MS)*activeStone;stoneElapsed=stoneTotal%STONE_TICK_MS}else stoneElapsed=0;
 const foodTotal=foodElapsed+away;if(productionFields()){food+=Math.floor(foodTotal/12000)*productionFields();foodElapsed=foodTotal%12000}else foodElapsed=0;
  if(!rockSites.size)seedRockSites([...owned]);restored=true}}}catch(e){}
 if(!restored){for(let x=-1;x<=1;x++)for(let z=-1;z<=1;z++)owned.add(key(x,z));refreshEdge();
@@ -2022,11 +2121,12 @@ for(const btn of document.querySelectorAll('[data-cat]'))btn.onclick=()=>categor
 viewButton.onclick=viewMode;openBuildButton.onclick=()=>{closeBuildingInfo();modeBuild=false;moving=null;closeEdit();clearPreview();buildPanel.hidden=!buildPanel.hidden;updateTools();status.textContent=buildPanel.hidden?'👁️ Ansichtsmodus':'🔨 Wähle eine Kategorie und dann dein Gebäude.'};
 category('wohnen');updateTools();updateExpansionButton();
 document.getElementById('reset').onclick=()=>{hideBuildUndo();closeBuildingInfo();clearPreview();cancelHold();moving=null;closeEdit();if(!confirm('3D-Test zurücksetzen? Das alte Inselreich bleibt erhalten.'))return;for(const g of buildings.values())land.remove(g);buildings.clear();for(const g of markets.values())land.remove(g);markets.clear();for(const g of castles.values())land.remove(g);castles.clear();for(const g of lumberjacks.values())land.remove(g);lumberjacks.clear();for(const g of farms.values())land.remove(g);farms.clear();for(const g of fields.values())land.remove(g);fields.clear();for(const g of quarries.values())land.remove(g);quarries.clear();quarryDeposits.clear();for(const model of roadModels.values())land.remove(model);roadModels.clear();roads.clear();rockSites.clear();rockModels.clear();quarries.clear();quarryDeposits.clear();roadStrokeDirty=false;citizens.clear();citizenElapsed=0;food=0;foodElapsed=0;refreshFood();stone=0;stoneElapsed=0;refreshStone();wood=START_WOOD;woodElapsed=0;starterWoodGranted=true;refreshWood();owned.clear();for(const obj of tileModels.values())land.remove(obj);tileModels.clear();tiles.length=0;for(let x=-1;x<=1;x++)for(let z=-1;z<=1;z++)owned.add(key(x,z));refreshEdge();addHouse(key(0,0));updateExpansionButton();status.textContent='🌱 3D-Test zurückgesetzt.'};
-let lastFrame=performance.now(),autosave=0;function animate(now){requestAnimationFrame(animate);const dt=Math.min(1,(now-lastFrame)/1000||0);lastFrame=now;if(lumberjacks.size){woodElapsed+=dt*1000;if(woodElapsed>=15000){const batches=Math.floor(woodElapsed/15000);woodElapsed%=15000;wood+=batches*lumberjacks.size;refreshWood();save()}}if(quarries.size){
+let lastFrame=performance.now(),autosave=0;function animate(now){requestAnimationFrame(animate);const dt=Math.min(1,(now-lastFrame)/1000||0);lastFrame=now;const activeLumber=activeLumberjackCount();if(activeLumber){woodElapsed+=dt*1000;if(woodElapsed>=15000){const batches=Math.floor(woodElapsed/15000);woodElapsed%=15000;wood+=batches*activeLumber;refreshWood();save()}}else woodElapsed=0;
+const activeStone=activeQuarryCount();if(activeStone){
  stoneElapsed+=dt*1000;
  if(stoneElapsed>=STONE_TICK_MS){
   const batches=Math.floor(stoneElapsed/STONE_TICK_MS);
-  stoneElapsed%=STONE_TICK_MS;stone+=batches*quarries.size;
+  stoneElapsed%=STONE_TICK_MS;stone+=batches*activeStone;
   refreshStone();save()
  }
 }else stoneElapsed=0;
