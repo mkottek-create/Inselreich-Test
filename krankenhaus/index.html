@@ -64,10 +64,10 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
 </style>
 </head>
 <body>
-<header><div><div class="eyebrow">🏥 Eigenes Krankenhaus-Spiel</div><h1>Klinik am Park <span aria-hidden="true">✚</span></h1><p class="subtitle">Krankenhaus 3D · Offener Grundriss mit Hauptflur</p></div><span class="pill">KLINIK BAUEN</span></header>
+<header><div><div class="eyebrow">🏥 Eigenes Krankenhaus-Spiel</div><h1>Klinik am Park <span aria-hidden="true">✚</span></h1><p class="subtitle">Krankenhaus 3D · Großes Foyer und Hauptflur</p></div><span class="pill">KLINIK BAUEN</span></header>
 <main>
 <div id="stage" aria-label="Interaktive dreidimensionale Ansicht des Krankenhauses">
- <div id="topLegend"><strong>🏥 Klinik am Park</strong><small>🚪 Eingang & Hauptflur<br>🧑‍💻 Anmeldung · 🪑 Warten<br>🩺 2 Behandlungsräume<br>🔬 Diagnose · ☕ Personal · 🚻 WC</small></div>
+ <div id="topLegend"><strong>🏥 Klinik am Park</strong><small>🚪 Haupteingang · großes Foyer<br>🧑‍💻 Anmeldung links · 🪑 Warten rechts<br>⬆️ Dahinter der Hauptflur<br>🩺 Behandlung · 🔬 Diagnose · 🚻 WC</small></div>
  <div id="roomInfo" hidden role="status" aria-live="polite"><strong id="roomTitle"></strong><span id="roomDescription"></span></div>
 </div>
 <div id="cameraBar" role="group" aria-label="Kamerasteuerung">
@@ -79,7 +79,7 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
   <button id="camReset" type="button" title="Kamera zurücksetzen" aria-label="Ansicht zurücksetzen">⌂</button>
  </div>
 <div id="gestureHint">☝️ Schieben · ✌️ Zoomen & Drehen</div>
-<div id="status" role="status" aria-live="polite">🏥 Neuer Klinik-Grundriss: zentraler Flur, sieben Räume und isometrischer Aufbau.</div>
+<div id="status" role="status" aria-live="polite">🏥 Großes, offenes Foyer: Anmeldung links, Wartebereich rechts, Hauptflur dahinter.</div>
 <div id="layoutTools" aria-label="Einrichtungsmodus">
  <button id="toggleFloorplan" type="button">🏗️ Grundriss bearbeiten</button>
  <button id="editReception" type="button">🛠️ Anmeldung verschieben</button>
@@ -107,15 +107,15 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
 <section>
  <h2>Das ist bereits gebaut</h2>
  <div class="rooms">
-  <div class="room"><span class="symbol">🚪</span><strong>Eingang</strong><p>Vorne mittig, mit Glastür und Eingangsweg.</p></div>
-  <div class="room"><span class="symbol">🧑‍💻</span><strong>Empfang</strong><p>Jetzt links im Raum, mit verschiebbarem Tresen, PCs und Anmeldungsschild.</p></div>
-  <div class="room"><span class="symbol">🪑</span><strong>Wartezimmer</strong><p>Rechts daneben, mit Sitzplätzen und Einrichtung.</p></div>
+  <div class="room"><span class="symbol">🚪</span><strong>Haupteingang & Foyer</strong><p>Breiter Eingang, großer gemeinsamer Raum und freier Zugang zum Flur.</p></div>
+  <div class="room"><span class="symbol">🧑‍💻</span><strong>Anmeldung</strong><p>Links im großen Foyer: gut sichtbarer Tresen, ohne Stühle davor.</p></div>
+  <div class="room"><span class="symbol">🪑</span><strong>Wartebereich</strong><p>Rechts im offenen Foyer, mit Stühlen, Tisch und Pflanzen.</p></div>
   <div class="room"><span class="symbol">🩺</span><strong>Behandlungsraum 1 + 2</strong><p>Zwei kleinere Räume am Hauptflur, noch leer.</p></div>
   <div class="room"><span class="symbol">🔬</span><strong>Diagnoseraum</strong><p>Linke hintere Seite, noch leer.</p></div>
   <div class="room"><span class="symbol">☕</span><strong>Personalraum</strong><p>Rechts hinten, noch leer.</p></div>
   <div class="room"><span class="symbol">🚻</span><strong>Toilette</strong><p>Hinten am Hauptflur, noch ohne Einrichtung.</p></div>
  </div>
- <p class="note">Der neue Hauptflur verbindet Anmeldung, Wartezimmer, zwei Behandlungsräume, Diagnose, Personalraum und Toilette. Die zusätzlichen Räume sind bewusst noch leer. Mit „🏗️ Grundriss bearbeiten“ verschiebst du Räume, wählst Größen oder ziehst eigene Wände, Türen, Fenster und Böden. Beim Empfang bleibt der verschiebbare Tresen erhalten. Alle Bau- und Kamerasteuerungen liegen unterhalb des 3D-Bildes. Dein alter Grundriss bleibt separat als Sicherung gespeichert; Inselreich ist unabhängig.</p>
+ <p class="note">Der große Haupteingang führt zuerst ins offene Foyer mit Anmeldung links und Wartebereich rechts. Erst hinter dem Foyer beginnt der Hauptflur mit zwei Behandlungsräumen, Diagnose, Personalraum und Toilette. Die zusätzlichen Räume sind bewusst noch leer. Mit „🏗️ Grundriss bearbeiten“ verschiebst du Räume, wählst Größen oder ziehst eigene Wände, Türen, Fenster und Böden. Beim Empfang bleibt der verschiebbare Tresen erhalten. Alle Bau- und Kamerasteuerungen liegen unterhalb des 3D-Bildes. Dein alter Grundriss bleibt separat als Sicherung gespeichert; Inselreich ist unabhängig.</p>
 </section>
 </main>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"}}</script>
@@ -638,8 +638,9 @@ function pan(dx,dy){
 /* Reception setup mode: one finger on the left room moves the whole reception
    desk; the other ground still pans. Two fingers retain free zoom and orbit.
    All layout data use a separate save key, never the Inselreich save. */
-const receptionStorageKey='klinik-am-park-anmeldung-v1';
-const deskLimits={minX:-4.98,maxX:-3.12,minZ:1.02,maxZ:2.06};
+const oldReceptionStorageKey='klinik-am-park-anmeldung-v1';
+const receptionStorageKey='klinik-am-park-anmeldung-v2'; // New foyer default; keep old desk save intact.
+const deskLimits={minX:-4.925,maxX:-2.275,minZ:1.185,maxZ:6.135};
 function syncDeskLimits(){
  const rec=roomSpecs.find(r=>r.id==='reception');
  // Keep the entire L-shaped reception counter, overhead sign and queue marks
@@ -753,15 +754,18 @@ function validRoomSpot(id,x,z){
  if(!r||!Number.isFinite(x)||!Number.isFinite(z))return false;
  const halfW=r.w/2,halfD=r.d/2;
  if(x-halfW<-15.5||x+halfW>15.5||z-halfD<-14.5||z+halfD>15.5)return false;
- // Protect the continuous main hallway so new rooms never obstruct the way.
- if(Math.abs(x)<halfW+1.33&&z+halfD>-11.70&&z-halfD<4.52)return false;
+ // Protect both the rear hallway and the common open foyer.
+ if(Math.abs(x)<halfW+1.38&&z+halfD>-12.0&&z-halfD<.28)return false;
+ if(id!=='reception'&&id!=='waiting'&&
+  Math.abs(x)<halfW+7.10&&z+halfD>-.08&&z-halfD<8.36)return false;
  for(const other of roomSpecs){
   if(other.id===id)continue;
   if(Math.abs(x-other.x)<(r.w+other.w)/2+.15 &&
      Math.abs(z-other.z)<(r.d+other.d)/2+.15)return false
  }
  // Keep the fixed entrance open except when it is the reception itself.
- if(id!=='reception' && Math.abs(x)<halfW+1.0 && Math.abs(z-6.2)<halfD+1.6)return false;
+ if(id!=='reception'&&id!=='waiting'&&
+  Math.abs(x)<halfW+1.7&&Math.abs(z-10.2)<halfD+2.3)return false;
  return true
 }
 function moveRoomTo(id,x,z,force=false,relocateContents=true){
@@ -791,13 +795,16 @@ function applyFloorplanFromStorage(){
  try{
   const saved=JSON.parse(localStorage.getItem(floorplanKey)||'null');
   const hasNewLayout=Array.isArray(saved);
-  // Older edits remain untouched in their v1 key. On a fresh v2 visit,
-  // carry over user-created rooms (not the old three-room template).
-  const previous=hasNewLayout?null:JSON.parse(localStorage.getItem(legacyFloorplanKey)||'null');
+  // Older v2/v1 edits stay untouched. A fresh v3 foyer migrates only
+  // custom player-made rooms, not the former three/seven-room templates.
+  const previous=hasNewLayout?null:JSON.parse(
+   localStorage.getItem(legacyFloorplanKey)||
+   localStorage.getItem(originalFloorplanKey)||'null'
+  );
   const raw=hasNewLayout?saved:Array.isArray(previous)
    ?previous.filter(r=>r&&typeof r.id==='string'&&/^extra-[0-9]+$/.test(r.id)):[];
   if(hasNewLayout){
-   // V2 saved initial room locations are authoritative; don't reset them.
+   // V3 saved room locations are authoritative; don't reset them.
    for(const data of raw){
     if(!data||typeof data.id!=='string'||!Number.isFinite(data.x)||!Number.isFinite(data.z))continue;
     if(initialRooms.some(r=>r.id===data.id))moveRoomTo(data.id,data.x,data.z,true,false)
@@ -831,7 +838,7 @@ function applyFloorplanFromStorage(){
    }else roomSpecs.pop()
   }
   extraRoomNumber=3+added;
-  // V2 receives its own complete copy; the legacy v1 save is never changed.
+  // V3 gets a new complete copy; v2 and v1 save data remain untouched.
   if(!hasNewLayout&&added)saveFloorplan()
  }catch(e){console.warn('Grundriss konnte nicht geladen werden',e)}
  syncDeskLimits()
@@ -844,9 +851,10 @@ function showBuilder(){
  for(const element of document.querySelectorAll('[data-room-controls]'))element.hidden=!editingFloorplan||buildCategory!=='rooms';
  document.getElementById('constructionControls').hidden=!editingFloorplan||buildCategory!=='construction';
  const importPrevious=document.getElementById('importOldConstruction');
- const legacyBuild=localStorage.getItem('klinik-am-park-bauteile-v1');
+ const legacyBuild=localStorage.getItem('klinik-am-park-bauteile-v2')||
+  localStorage.getItem('klinik-am-park-bauteile-v1');
  importPrevious.hidden=!editingFloorplan||buildCategory!=='construction'||!legacyBuild||
-  !!localStorage.getItem('klinik-am-park-bauteile-v2');
+  !!localStorage.getItem('klinik-am-park-bauteile-v3');
  gestureHint.textContent=editingFloorplan
   ?(buildCategory==='construction'?'☝️ Bauen · ✌️ Zoomen & Drehen':'☝️ Raum antippen & ziehen · ✌️ Zoomen & Drehen')
   :editingReception?'☝️ Anmeldung verschieben · ✌️ Zoom & Drehen':'☝️ Verschieben · ✌️ Zoomen & Drehen'
@@ -864,8 +872,8 @@ floorplanToggle.onclick=()=>{
  editingFloorplan=!editingFloorplan;
  if(editingFloorplan){
   selectedRoomId=null;
-  focus.set(0,.1,0);
-  distance=Math.max(distance,21);
+  focus.set(0,.1,-1.65);
+  distance=Math.max(distance,28);
   placeCamera();
   document.getElementById('status').textContent='🏗️ Raum antippen und ziehen, oder neuen Raum bauen.';
  }else{selectedRoomId=null;clearConstructionPreview();saveConstruction();saveFloorplan();storeReception()}
@@ -972,8 +980,9 @@ function roomPointerEnd(px,py,state){
 /* Free-form hospital architecture: 1m grid segments plus draggable floor
    rectangles. Doors/windows swap a user-built wall segment. Persistence is
    independent from the camera, furniture and movable room modules. */
-const legacyConstructionKey='klinik-am-park-bauteile-v1';
-const constructionKey='klinik-am-park-bauteile-v2';
+const legacyConstructionKey='klinik-am-park-bauteile-v2';
+const originalConstructionKey='klinik-am-park-bauteile-v1';
+const constructionKey='klinik-am-park-bauteile-v3';
 const constructionLayer=new THREE.Group();constructionLayer.name='Freier-Grundriss';scene.add(constructionLayer);
 const constructionPreview=new THREE.Group();scene.add(constructionPreview);
 const constructionParts=new Map(),constructionFloors=[],constructionUndoStack=[];
@@ -1179,7 +1188,8 @@ restoreConstruction();
 document.getElementById('importOldConstruction').onclick=()=>{
  if(!editingFloorplan||buildCategory!=='construction')return;
  try{
-  const legacy=JSON.parse(localStorage.getItem(legacyConstructionKey)||'null');
+  const legacy=JSON.parse(localStorage.getItem(legacyConstructionKey)||
+   localStorage.getItem(originalConstructionKey)||'null');
   if(!legacy||!Array.isArray(legacy.parts)||!Array.isArray(legacy.floors))return;
   rememberConstruction();
   reconstructConstruction(legacy);
