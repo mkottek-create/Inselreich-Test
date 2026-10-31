@@ -20,7 +20,13 @@ main{max-width:1100px;margin:auto}
 #topLegend{position:absolute;left:12px;top:12px;z-index:2;background:#fffcf5ef;border:1px solid #ffffffaa;padding:10px 12px;border-radius:14px;box-shadow:0 4px 18px #40727723;pointer-events:none;max-width:min(58vw,245px)}
 #topLegend strong{font-size:12px;color:#30615c;display:block}
 #topLegend small{font-size:11px;color:#607e7d;line-height:1.5;display:block;margin-top:4px}
-#gestureHint{position:absolute;bottom:13px;left:50%;transform:translateX(-50%);z-index:2;background:#173e46df;color:#fff;border-radius:999px;padding:10px 14px;font-size:11px;font-weight:750;text-align:center;white-space:normal;pointer-events:none;max-width:95%}
+#gestureHint{position:absolute;bottom:9px;left:50%;transform:translateX(-50%);z-index:2;background:#173e46df;color:#fff;border-radius:999px;padding:8px 12px;font-size:11px;font-weight:750;text-align:center;white-space:normal;pointer-events:none;max-width:95%}
+#cameraBar{position:absolute;left:50%;bottom:48px;transform:translateX(-50%);z-index:4;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:5px;padding:6px;max-width:calc(100% - 18px);border-radius:15px;background:#f6fffaed;box-shadow:0 3px 15px #25565355;border:1px solid #ffffffaf}
+#cameraBar button{min-height:43px;min-width:41px;border:1px solid #aecfca;border-radius:10px;background:#fff;color:#276a6b;font-size:12px;font-weight:800;padding:8px 10px;white-space:nowrap;touch-action:manipulation;cursor:pointer}
+#cameraBar button.active,#cameraBar button[aria-pressed="true"]{background:#246f78;color:#fff;border-color:#246f78}
+#cameraBar button[hidden]{display:none!important}
+#cameraBar button:focus-visible{outline:3px solid #e7ae54;outline-offset:2px}
+@media(max-width:380px){#cameraBar{gap:4px;padding:5px}#cameraBar button{padding:7px 8px;font-size:11px;min-width:37px}}
 #roomInfo{position:absolute;top:12px;right:12px;z-index:2;padding:9px 11px;border-radius:12px;max-width:min(42vw,210px);background:#fffcf2ed;box-shadow:0 4px 14px #1e4d4c19;border:1px solid #fff;pointer-events:none}
 #roomInfo strong{display:block;font-size:12px}
 #roomInfo span{display:block;color:#657e80;font-size:11px;line-height:1.35;margin-top:4px}
@@ -62,7 +68,15 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
 <div id="stage" aria-label="Interaktive dreidimensionale Ansicht des Krankenhauses">
  <div id="topLegend"><strong>🏥 Unser Krankenhaus</strong><small>🚪 Eingang vorne<br>🧑‍💻 Anmeldung links<br>🪑 Wartezimmer rechts<br>🩺 Behandlungsraum hinten</small></div>
  <div id="roomInfo" hidden role="status" aria-live="polite"><strong id="roomTitle"></strong><span id="roomDescription"></span></div>
- <div id="gestureHint">☝️ Verschieben &nbsp;·&nbsp; ✌️ Zoomen & Drehen</div>
+ <div id="cameraBar" role="group" aria-label="Kamerasteuerung">
+  <button id="camBuild" type="button" hidden aria-pressed="false">🛠️ Bauen</button>
+  <button id="camPan" type="button" aria-pressed="true">✋ Schieben</button>
+  <button id="camRotate" type="button" aria-pressed="false">🔄 Drehen</button>
+  <button id="camZoomIn" type="button" title="Heranzoomen" aria-label="Heranzoomen">＋</button>
+  <button id="camZoomOut" type="button" title="Wegzoomen" aria-label="Wegzoomen">－</button>
+  <button id="camReset" type="button" title="Kamera zurücksetzen" aria-label="Ansicht zurücksetzen">⌂</button>
+ </div>
+ <div id="gestureHint">☝️ Schieben · ✌️ Zoomen & Drehen</div>
 </div>
 <div id="status" role="status" aria-live="polite">🏥 Anmeldung ohne Stühle, großes Schild und ein neuer leerer Behandlungsraum.</div>
 <div id="layoutTools" aria-label="Einrichtungsmodus">
@@ -538,7 +552,8 @@ editReceptionBtn.onclick=()=>{
   storeReception();
   document.getElementById('status').textContent='✅ Neue Position der Anmeldung gespeichert.'
  }
- updateReceptionEditor()
+ updateReceptionEditor();
+ setCameraMode(editingReception?'build':'pan')
 };
 rotateReceptionBtn.onclick=()=>{
  if(!editingReception)return;
@@ -550,6 +565,7 @@ finishReceptionBtn.onclick=()=>{
  editingReception=false;
  storeReception();
  updateReceptionEditor();
+ setCameraMode('pan');
  document.getElementById('status').textContent='✅ Anmeldung gespeichert. Du kannst die Karte wieder normal verschieben.'
 };
 updateReceptionEditor();
@@ -662,6 +678,7 @@ function showBuilder(){
 function finishFloorplan(){
  if(!editingFloorplan)return;
  editingFloorplan=false;selectedRoomId=null;clearConstructionPreview();saveConstruction();saveFloorplan();storeReception();showBuilder();
+ setCameraMode('pan');
  document.getElementById('status').textContent='✅ Grundriss gespeichert! Du kannst die Kamera wieder frei bewegen.'
 }
 floorplanToggle.onclick=()=>{
@@ -676,7 +693,8 @@ floorplanToggle.onclick=()=>{
   placeCamera();
   document.getElementById('status').textContent='🏗️ Raum antippen und ziehen, oder neuen Raum bauen.';
  }else{selectedRoomId=null;clearConstructionPreview();saveConstruction();saveFloorplan();storeReception()}
- showBuilder()
+ showBuilder();
+ setCameraMode(editingFloorplan?'build':'pan')
 };
 document.getElementById('roomFinish').onclick=finishFloorplan;
 document.getElementById('constructionDone').onclick=finishFloorplan;
@@ -990,6 +1008,63 @@ if(restoredDeskWorldPosition){
 }
 showBuilder();
 
+// Precise mobile camera control. Pan keeps the world point under the finger;
+// rotation needs its own explicit mode. Two-finger gestures always work.
+let cameraMode='pan';
+const cameraButtons={build:document.getElementById('camBuild'),
+ pan:document.getElementById('camPan'),rotate:document.getElementById('camRotate')};
+function cameraActiveEditor(){return editingFloorplan||editingReception}
+function setCameraMode(mode){
+ cameraMode=mode==='rotate'?'rotate':mode==='build'&&cameraActiveEditor()?'build':'pan';
+ clearConstructionPreview();
+ for(const [name,button] of Object.entries(cameraButtons)){
+  button.classList.toggle('active',cameraMode===name);
+  button.setAttribute('aria-pressed',String(cameraMode===name))
+ }
+ cameraButtons.build.hidden=!cameraActiveEditor();
+ gestureHint.textContent=cameraMode==='rotate'
+  ?'☝️ Links/rechts drehen · Hoch/runter neigen · ✌️ Zoomen'
+  :cameraMode==='build'
+   ?(editingFloorplan?'☝️ Raum/Bauteil bearbeiten · ✌️ Zoomen & Drehen':'☝️ Anmeldung verschieben · ✌️ Zoomen & Drehen')
+   :'☝️ Ansicht schieben · ✌️ Zoomen & Drehen';
+}
+cameraButtons.pan.onclick=()=>setCameraMode('pan');
+cameraButtons.rotate.onclick=()=>setCameraMode('rotate');
+cameraButtons.build.onclick=()=>setCameraMode('build');
+function adjustZoom(ratio,px,py){
+ const before=Number.isFinite(px)&&Number.isFinite(py)?groundHit(px,py):null;
+ distance=clamp(distance*ratio,7,42);
+ placeCamera();
+ if(before){
+  const after=groundHit(px,py);
+  if(after){focus.x=clamp(focus.x+before.x-after.x,-26,26);
+   focus.z=clamp(focus.z+before.z-after.z,-26,26);placeCamera()}
+ }
+ storeCamera()
+}
+document.getElementById('camZoomIn').onclick=()=>adjustZoom(.84);
+document.getElementById('camZoomOut').onclick=()=>adjustZoom(1.19);
+document.getElementById('camReset').onclick=()=>{
+ focus.set(-.25,.1,-.22);orbit=-.42;elevation=1.03;distance=19.4;
+ placeCamera();storeCamera();
+ document.getElementById('status').textContent='🎯 Kamera wieder auf die Übersicht ausgerichtet.'
+};
+function panFinger(oldX,oldY,newX,newY){
+ const before=groundHit(oldX,oldY);
+ const after=groundHit(newX,newY);
+ if(before&&after){
+  focus.x=clamp(focus.x+before.x-after.x,-26,26);
+  focus.z=clamp(focus.z+before.z-after.z,-26,26);
+  placeCamera()
+ }else pan(newX-oldX,newY-oldY)
+}
+function rotateFinger(dx,dy){
+ orbit-=dx*.008;
+ elevation=clamp(elevation+dy*.006,.50,1.43);
+ placeCamera()
+}
+setCameraMode('pan');
+
 function snapshot(touches){
  const a=touches[0],b=touches[1];
  return {midX:(a.clientX+b.clientX)/2,midY:(a.clientY+b.clientY)/2,
@@ -999,11 +1074,16 @@ function snapshot(touches){
 let touchState=null;
 function startTouch(e){
  e.preventDefault();
- if(e.touches.length>=2){clearConstructionPreview();touchState={mode:2,...snapshot(e.touches)}}
- else if(e.touches.length===1){
+ if(e.touches.length>=2){
+  clearConstructionPreview();touchState={mode:2,...snapshot(e.touches)};return
+ }
+ if(e.touches.length===1){
   const t=e.touches[0];
-  touchState=constructionPointerStart(t.clientX,t.clientY)||roomPointerStart(t.clientX,t.clientY)||startDeskDrag(t.clientX,t.clientY)||
-   {mode:1,x:t.clientX,y:t.clientY,startX:t.clientX,startY:t.clientY,moved:false}
+  touchState=(cameraMode==='build'
+   ?constructionPointerStart(t.clientX,t.clientY)||roomPointerStart(t.clientX,t.clientY)||startDeskDrag(t.clientX,t.clientY)
+   :null)||
+   {mode:1,kind:cameraMode==='rotate'?'rotate':'pan',
+    x:t.clientX,y:t.clientY,startX:t.clientX,startY:t.clientY,moved:false}
  }
 }
 function moveTouch(e){
@@ -1013,12 +1093,21 @@ function moveTouch(e){
   if(touchState.mode==='construction')clearConstructionPreview();
   const n=snapshot(e.touches);
   if(touchState.mode===2){
-   pan(n.midX-touchState.midX,n.midY-touchState.midY);
-   const d=Math.atan2(Math.sin(n.angle-touchState.angle),Math.cos(n.angle-touchState.angle));
-   orbit-=d;
-   distance=clamp(distance*touchState.distance/n.distance,8,35);
+   // First calculate the scene point under the old gesture midpoint.
+   const before=groundHit(touchState.midX,touchState.midY);
+   const turn=Math.atan2(Math.sin(n.angle-touchState.angle),Math.cos(n.angle-touchState.angle));
+   if(Math.abs(turn)>.008)orbit-=turn*.85;
+   distance=clamp(distance*touchState.distance/n.distance,7,42);
+   placeCamera();
+   // Re-anchor the same scene point to the new finger midpoint.
+   const after=groundHit(n.midX,n.midY);
+   if(before&&after){
+    focus.x=clamp(focus.x+before.x-after.x,-26,26);
+    focus.z=clamp(focus.z+before.z-after.z,-26,26);
+    placeCamera()
+   }
   }
-  touchState={mode:2,...n};placeCamera();
+  touchState={mode:2,...n};
  }else if(e.touches.length===1){
   const t=e.touches[0];
   if(touchState.mode==='construction'){
@@ -1029,11 +1118,14 @@ function moveTouch(e){
    if(Math.hypot(t.clientX-touchState.startX,t.clientY-touchState.startY)>6)touchState.moved=true;
    if(touchState.moved)moveDeskDrag(t.clientX,t.clientY,touchState)
   }else if(touchState.mode===1){
-   if(Math.hypot(t.clientX-touchState.startX,t.clientY-touchState.startY)>7)touchState.moved=true;
-   pan(t.clientX-touchState.x,t.clientY-touchState.y);
+   if(Math.hypot(t.clientX-touchState.startX,t.clientY-touchState.startY)>5)touchState.moved=true;
+   if(touchState.moved){
+    if(touchState.kind==='rotate')rotateFinger(t.clientX-touchState.x,t.clientY-touchState.y);
+    else panFinger(touchState.x,touchState.y,t.clientX,t.clientY)
+   }
    touchState.x=t.clientX;touchState.y=t.clientY
   }else{
-   touchState={mode:1,x:t.clientX,y:t.clientY,startX:t.clientX,startY:t.clientY,moved:true}
+   touchState={mode:1,kind:'pan',x:t.clientX,y:t.clientY,startX:t.clientX,startY:t.clientY,moved:true}
   }
  }
 }
@@ -1042,7 +1134,7 @@ function endTouch(e){
  if(e.type==='touchcancel'){clearConstructionPreview();touchState=null;storeCamera();return}
  if(e.touches.length>=2){touchState={mode:2,...snapshot(e.touches)};return}
  if(e.touches.length===1){
-  const t=e.touches[0];touchState={mode:1,x:t.clientX,y:t.clientY,startX:t.clientX,startY:t.clientY,moved:true};return
+  const t=e.touches[0];touchState={mode:1,kind:'pan',x:t.clientX,y:t.clientY,startX:t.clientX,startY:t.clientY,moved:true};return
  }
  if(touchState?.mode==='construction'&&e.changedTouches.length===1){
   const t=e.changedTouches[0];
@@ -1056,7 +1148,7 @@ function endTouch(e){
    const t=e.changedTouches[0];placeDeskByTap(t.clientX,t.clientY)
   }
   storeReception()
- }else if(touchState?.mode===1&&!touchState.moved&&e.changedTouches.length===1){
+ }else if(touchState?.mode===1&&!touchState.moved&&cameraMode==='pan'&&e.changedTouches.length===1){
   const t=e.changedTouches[0];inspectRoom(t.clientX,t.clientY)
  }
  touchState=null;storeCamera()
@@ -1069,9 +1161,11 @@ canvas.addEventListener('touchcancel',endTouch,{passive:false});
 let pointer=null;
 canvas.addEventListener('pointerdown',e=>{
  if(e.pointerType==='touch')return;
- pointer=(e.button===0?(constructionPointerStart(e.clientX,e.clientY)||roomPointerStart(e.clientX,e.clientY)||startDeskDrag(e.clientX,e.clientY)):null)||
+ pointer=(e.button===0&&cameraMode==='build'
+  ?constructionPointerStart(e.clientX,e.clientY)||roomPointerStart(e.clientX,e.clientY)||startDeskDrag(e.clientX,e.clientY)
+  :null)||
  {id:e.pointerId,x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,
-          moved:false,rotate:e.button===2};
+  moved:false,kind:e.button===2||cameraMode==='rotate'?'rotate':'pan'};
  pointer.id=e.pointerId;
  canvas.setPointerCapture(e.pointerId);e.preventDefault()
 });
@@ -1082,8 +1176,8 @@ canvas.addEventListener('pointermove',e=>{
  if(pointer.mode==='construction')constructionPointerMove(e.clientX,e.clientY,pointer);
  else if(pointer.mode==='room'||pointer.mode==='roomTap')roomPointerMove(e.clientX,e.clientY,pointer);
  else if(pointer.mode==='desk')moveDeskDrag(e.clientX,e.clientY,pointer);
- else if(pointer.rotate){orbit-=dx*.009;elevation=clamp(elevation+dy*.007,.55,1.28);placeCamera()}
- else pan(dx,dy);
+ else if(pointer.kind==='rotate')rotateFinger(dx,dy);
+ else panFinger(pointer.x,pointer.y,e.clientX,e.clientY);
  pointer.x=e.clientX;pointer.y=e.clientY
 });
 canvas.addEventListener('pointerup',e=>{
@@ -1096,7 +1190,7 @@ canvas.addEventListener('pointerup',e=>{
  }else if(pointer.mode==='desk'){
   if(!pointer.moved)placeDeskByTap(e.clientX,e.clientY);
   storeReception()
- }else if(!pointer.moved)inspectRoom(e.clientX,e.clientY);
+ }else if(!pointer.moved&&cameraMode==='pan')inspectRoom(e.clientX,e.clientY);
  pointer=null;storeCamera()
 });
 canvas.addEventListener('pointercancel',e=>{if(e.pointerType!=='touch'){
@@ -1109,7 +1203,7 @@ canvas.addEventListener('pointercancel',e=>{if(e.pointerType!=='touch'){
  pointer=null;storeCamera()
 }});
 canvas.addEventListener('wheel',e=>{
- e.preventDefault();distance=clamp(distance*Math.exp(e.deltaY*.001),8,35);placeCamera();storeCamera()
+ e.preventDefault();adjustZoom(Math.exp(e.deltaY*.001),e.clientX,e.clientY)
 },{passive:false});
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 function resize(){
