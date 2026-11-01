@@ -907,6 +907,10 @@ const brickLower=mat(0xe8c3a7);
 const wallSkirting=mat(0x98c9be,.85);
 const doorMetal=mat(0x98b0bc,.42,.22);
 const frameHighlight=mat(0xf5fff9,.56);
+const frostedToiletGlass=new THREE.MeshPhysicalMaterial({
+ color:0xbfe9f4,transparent:true,opacity:.78,roughness:.82,metalness:0,
+ side:THREE.DoubleSide,depthWrite:false
+});
 const cutawayCap=mat(0xfffef6,.56);
 const floorSpot=mat(0xfff8e8,.8);
 const plusMark=mat(0xffffff,.72);
@@ -1081,7 +1085,8 @@ function makeRoomShell(r){
   // pale mullions and colorful room-specific edge trim.
   box(.22,.40,span,x,.38,middle,brickLower,group,false);
   box(.23,.15,span,x,1.24,middle,wallWhite,group,false);
-  box(.067,.61,span-.12,x,.91,middle,glass,group,false);
+  box(.067,.61,span-.12,x,.91,middle,
+   r.kind==='toilet'?frostedToiletGlass:glass,group,false);
   for(const z of [middle-halfOpening,middle+halfOpening]){
    box(.23,.70,.075,x,.89,z,accent,group,false);
    box(.10,.54,.043,x,.89,z,frameHighlight,group,false)
@@ -1282,6 +1287,9 @@ function furnishToiletRoom(){
  const soap=mat(0xffc377,.82),pedalBin=mat(0x9baebb,.5,.22);
  const tileDeco=mat(0xd5f4f8,.87),drain=mat(0x688b9f,.43,.27);
 
+ // Pale splash-proof wall tiles on the back side, flush to the wall.
+ for(const y of [.46,.88])for(const x of [-1.20,-.80,-.40,0,.40,.80,1.20])
+  box(.36,.027,.018,x,y,-1.227,y<.6?tileDeco:tileEdge,decor,false);
  // Bathroom tile border and tiny floor drain. Low-poly details are light
  // enough for the iPhone and won't block the center of the corridor doorway.
  for(const x of [-1.40,1.39])
@@ -1319,6 +1327,7 @@ function furnishToiletRoom(){
  cylinder(.17,.19,.30,tx,.35,tz,ceramic,16,decor);
  cylinder(.28,.24,.24,tx,.49,tz+.04,ceramic,18,decor);
  cylinder(.23,.23,.037,tx,.605,tz+.07,paleCeramic,20,decor);
+ cylinder(.13,.13,.012,tx,.632,tz+.07,basinWater,18,decor,false);
  // A visible hole in the toilet seat (rather than a solid disc).
  const seatRing=new THREE.Mesh(
   new THREE.TorusGeometry(.204,.045,8,24),ceramic);
