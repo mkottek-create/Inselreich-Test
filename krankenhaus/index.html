@@ -21,6 +21,23 @@ main{max-width:1100px;margin:auto}
 #topLegend strong{font-size:12px;color:#30615c;display:block}
 #topLegend small{font-size:11px;color:#607e7d;line-height:1.5;display:block;margin-top:4px}
 #gestureHint{position:static;transform:none;max-width:none;background:#e5f2ee;color:#3b6666;padding:5px 12px 8px;font-size:11px;font-weight:700;text-align:center;white-space:normal;pointer-events:none;border-bottom:1px solid #d6e9e5}
+#toggleFly{flex:1 1 100%;background:#397d9b!important;font-size:15px!important}
+#toggleFly.active{background:#c68b38!important}
+#flyControls{position:absolute;inset:0;z-index:7;pointer-events:none;user-select:none;-webkit-user-select:none}
+#flyControls[hidden]{display:none!important}
+#flyControls button{pointer-events:auto;border:2px solid #ffffffb8;background:#235771db;color:#fff;font-weight:900;border-radius:13px;min-height:51px;min-width:48px;font-size:21px;box-shadow:0 3px 12px #0004;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+#flyControls button:active,#flyControls button.pressed{background:#f3b847;color:#193f4f;transform:scale(.97)}
+#flyReturn{position:absolute;top:12px;right:12px;min-height:44px!important;font-size:13px!important;padding:10px 13px;background:#ffdf8bee!important;color:#34525c!important}
+#flyHelp{position:absolute;left:50%;transform:translateX(-50%);bottom:80px;width:max-content;max-width:94%;background:#183f54bb;border-radius:11px;color:#fff;font-size:11px;font-weight:800;text-align:center;padding:7px 10px;pointer-events:none}
+#flyPad{position:absolute;bottom:12px;left:10px;right:10px;display:flex;align-items:flex-end;justify-content:space-between;gap:8px;pointer-events:none}
+#flyDirections{display:grid;grid-template-columns:repeat(4,minmax(43px,55px));gap:5px;pointer-events:none}
+#flyHeight{display:grid;grid-template-columns:repeat(2,minmax(45px,54px));gap:5px;pointer-events:none}
+#flyControls .flySmall{font-size:11px;font-weight:900;line-height:1.2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+#flyControls .flySmall strong{font-size:21px}
+#flyCrosshair{position:absolute;top:50%;left:50%;width:14px;height:14px;margin:-7px;opacity:.58;border:2px solid white;border-radius:50%;box-shadow:0 0 2px #234;pointer-events:none}
+body.fly-active #topLegend,body.fly-active #roomInfo{display:none!important}
+@media(max-width:390px){#flyDirections{grid-template-columns:repeat(4,minmax(39px,49px));gap:4px}#flyHeight{grid-template-columns:repeat(2,minmax(42px,47px));gap:4px}#flyPad{left:7px;right:7px;gap:5px}#flyControls button{min-width:39px;padding:4px}}
+
 #roomInfo{position:absolute;top:12px;right:12px;z-index:2;padding:8px 10px;border-radius:12px;max-width:min(48vw,240px);background:#fffff4f2;box-shadow:0 4px 16px #244e5340;border:1px solid #fff;pointer-events:none}
 #roomInfo strong{display:block;font-size:12px;line-height:1.25;color:#27545d}
 #roomInfo span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:#526f74;font-size:10px;line-height:1.35;margin-top:3px}
@@ -89,10 +106,28 @@ body.furniture-active #stage{height:53dvh;min-height:275px;max-height:520px}
 <div id="stage" aria-label="Interaktive dreidimensionale Ansicht des Krankenhauses">
  <div id="topLegend"><strong>🏥 Klinik am Park</strong><small>🚪 Haupteingang · großes Foyer<br>🧑‍💻 Anmeldung links · 🪑 Warten rechts<br>⬆️ Dahinter der Hauptflur<br>🩺 Behandlung · 🔬 Diagnose · 🚻 WC</small></div>
  <div id="roomInfo" hidden role="status" aria-live="polite"><strong id="roomTitle"></strong><span id="roomDescription"></span></div>
+ <div id="flyControls" hidden aria-label="Klinik-Rundgang steuern">
+  <button id="flyReturn" type="button">↩️ Zur Bauansicht</button>
+  <span id="flyCrosshair" aria-hidden="true"></span>
+  <div id="flyHelp">☝️ Im Bild wischen: umsehen · Pfeile gedrückt halten: fliegen</div>
+  <div id="flyPad">
+   <div id="flyDirections" aria-label="Flugrichtung">
+    <button type="button" data-flymove="left" aria-label="Nach links fliegen">◀</button>
+    <button type="button" data-flymove="forward" aria-label="Vorwärts fliegen">▲</button>
+    <button type="button" data-flymove="backward" aria-label="Rückwärts fliegen">▼</button>
+    <button type="button" data-flymove="right" aria-label="Nach rechts fliegen">▶</button>
+   </div>
+   <div id="flyHeight" aria-label="Flughöhe">
+    <button type="button" data-flymove="up" class="flySmall" aria-label="Höher fliegen"><strong>↑</strong>Höher</button>
+    <button type="button" data-flymove="down" class="flySmall" aria-label="Tiefer fliegen"><strong>↓</strong>Tiefer</button>
+   </div>
+  </div>
+ </div>
 </div>
 <div id="gestureHint">☝️ Karte verschieben · ✌️ Zwei Finger nach links/rechts: Drehen · ✌️ Spreizen: Zoomen</div>
 <div id="status" role="status" aria-live="polite">🏥 Frisch gestalteter Haupteingang: helles Foyer, Anmeldung links, Wartebereich rechts, freier Mittelweg.</div>
 <div id="layoutTools" aria-label="Einrichtungsmodus">
+ <button id="toggleFly" type="button" aria-pressed="false">🚶 Klinik erkunden</button>
  <button id="viewTreatments" type="button">🩺 Beide Behandlungsräume ansehen</button>
  <button id="toggleFurniture" type="button" aria-expanded="false" aria-controls="furniturePanel">🪑 Möbel bauen</button>
  <button id="toggleFloorplan" type="button">🏗️ Grundriss bearbeiten</button>
@@ -1284,6 +1319,41 @@ function inspectRoom(px,py){
 const focus=new THREE.Vector3(0,.1,-1.65);
 let orbit=-.32,elevation=1.19,distance=39.5;
 const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
+// This tour camera is temporary: it never overwrites the saved build view.
+const flyMode={
+ active:false,pos:new THREE.Vector3(0,1.7,10.7),yaw:0,pitch:-.035,
+ input:{forward:false,backward:false,left:false,right:false,up:false,down:false},
+ touch:null,pointer:null,lastFrame:0
+};
+function positionTourCamera(){
+ camera.position.copy(flyMode.pos);
+ const cp=Math.cos(flyMode.pitch);
+ camera.lookAt(flyMode.pos.x+Math.sin(flyMode.yaw)*cp,
+  flyMode.pos.y+Math.sin(flyMode.pitch),
+  flyMode.pos.z-Math.cos(flyMode.yaw)*cp)
+}
+function updateTourLook(dx,dy){
+ flyMode.yaw-=dx*.0056;
+ flyMode.pitch=clamp(flyMode.pitch-dy*.0044,-1.07,1.07);
+ positionTourCamera()
+}
+function moveTour(seconds){
+ if(!flyMode.active)return;
+ const actions=flyMode.input;
+ let f=Number(actions.forward)-Number(actions.backward);
+ let side=Number(actions.right)-Number(actions.left);
+ const length=Math.hypot(f,side);
+ if(length>1){f/=length;side/=length}
+ const speed=3.4*clamp(seconds,0,.12);
+ flyMode.pos.x=clamp(flyMode.pos.x+(Math.sin(flyMode.yaw)*f+Math.cos(flyMode.yaw)*side)*speed,-15,15);
+ flyMode.pos.z=clamp(flyMode.pos.z+(-Math.cos(flyMode.yaw)*f+Math.sin(flyMode.yaw)*side)*speed,-15,14);
+ flyMode.pos.y=clamp(flyMode.pos.y+(Number(actions.up)-Number(actions.down))*speed*.83,.85,4.3);
+ positionTourCamera()
+}
+function releaseTourButtons(){
+ for(const key of Object.keys(flyMode.input))flyMode.input[key]=false;
+ document.querySelectorAll('[data-flymove]').forEach(b=>b.classList.remove('pressed'))
+}
 // View version bump applies the better entrance/reception angle once; no town data is reset.
 const storedKey='klinik-am-park-kamera-v4'; // Preserve the earlier v3 view as a backup.
 try{
@@ -1298,6 +1368,7 @@ function storeCamera(){
  try{localStorage.setItem(storedKey,JSON.stringify({orbit,elevation,distance,focus:[focus.x,focus.z]}))}catch(e){}
 }
 function placeCamera(){
+ if(flyMode.active){positionTourCamera();return}
  camera.position.set(focus.x+Math.sin(orbit)*Math.cos(elevation)*distance,
                      focus.y+Math.sin(elevation)*distance,
                      focus.z+Math.cos(orbit)*Math.cos(elevation)*distance);
@@ -1917,6 +1988,76 @@ const furnitureEditor=setupFurniture({
   if(editingReception){editingReception=false;storeReception();updateReceptionEditor()}
  }
 });
+// Reversible first-person fly-through: the old overhead camera is unchanged.
+const flyToggle=document.getElementById('toggleFly');
+const flyControls=document.getElementById('flyControls');
+function setTourMode(enabled){
+ if(enabled===flyMode.active)return;
+ if(enabled){
+  // End editors cleanly before entering first-person mode, preserving saves.
+  if(editingFloorplan)finishFloorplan();
+  if(editingReception){
+   editingReception=false;storeReception();updateReceptionEditor()
+  }
+  furnitureEditor.close();
+  setCameraMode('pan');
+  flyMode.active=true;
+  flyMode.pos.set(0,1.7,10.7);flyMode.yaw=0;flyMode.pitch=-.035;
+  flyMode.touch=null;flyMode.pointer=null;
+  camera.fov=73;camera.updateProjectionMatrix();
+  document.body.classList.add('fly-active');
+  flyControls.hidden=false;
+  flyToggle.classList.add('active');
+  flyToggle.setAttribute('aria-pressed','true');
+  flyToggle.textContent='↩️ Zur Bauansicht';
+  gestureHint.textContent='🚶 Rundgang: im 3D-Bild umsehen · mit den Pfeilen fliegen · ↑↓ Höhe ändern';
+  document.getElementById('status').textContent='🚶 Du stehst am Haupteingang. Mit ▲ fliegst du hinein und mit einem Finger schaust du dich um.';
+  hideRoomInfo();positionTourCamera()
+ }else{
+  releaseTourButtons();
+  flyMode.active=false;flyMode.touch=null;flyMode.pointer=null;
+  camera.fov=52;camera.updateProjectionMatrix();
+  document.body.classList.remove('fly-active');
+  flyControls.hidden=true;
+  flyToggle.classList.remove('active');
+  flyToggle.setAttribute('aria-pressed','false');
+  flyToggle.textContent='🚶 Klinik erkunden';
+  setCameraMode('pan');placeCamera();
+  document.getElementById('status').textContent='🏥 Zurück zur gewohnten Krankenhausübersicht.'
+ }
+}
+flyToggle.onclick=()=>setTourMode(!flyMode.active);
+document.getElementById('flyReturn').onclick=()=>setTourMode(false);
+document.querySelectorAll('[data-flymove]').forEach(button=>{
+ const direction=button.dataset.flymove;
+ const release=()=>{
+  flyMode.input[direction]=false;button.classList.remove('pressed')
+ };
+ button.addEventListener('pointerdown',e=>{
+  if(!flyMode.active)return;
+  e.preventDefault();e.stopPropagation();
+  flyMode.input[direction]=true;button.classList.add('pressed');
+  button.setPointerCapture?.(e.pointerId);
+  moveTour(.10) // A short tap also takes a visible step.
+ });
+ for(const name of ['pointerup','pointercancel','lostpointercapture','pointerleave'])
+  button.addEventListener(name,release);
+ button.addEventListener('contextmenu',e=>e.preventDefault())
+});
+const tourKeyboard={w:'forward',arrowup:'forward',s:'backward',arrowdown:'backward',
+ a:'left',arrowleft:'left',d:'right',arrowright:'right',r:'up',f:'down'};
+window.addEventListener('keydown',e=>{
+ if(!flyMode.active||e.altKey||e.metaKey||e.ctrlKey)return;
+ if(e.key==='Escape'){setTourMode(false);return}
+ const action=tourKeyboard[e.key.toLowerCase()];
+ if(action){e.preventDefault();flyMode.input[action]=true}
+});
+window.addEventListener('keyup',e=>{
+ const action=tourKeyboard[e.key.toLowerCase()];
+ if(action)flyMode.input[action]=false
+});
+window.addEventListener('blur',releaseTourButtons);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseTourButtons()});
 // Native touch gestures only: one finger pans, two fingers zoom/twist/tilt.
 // In edit modes, one finger edits and two fingers still control the camera.
 let cameraMode='pan';
@@ -1983,6 +2124,12 @@ function beginTwoFingerGesture(touches){
 let touchState=null;
 function startTouch(e){
  e.preventDefault();
+ if(flyMode.active){
+  if(e.touches.length){
+   const t=e.touches[0];flyMode.touch={x:t.clientX,y:t.clientY}
+  }
+  return
+ }
  if(e.touches.length>=2){
   hideRoomInfo();clearConstructionPreview();touchState=beginTwoFingerGesture(e.touches);return
  }
@@ -1997,6 +2144,14 @@ function startTouch(e){
 }
 function moveTouch(e){
  e.preventDefault();
+ if(flyMode.active){
+  const t=e.touches[0];
+  if(t){
+   if(flyMode.touch)updateTourLook(t.clientX-flyMode.touch.x,t.clientY-flyMode.touch.y);
+   flyMode.touch={x:t.clientX,y:t.clientY}
+  }
+  return
+ }
  if(!touchState)return;
  if(e.touches.length>=2){
   const previous=touchState;
@@ -2048,6 +2203,11 @@ function moveTouch(e){
 }
 function endTouch(e){
  e.preventDefault();
+ if(flyMode.active){
+  const t=e.touches[0];
+  flyMode.touch=t?{x:t.clientX,y:t.clientY}:null;
+  return
+ }
  if(e.type==='touchcancel'){
   if(touchState?.mode==='furnitureMove')furnitureEditor.pointerEnd(0,0,touchState);
   clearConstructionPreview();touchState=null;storeCamera();return
@@ -2085,6 +2245,10 @@ canvas.addEventListener('touchcancel',endTouch,{passive:false});
 let pointer=null;
 canvas.addEventListener('pointerdown',e=>{
  if(e.pointerType==='touch')return;
+ if(flyMode.active){
+  flyMode.pointer={id:e.pointerId,x:e.clientX,y:e.clientY};
+  canvas.setPointerCapture(e.pointerId);e.preventDefault();return
+ }
  pointer=(e.button===0&&cameraMode==='build'
   ?furnitureEditor.pointerStart(e.clientX,e.clientY)||constructionPointerStart(e.clientX,e.clientY)||roomPointerStart(e.clientX,e.clientY)||startDeskDrag(e.clientX,e.clientY)
   :null)||
@@ -2094,7 +2258,16 @@ canvas.addEventListener('pointerdown',e=>{
  canvas.setPointerCapture(e.pointerId);e.preventDefault()
 });
 canvas.addEventListener('pointermove',e=>{
- if(e.pointerType==='touch'||!pointer||pointer.id!==e.pointerId)return;
+ if(e.pointerType==='touch')return;
+ if(flyMode.active){
+  const p=flyMode.pointer;
+  if(p&&p.id===e.pointerId){
+   updateTourLook(e.clientX-p.x,e.clientY-p.y);
+   p.x=e.clientX;p.y=e.clientY
+  }
+  return
+ }
+ if(!pointer||pointer.id!==e.pointerId)return;
  const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;
  if(Math.hypot(e.clientX-pointer.startX,e.clientY-pointer.startY)>6)pointer.moved=true;
  if(pointer.mode==='furnitureMove'||pointer.mode==='furniturePlace')
@@ -2107,7 +2280,9 @@ canvas.addEventListener('pointermove',e=>{
  pointer.x=e.clientX;pointer.y=e.clientY
 });
 canvas.addEventListener('pointerup',e=>{
- if(e.pointerType==='touch'||!pointer||pointer.id!==e.pointerId)return;
+ if(e.pointerType==='touch')return;
+ if(flyMode.active){flyMode.pointer=null;return}
+ if(!pointer||pointer.id!==e.pointerId)return;
  if(pointer.mode==='furnitureMove'||pointer.mode==='furniturePlace'){
   furnitureEditor.pointerMove(e.clientX,e.clientY,pointer);
   furnitureEditor.pointerEnd(e.clientX,e.clientY,pointer)
@@ -2123,6 +2298,7 @@ canvas.addEventListener('pointerup',e=>{
  pointer=null;storeCamera()
 });
 canvas.addEventListener('pointercancel',e=>{if(e.pointerType!=='touch'){
+ if(flyMode.active){flyMode.pointer=null;return}
  if(pointer?.mode==='desk')storeReception();
  if(pointer?.mode==='furnitureMove')furnitureEditor.pointerEnd(pointer.x,pointer.y,pointer);
  if(pointer?.mode==='construction')clearConstructionPreview();
@@ -2133,7 +2309,13 @@ canvas.addEventListener('pointercancel',e=>{if(e.pointerType!=='touch'){
  pointer=null;storeCamera()
 }});
 canvas.addEventListener('wheel',e=>{
- e.preventDefault();adjustZoom(Math.exp(e.deltaY*.001),e.clientX,e.clientY)
+ e.preventDefault();
+ if(flyMode.active){
+  flyMode.input[e.deltaY<0?'forward':'backward']=true;
+  moveTour(.12);flyMode.input[e.deltaY<0?'forward':'backward']=false;
+  return
+ }
+ adjustZoom(Math.exp(e.deltaY*.001),e.clientX,e.clientY)
 },{passive:false});
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 function resize(){
@@ -2142,9 +2324,13 @@ function resize(){
 }
 new ResizeObserver(resize).observe(stage);resize();
 let frame=0;
-function animate(){
+let tourLastTime=0;
+function animate(time=0){
  requestAnimationFrame(animate);
- // All architecture is static; redraw camera scenes without expensive dynamic updates.
+ if(flyMode.active){
+  if(tourLastTime)moveTour(Math.min((time-tourLastTime)/1000,.07));
+  tourLastTime=time
+ }else tourLastTime=0;
  renderer.render(scene,camera);frame++
 }
 requestAnimationFrame(animate);
