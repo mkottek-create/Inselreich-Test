@@ -559,7 +559,21 @@ function setupFurniture(ctx){
   }catch(e){console.warn('Möbel konnten nicht geladen werden',e)}
   save()
  }
- restore();menu();selectedButtons();
+
+ // Standard bins are saved as editable furniture and only seeded once.
+ function seedBins(){
+  const key='klinik-am-park-muelleimer-start-v1';
+  try{if(localStorage.getItem(key)==='1')return}catch(e){}
+  const spots=[['reception',-1.95,1.55],['waiting',.95,2.85],['treatment',1.85,-.65],['treatment2',-1.85,-.65]];
+  let added=0;
+  for(const [roomId,x,z] of spots){
+   if(!roomGroups.has(roomId)||[...records.values()].some(r=>r.type==='eimer'&&r.roomId===roomId))continue;
+   if(valid('eimer',roomId,x,z,0)&&create({id:'f-'+(++nextId),type:'eimer',roomId,x,z,turn:0}))added++
+  }
+  if(added)save();
+  try{localStorage.setItem(key,'1')}catch(e){}
+ }
+ restore();seedBins();menu();selectedButtons();
  return {get editing(){return open},close,pointerStart,pointerMove,pointerEnd,removeRoom};
 }
 const stage=document.getElementById('stage');
