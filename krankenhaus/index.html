@@ -1359,9 +1359,10 @@ function furnishToiletRoom(){
  box(.16,.29,.12,1.32,.93,-.91,ceramic,decor);
  box(.10,.045,.075,1.32,1.09,-.91,chrome,decor,false);
  cylinder(.045,.045,.075,1.32,1.14,-.91,soap,12,decor);
- box(.27,.33,.13,1.39,1.10,-.12,cubiclePale,decor);
- box(.23,.065,.05,1.39,.96,-.039,chrome,decor,false);
- box(.15,.05,.08,1.39,.91,-.022,paper,decor,false);
+ // Hand towels sit on the back wall, never over the corridor entrance.
+ box(.27,.33,.13,.19,1.10,-1.15,cubiclePale,decor);
+ box(.23,.065,.05,.19,.96,-1.061,chrome,decor,false);
+ box(.15,.05,.08,.19,.91,-1.045,paper,decor,false);
 
  // Small pedal bin, wall hooks and non-slip turquoise floor mat.
  cylinder(.16,.19,.40,1.02,.40,.79,pedalBin,14,decor);
