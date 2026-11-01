@@ -2001,6 +2001,41 @@ document.getElementById('importOldConstruction').onclick=()=>{
 };
 
 applyFloorplanFromStorage();
+// One-time safe migration of the ORIGINAL 70 cm gaps for returning players.
+// Only relocate untouched original room modules; never override customized
+// locations or drop a player's extra room. Back up the full old layout first.
+function migrateCompactRoomsOnce(){
+ const marker='klinik-am-park-kompakt-v1';
+ try{if(localStorage.getItem(marker)==='1')return}catch(e){}
+ const oldPositions={treatment:-2.13,treatment2:-2.13,
+  diagnostic:-6.13,staff:-6.13,toilet:-10.01};
+ const compactPositions={treatment:-1.40,treatment2:-1.40,
+  diagnostic:-4.70,staff:-4.70,toilet:-7.80};
+ const oldX={treatment:-4.05,treatment2:4.05,
+  diagnostic:-4.05,staff:4.05,toilet:-2.95};
+ let changed=0,backedUp=false;
+ for(const [id,previousZ] of Object.entries(oldPositions)){
+  const room=roomSpecs.find(r=>r.id===id);
+  if(!room||Math.abs(room.z-previousZ)>.22||
+   Math.abs(room.x-oldX[id])>.22)continue;
+  const targetZ=compactPositions[id];
+  // Collision check includes added user-built rooms. Keep custom placement safe.
+  if(!validRoomSpot(id,room.x,targetZ))continue;
+  if(!backedUp){
+   try{
+    const original=localStorage.getItem(floorplanKey);
+    if(original&&!localStorage.getItem('klinik-am-park-grundriss-v3-vor-kompakt'))
+     localStorage.setItem('klinik-am-park-grundriss-v3-vor-kompakt',original)
+   }catch(e){}
+   backedUp=true
+  }
+  moveRoomTo(id,room.x,targetZ,true,false);
+  changed++
+ }
+ if(changed){refreshSharedRoomWalls();saveFloorplan();renderer.shadowMap.needsUpdate=true}
+ try{localStorage.setItem(marker,'1')}catch(e){}
+}
+migrateCompactRoomsOnce();
 // Restore the saved GLOBAL position only after the floorplan has restored the
 // reception room's new bounds. Otherwise old bounds would clamp the desk.
 if(restoredDeskWorldPosition){
