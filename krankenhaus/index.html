@@ -8,14 +8,14 @@
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;min-height:100%;overscroll-behavior:none}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;background:#e9f5f5;color:#244450}
-header{padding:15px 16px 13px;background:#fafffc;border-bottom:1px solid #c9e6e4;display:flex;align-items:center;justify-content:space-between;gap:10px}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;background:#e3f5ed;color:#244450}
+header{padding:15px 16px 13px;background:linear-gradient(120deg,#fffdf5 0%,#e3faf2 65%,#d6efff 100%);border-bottom:3px solid #80c6ad;display:flex;align-items:center;justify-content:space-between;gap:10px}
 .eyebrow{font-weight:850;letter-spacing:.1em;color:#33958b;font-size:10px;text-transform:uppercase}
 h1{font-size:clamp(20px,5vw,27px);line-height:1.1;margin:3px 0 0;font-weight:850;letter-spacing:-.035em}
 .subtitle{font-size:12px;color:#648088;margin:5px 0 0}
-.pill{background:#dff6ec;color:#247c67;font-size:11px;font-weight:800;padding:8px 10px;border:1px solid #bee8d5;border-radius:999px;white-space:nowrap}
+.pill{background:#ffda7e;color:#765122;font-size:11px;font-weight:900;padding:9px 11px;border:2px solid #f8bb55;border-radius:999px;white-space:nowrap;box-shadow:0 3px 0 #df9d43}
 main{max-width:1100px;margin:auto}
-#stage{position:relative;height:72vh;height:72dvh;min-height:390px;max-height:780px;overflow:hidden;background:linear-gradient(#c9e8f1,#e4f3eb);touch-action:none;overscroll-behavior:contain;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+#stage{position:relative;height:72vh;height:72dvh;min-height:390px;max-height:780px;overflow:hidden;background:linear-gradient(#b3e2f4,#e6f9ed);touch-action:none;overscroll-behavior:contain;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 #stage canvas{width:100%;height:100%;display:block;touch-action:none!important;user-select:none;-webkit-user-select:none}
 #topLegend{position:absolute;left:12px;top:12px;z-index:2;background:#fffcf5ef;border:1px solid #ffffffaa;padding:10px 12px;border-radius:14px;box-shadow:0 4px 18px #40727723;pointer-events:none;max-width:min(58vw,245px)}
 #topLegend strong{font-size:12px;color:#30615c;display:block}
@@ -41,7 +41,7 @@ section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
 #roomBuilder #roomFinish{background:#667987}
 #roomBuilder .builderHint{margin:0;color:#406a66;font-size:11px;line-height:1.4}
 #toggleFloorplan.active{background:#c28b37!important}
-.room{background:#fffdf8;border:1px solid #d8e8e6;border-radius:14px;padding:11px 10px;min-height:106px;box-shadow:0 3px 12px #234c4d0b}
+.room{background:#fffdf8;border:2px solid #cee7e0;border-radius:15px;padding:11px 10px;min-height:106px;box-shadow:0 4px 0 #c8ded3,0 7px 18px #234c4d12}
 .room .symbol{font-size:24px;display:block;margin-bottom:6px}
 .room strong{font-size:12px;display:block}
 .room p{font-size:11px;line-height:1.5;margin:5px 0 0;color:#638084}
@@ -578,33 +578,34 @@ function setupFurniture(ctx){
 }
 const stage=document.getElementById('stage');
 const scene=new THREE.Scene();
-scene.background=new THREE.Color(0xc8e0df);
-scene.fog=new THREE.Fog(0xc8e0df,34,82);
+scene.background=new THREE.Color(0xc1e9f2);
+scene.fog=new THREE.Fog(0xc1e9f2,40,94);
 const camera=new THREE.PerspectiveCamera(52,1,.1,130);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,matchMedia('(pointer:coarse)').matches?1.25:1.7));
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.10;
+renderer.toneMappingExposure=1.14;
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.shadowMap.autoUpdate=false;
 renderer.shadowMap.needsUpdate=true;
 stage.insertBefore(renderer.domElement,stage.firstChild);
 // Reduce the previously washed-out mobile look while keeping cheerful colors.
-const hemi=new THREE.HemisphereLight(0xe8fbff,0x8ba2a0,1.6);scene.add(hemi);
-const sun=new THREE.DirectionalLight(0xfff1db,2.45);sun.position.set(-9,17,12);
+const hemi=new THREE.HemisphereLight(0xf4ffff,0x91b7a3,1.52);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xfff4d9,2.55);sun.position.set(-9,18,13);
 sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);
 sun.shadow.camera.left=-22;sun.shadow.camera.right=22;sun.shadow.camera.top=22;sun.shadow.camera.bottom=-22;
 sun.shadow.normalBias=.025;sun.shadow.bias=-.0003;scene.add(sun);
 const mat=(c,roughness=.88,metalness=0)=>new THREE.MeshStandardMaterial({color:c,roughness,metalness});
-const green=mat(0x82ba9d),grassAlt=mat(0x72a98c),concrete=mat(0xd6d6c9),walk=mat(0xe7dfcf);
-const white=mat(0xf7f5eb),wallWhite=mat(0xf2f3ed),wallTrim=mat(0xadc9c8);
-const teal=mat(0x247c81),tealLight=mat(0x88c4c2),deepTeal=mat(0x225f6b);
-const oak=mat(0xb99164),oakDark=mat(0x8d6a49),gold=mat(0xecbf72);
-const chairBlue=mat(0x7da8b4),chairTeal=mat(0x548b91),fabric=mat(0xe5e8e3);
-const leaf=mat(0x3d916e),leaf2=mat(0x65a37a),soil=mat(0x90745c);
-const black=mat(0x34484c),glass=new THREE.MeshPhysicalMaterial({color:0xa5e1ea,transparent:true,opacity:.34,roughness:.18,metalness:.05,side:THREE.DoubleSide,depthWrite:false});
+// Saturated, clean original tycoon palette.
+const green=mat(0x8bcf8a),grassAlt=mat(0x74be7c),concrete=mat(0xd9d2c6),walk=mat(0xf4deab);
+const white=mat(0xfffaf0),wallWhite=mat(0xfff6e8),wallTrim=mat(0x86c9c9);
+const teal=mat(0x168e97),tealLight=mat(0x6ad4c9),deepTeal=mat(0x136b80);
+const oak=mat(0xcba06d),oakDark=mat(0x936442),gold=mat(0xffc858);
+const chairBlue=mat(0x72b8dc),chairTeal=mat(0x49b6aa),fabric=mat(0xfff1dc);
+const leaf=mat(0x349a5e),leaf2=mat(0x6cc977),soil=mat(0x987257);
+const black=mat(0x344a5c),glass=new THREE.MeshPhysicalMaterial({color:0x9ae9f6,transparent:true,opacity:.42,roughness:.13,metalness:.05,side:THREE.DoubleSide,depthWrite:false});
 const screenMat=new THREE.MeshStandardMaterial({color:0x96ced1,emissive:0x346c76,emissiveIntensity:.45,roughness:.3});
 const group=new THREE.Group();scene.add(group);
 function box(w,h,d,x,y,z,m,parent=group,cast=true){
@@ -622,34 +623,46 @@ function cylinder(rt,rb,h,x,y,z,m,segments=12,parent=group){
 function groundRect(w,d,x,z,m,y=.09){
  return box(w,.07,d,x,y,z,m,group,false)
 }
-function tileTexture(background,line,freckles=false){
+function tileTexture(background,line,freckles=false,accent=null){
  const c=document.createElement('canvas');c.width=c.height=128;
  const cx=c.getContext('2d');cx.fillStyle=background;cx.fillRect(0,0,128,128);
- cx.strokeStyle=line;cx.lineWidth=3;cx.strokeRect(0,0,128,128);
- if(freckles){for(let i=0;i<26;i++){const px=(i*59+19)%126,pz=(i*47+31)%126;cx.fillStyle=i%2?'#b9c1b9':'#e8e9df';cx.fillRect(px,pz,3,3)}}
- const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=THREE.SRGBColorSpace;return t
+ // Pastel checker tiles read clearly in the angled 3D isometric view.
+ if(accent){cx.fillStyle=accent;cx.fillRect(0,0,64,64);cx.fillRect(64,64,64,64)}
+ cx.strokeStyle=line;cx.lineWidth=3;
+ for(const at of [0,64,127]){
+  cx.beginPath();cx.moveTo(at,0);cx.lineTo(at,128);cx.stroke();
+  cx.beginPath();cx.moveTo(0,at);cx.lineTo(128,at);cx.stroke()
+ }
+ cx.fillStyle='rgba(255,255,255,.24)';
+ for(const [x,y] of [[7,7],[71,71]])cx.fillRect(x,y,8,8);
+ if(freckles)for(let i=0;i<18;i++){
+  const px=(i*59+19)%122,pz=(i*47+31)%122;
+  cx.fillStyle=i%2?'#e5d7bf':'#ffffff';cx.fillRect(px,pz,2,2)
+ }
+ const t=new THREE.CanvasTexture(c);
+ t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=THREE.SRGBColorSpace;return t
 }
-const tileBase=tileTexture('#f2ecdc','#dfd8c9',true);
-const tileWaiting=tileTexture('#d7e8e9','#c1dadd',false);
-const tileEntry=tileTexture('#eae1d2','#c9c4ba',true);
-const tileTreatment=tileTexture('#dce8e3','#c3d7d1',false);
-const tileDiagnostic=tileTexture('#e9dff3','#d9c8e9',false);
-const tileStaff=tileTexture('#f2e6d3','#e5d2b7',false);
-const tileToilet=tileTexture('#d9edf5','#b5d9e8',false);
+const tileBase=tileTexture('#fff0d8','#dec8a9',true,'#ffe5c4');
+const tileWaiting=tileTexture('#d5f4f5','#b2dadd',false,'#b5e6ed');
+const tileEntry=tileTexture('#fff2d9','#dfc6a2',true,'#ffe4c3');
+const tileTreatment=tileTexture('#d4f5dd','#afdbbd',false,'#b8eccf');
+const tileDiagnostic=tileTexture('#ecdefc','#cfb5ec',false,'#e0d0f7');
+const tileStaff=tileTexture('#ffe7ca','#e4c39e',false,'#ffd6aa');
+const tileToilet=tileTexture('#d9f0fc','#b0d7ee',false,'#b9e0f8');
 function corridorTexture(){
  const canvas=document.createElement('canvas');canvas.width=canvas.height=128;
  const context=canvas.getContext('2d');
  for(let x=0;x<2;x++)for(let z=0;z<2;z++){
-  context.fillStyle=(x+z)%2?'#dee9df':'#f1f5ee';
+  context.fillStyle=(x+z)%2?'#ceede0':'#f6f9ef';
   context.fillRect(x*64,z*64,64,64);
-  context.strokeStyle='#bbcfc4';context.lineWidth=2;context.strokeRect(x*64,z*64,64,64)
+  context.strokeStyle='#a7d9cc';context.lineWidth=2;context.strokeRect(x*64,z*64,64,64)
  }
  const t=new THREE.CanvasTexture(canvas);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=THREE.SRGBColorSpace;
  return t
 }
 const tileHall=corridorTexture();
 function tiled(w,d,x,z,base){
- const t=base.clone();t.needsUpdate=true;t.repeat.set(w/.75,d/.75);
+ const t=base.clone();t.needsUpdate=true;t.repeat.set(w/1.14,d/1.14);
  const o=new THREE.Mesh(new THREE.PlaneGeometry(w,d),new THREE.MeshStandardMaterial({map:t,roughness:1}));
  o.rotation.x=-Math.PI/2;o.position.set(x,.151,z);o.receiveShadow=true;group.add(o);return o
 }
@@ -753,9 +766,14 @@ const roomGroups=new Map();
 const roomColors={reception:tileBase,waiting:tileWaiting,treatment:tileTreatment,
  diagnostic:tileDiagnostic,staff:tileStaff,toilet:tileToilet,
  lab:tileDiagnostic,patient:tileTreatment,empty:tileBase};
-const trimTint={reception:mat(0x4bab91),waiting:mat(0x57adbc),treatment:mat(0x64bba1),
- diagnostic:mat(0xa28ec3),staff:mat(0xd4a86e),toilet:mat(0x69b4d5)};
-const brickLower=mat(0xc0957c);
+const trimTint={reception:mat(0x38baa7),waiting:mat(0x42bde0),
+ treatment:mat(0x52c889),patient:mat(0x52c889),
+ diagnostic:mat(0xb58be2),lab:mat(0xb58be2),
+ staff:mat(0xf1ae60),toilet:mat(0x62bbef),empty:mat(0x8dc8cb)};
+const brickLower=mat(0xe8c3a7);
+const cutawayCap=mat(0xfffef6,.56);
+const floorSpot=mat(0xfff8e8,.8);
+const plusMark=mat(0xffffff,.72);
 let extraRoomNumber=3;
 let nextRoomId=0;
 // A common foyer, not two small rooms: the outer walls are shared and the
@@ -785,7 +803,7 @@ wallX(-7.04,-1.48,.12,1.02);
 wallX(1.48,7.04,.12,1.02);
 for(const x of [-1.48,1.48])box(.09,1.40,.10,x,.88,.12,teal);
 box(3.02,.11,.18,0,1.63,.12,tealLight);
-const foyerAccent=mat(0x64b69b);
+const foyerAccent=mat(0x54bfa2);
 for(const x of [-6.82,6.82])box(.09,.020,7.8,x,.189,4.19,foyerAccent,group,false);
 for(const z of [.50,7.83])box(13.6,.018,.08,0,.188,z,foyerAccent,group,false);
 // Foyer refresh: light stone tiles and slim mint inlays visually guide visitors
@@ -815,7 +833,7 @@ const foyerWalk=new THREE.Mesh(new THREE.PlaneGeometry(3.18,7.9),
  new THREE.MeshStandardMaterial({map:foyerWalkMap,roughness:.97,side:THREE.DoubleSide}));
 foyerWalk.rotation.x=-Math.PI/2;foyerWalk.position.set(0,.163,4.15);
 foyerWalk.receiveShadow=true;group.add(foyerWalk);
-const foyerInlay=mat(0x76b9a9,.75);
+const foyerInlay=mat(0x47c0a6,.75);
 for(const x of [-1.54,1.54])
  box(.045,.012,7.66,x,.174,4.15,foyerInlay,group,false);
 for(const z of [1.02,7.35])
@@ -943,13 +961,13 @@ for(const r of roomSpecs)makeRoomShell(r);
 // The room shell, side doors and custom room positions stay unchanged.
 // All furnishings are children of their movable room, so relocating the room
 // in the existing floorplan mode also relocates the furniture automatically.
-const treatmentCotFrame=mat(0x568f93,.58,.18);
-const treatmentCotMattress=mat(0xe8f6f3,.85);
-const treatmentPillow=mat(0xfffaf0,.96);
-const treatmentCabinet=mat(0xe7eeea,.78);
-const treatmentAccent=mat(0x398f94,.65);
-const treatmentBlanket=mat(0x92c8c5,.94);
-const treatmentSteel=mat(0x839da3,.45,.35);
+const treatmentCotFrame=mat(0x3997a7,.58,.12);
+const treatmentCotMattress=mat(0xedfcf8,.82);
+const treatmentPillow=mat(0xfffbf0,.96);
+const treatmentCabinet=mat(0xf3faf2,.78);
+const treatmentAccent=mat(0x32bca3,.65);
+const treatmentBlanket=mat(0x72d1c4,.94);
+const treatmentSteel=mat(0x91aab5,.45,.24);
 const treatmentScreen=new THREE.MeshStandardMaterial({
  color:0xa8e9e4,emissive:0x267a86,emissiveIntensity:.50,roughness:.35
 });
@@ -1071,7 +1089,7 @@ plane(2.55,.42,4.07,1.37,.28,new THREE.MeshBasicMaterial({
 const receptionDecorStart=group.children.length;
 // A subtle translucent color wash keeps the individual floor tiles visible.
 const receptionFloor=new THREE.MeshStandardMaterial({
- color:0xe6f3f0,transparent:true,opacity:.16,roughness:1,depthWrite:false
+ color:0xc7f2e3,transparent:true,opacity:.19,roughness:1,depthWrite:false
 });
 const receptionRoom=roomSpecs.find(r=>r.id==='reception');
 box(receptionRoom.w-.34,.018,receptionRoom.d-.34,
@@ -1083,8 +1101,8 @@ for(const z of [receptionRoom.z-.95,receptionRoom.z+.98])
 const deskStartIndex=group.children.length;
 const deskOriginalX=-1.40,deskOriginalZ=2.02;
 // Entrance-facing L-shaped desk, movable freely within the left room.
-const deskFront=mat(0x197982),deskPanel=mat(0x2d9295),trimBrass=mat(0xe5bd75,.56,.22),
-      creamCounter=mat(0xf9f4e8,.33);
+const deskFront=mat(0x168b9b),deskPanel=mat(0x36b8b7),trimBrass=mat(0xffc45c,.56,.15),
+      creamCounter=mat(0xfff9e8,.33);
 box(3.35,.72,.72,-1.40,.60,2.02,deskFront);
 box(3.48,.12,.87,-1.40,1.01,2.02,creamCounter);
 box(.62,.71,1.22,-2.80,.60,1.65,deskFront);
