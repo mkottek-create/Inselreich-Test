@@ -2012,7 +2012,8 @@ function moveTouch(e){
    // Two fingers together left/right: rotate the building instantly.
    // Twisting the fingers also rotates; up/down tilts the camera.
    // A clear pinch zooms without accidental sideways rotation.
-   const zooming=Math.abs(pinch)>Math.max(1.7,Math.hypot(dx,dy)*.9);
+   const twistMotion=Math.abs(twist)*previous.distance*.5;
+   const zooming=Math.abs(pinch)>Math.max(1.7,Math.hypot(dx,dy)*.9,twistMotion*.85);
    if(zooming){
     distance=clamp(distance*previous.distance/n.distance,7,42);
    }else{
