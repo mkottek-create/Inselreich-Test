@@ -713,11 +713,20 @@ function lobbyChair(x,z,angle=0,m=chairBlue){
 }
 function visitor(x,z,shirt=teal,scale=1,angle=0){
  const g=new THREE.Group();g.position.set(x,.18,z);g.rotation.y=angle;g.scale.setScalar(scale);group.add(g);
- for(const side of [-1,1])box(.09,.28,.1,.12*side,.24,0,black,g);
- cylinder(.23,.26,.41,0,.61,0,shirt,10,g);
- cylinder(.16,.16,.23,0,.96,0,mat(0xe7b98c),12,g);
- sphere(.18,0,1.12,-.015,mat(0x55423b),g);
- for(const side of [-1,1])box(.08,.35,.085,.3*side,.65,0,shirt,g);
+ const skin=mat(0xf2c49e),shoes=mat(0x475572),hair=mat(0x6b4b42);
+ // Friendly toy-like visitors, with faces and bright chunky clothes.
+ for(const side of [-1,1]){
+  box(.12,.30,.14,.12*side,.23,0,black,g);
+  box(.18,.09,.23,.12*side,.092,.075,shoes,g);
+  box(.105,.32,.115,.30*side,.64,0,shirt,g);
+  sphere(.095,.30*side,.45,.02,skin,g)
+ }
+ cylinder(.24,.26,.43,0,.60,0,shirt,10,g);
+ sphere(.24,0,1.01,0,skin,g);
+ sphere(.18,0,1.18,-.045,hair,g);
+ box(.09,.13,.018,-.12,.69,.246,white,g,false);
+ for(const eye of [-.085,.085])sphere(.026,eye,1.04,.220,black,g);
+ sphere(.032,0,.94,.227,mat(0xd47e79),g);
  return g
 }
 function lightPost(x,z){
@@ -746,6 +755,16 @@ for(const x of [-4.9,-3.7,4.5,5.5]){
  }
 }
 lightPost(-1.6,10.35);lightPost(1.6,10.35);
+// Cartoon park frontage: flower borders, friendly hedges and bright path trim.
+const flowerPink=mat(0xf87da6),flowerYellow=mat(0xffd468),flowerBlue=mat(0x80b6ff);
+for(const x of [-6.55,-5.95,5.95,6.55])for(const z of [9.28,10.00,10.72]){
+ cylinder(.026,.031,.23,x,.26,z,leaf,6);
+ const bloom=((Math.round(x*10+z*10)%3)+3)%3;
+ sphere(.095,x,.40,z,[flowerPink,flowerYellow,flowerBlue][bloom])
+}
+for(const [x,z] of [[-5.55,10.7],[5.55,10.7],[-6.0,7.95],[6.0,7.95]])
+ for(const dx of [-.24,0,.24])sphere(.24,x+dx,.42,z,leaf2);
+for(const z of [11.25,11.82])box(2.35,.018,.055,0,.167,z,gold,group,false);
 // Layout v3: a generously proportioned open foyer, left registration and
 // right waiting zone, feeding a narrower hallway behind them.
 const legacyFloorplanKey='klinik-am-park-grundriss-v2';
@@ -877,13 +896,18 @@ function makeRoomShell(r){
   if(x2-x1<.10)return;
   wallX(x1,x2,z,h,wallWhite);
   box(x2-x1,.30,.19,(x1+x2)/2,.32,z,brickLower,group,false);
-  box(x2-x1,.055,.225,(x1+x2)/2,.51,z,accent,group,false)
+  box(x2-x1,.065,.245,(x1+x2)/2,.51,z,accent,group,false);
+  // Miniature cutaway walls: bright cap above the room's distinct accent band.
+  box(x2-x1,.062,.255,(x1+x2)/2,.18+h+.026,z,cutawayCap,group,false);
+  box(x2-x1,.034,.205,(x1+x2)/2,.17+h+.061,z,accent,group,false)
  }
  function wallVertical(x,z1,z2,h){
   if(z2-z1<.10)return;
   wallZ(x,z1,z2,h,wallWhite);
   box(.19,.30,z2-z1,x,.32,(z1+z2)/2,brickLower,group,false);
-  box(.225,.055,z2-z1,x,.51,(z1+z2)/2,accent,group,false)
+  box(.245,.065,z2-z1,x,.51,(z1+z2)/2,accent,group,false);
+  box(.265,.062,z2-z1,x,.18+h+.026,(z1+z2)/2,cutawayCap,group,false);
+  box(.205,.034,z2-z1,x,.17+h+.061,(z1+z2)/2,accent,group,false)
  }
  wallHorizontal(left,right,back,1.24);
  const side=r.doorSide||'front';
@@ -932,11 +956,25 @@ function makeRoomShell(r){
  // (The room walls face the central corridor through their doorways.)
  const windowX=side==='right'?left:right;
  // See wallWithWindow() above; the glass is not a sticker on a solid wall.
- // Department signage hangs over back wall in the 3D world.
- const sign=new THREE.Mesh(new THREE.PlaneGeometry(Math.min(r.w-1.0,2.72),.40),
-  new THREE.MeshBasicMaterial({map:labelTexture(r.name.replace(/^\S+\s/,''),'#174e56','#fffef2',42),
-   transparent:true,side:THREE.DoubleSide,depthWrite:false}));
- sign.position.set(r.x,1.62,back+.32);group.add(sign);
+ // Bold in-world room signs and tiny pictograms make the departments easier
+ // to read from the 3D isometric view. All follow their movable room groups.
+ const cornerX=left+.52,cornerZ=back+.58;
+ if(['treatment','patient','toilet'].includes(r.kind)){
+  box(.13,.012,.36,cornerX,.199,cornerZ,plusMark,group,false);
+  box(.36,.012,.13,cornerX,.200,cornerZ,plusMark,group,false)
+ }else if(['diagnostic','lab'].includes(r.kind)){
+  const mark=new THREE.Mesh(new THREE.RingGeometry(.12,.19,20),
+   new THREE.MeshBasicMaterial({color:0xffffff,side:THREE.DoubleSide}));
+  mark.rotation.x=-Math.PI/2;mark.position.set(cornerX,.201,cornerZ);group.add(mark)
+ }else box(.27,.012,.27,cornerX,.200,cornerZ,floorSpot,group,false);
+ const signW=Math.min(r.w-1,2.70);
+ box(signW+.16,.48,.065,r.x,1.61,back+.25,accent,group,false);
+ const sign=new THREE.Mesh(new THREE.PlaneGeometry(signW,.35),
+  new THREE.MeshBasicMaterial({
+   map:labelTexture(r.name.replace(/^\S+\s/,''),'#174e56','#fffef3',44),
+   transparent:true,side:THREE.DoubleSide,depthWrite:false
+  }));
+ sign.position.set(r.x,1.62,back+.294);group.add(sign);
  const root=new THREE.Group();root.name='room-'+r.id;
  for(const part of group.children.slice(begin)){
   group.remove(part);part.position.x-=r.x;part.position.z-=r.z;root.add(part)
@@ -1059,6 +1097,18 @@ const entranceGlow=new THREE.MeshStandardMaterial({
 box(3.53,.035,.06,0,2.29,9.43,entranceBrass,group,false);
 for(const x of [-1.2,0,1.2])
  box(.36,.024,.25,x,2.122,8.92,entranceGlow,group,false);
+// A readable clinic logo at the top of the entrance canopy.
+const canopyLogo=new THREE.Mesh(new THREE.PlaneGeometry(2.82,.37),
+ new THREE.MeshBasicMaterial({
+  map:labelTexture('KLINIK AM PARK','#145a6c','#fff9dd',54),
+  transparent:true,side:THREE.DoubleSide,depthWrite:false
+ }));
+canopyLogo.position.set(0,2.53,9.47);group.add(canopyLogo);
+for(const x of [-1.77,1.77]){
+ box(.23,.23,.07,x,2.48,9.45,teal,group,false);
+ box(.055,.18,.081,x,2.48,9.50,white,group,false);
+ box(.18,.055,.081,x,2.48,9.50,white,group,false)
+}
 // The slim welcome mat sits on the ground, not in the walkable 3D space.
 box(2.56,.014,.56,0,.185,9.08,mat(0x639b99),group,false);
 for(const x of [-2.35,2.35]){
