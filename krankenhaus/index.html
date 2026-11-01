@@ -1838,24 +1838,48 @@ function clearConstructionPreview(){
 function constructionPiece(p){
  const root=new THREE.Group();root.name='gebaut-'+p.kind;root.position.set(p.x,0,p.z);
  const w=p.dir==='x'?1.02:.15,d=p.dir==='z'?1.02:.15;
+ const longW=p.dir==='x'?1.03:.23,longD=p.dir==='z'?1.03:.23;
  if(p.kind==='wall'){
   box(w,1.45,d,0,.895,0,wallWhite,root);
-  box(p.dir==='x'?1.02:.21,.06,p.dir==='z'?1.02:.21,0,1.65,0,wallTrim,root,false)
+  box(longW,.08,longD,0,1.66,0,cutawayCap,root,false);
+  box(w,.29,d,0,.33,0,brickLower,root,false);
+  box(longW,.045,longD,0,.51,0,tealLight,root,false);
+  box(longW,.085,longD,0,.24,0,wallSkirting,root,false);
+  box(longW,.025,longD,0,1.714,0,wallTrim,root,false)
  }else if(p.kind==='door'){
-  for(const sign of [-1,1])
-   box(p.dir==='x'?.11:.15,1.49,p.dir==='z'?.11:.15,
-    p.dir==='x'?sign*.47:0,.915,p.dir==='z'?sign*.47:0,deepTeal,root);
-  box(p.dir==='x'?1.03:.18,.24,p.dir==='z'?1.03:.18,0,1.55,0,wallWhite,root);
-  box(p.dir==='x'?.72:.045,1.2,p.dir==='z'?.72:.045,0,.77,0,glass,root,false);
-  box(p.dir==='x'?.065:.09,.1,p.dir==='z'?.09:.065,
-   p.dir==='x'?.22:0,.89,p.dir==='z'?.22:0,gold,root,false)
+  // Clear center opening with colored jambs and an optional glass leaf.
+  for(const side of [-1,1]){
+   const x=p.dir==='x'?side*.47:0,z=p.dir==='z'?side*.47:0;
+   box(p.dir==='x'?.12:.17,1.46,p.dir==='z'?.12:.17,
+    x,.91,z,teal,root);
+   box(p.dir==='x'?.065:.18,1.25,p.dir==='z'?.065:.18,
+    x,.83,z,frameHighlight,root,false)
+  }
+  box(longW,.19,longD,0,1.61,0,tealLight,root);
+  box(longW,.055,longD,0,1.735,0,cutawayCap,root,false);
+  const pane=new THREE.Group();pane.rotation.y=-.28;root.add(pane);
+  box(p.dir==='x'?.78:.043,1.13,p.dir==='z'?.78:.043,
+    0,.77,0,glass,pane,false);
+  for(const side of [-1,1])box(p.dir==='x'?.055:.056,1.17,p.dir==='z'?.055:.056,
+   p.dir==='x'?side*.39:0,.77,p.dir==='z'?side*.39:0,teal,pane,false);
+  box(p.dir==='x'?.81:.08,.055,p.dir==='z'?.81:.08,
+   0,.45,0,tealLight,pane,false);
+  box(.09,.12,.09,p.dir==='x'?.26:.09,.87,p.dir==='z'?.09:.26,gold,pane,false);
+  box(longW,.035,longD,0,.18,0,cutawayCap,root,false)
  }else if(p.kind==='window'){
-  box(w,.59,d,0,.465,0,wallWhite,root);
-  box(w,.2,d,0,1.55,0,wallWhite,root);
-  for(const y of [.79,1.4])
-   box(p.dir==='x'?1.03:.21,.085,p.dir==='z'?1.03:.21,0,y,0,deepTeal,root,false);
-  box(p.dir==='x'?.88:.04,.52,p.dir==='z'?.88:.04,0,1.1,0,glass,root,false);
-  box(p.dir==='x'?.06:.09,.58,p.dir==='z'?.06:.09,0,1.1,0,deepTeal,root,false)
+  box(w,.58,d,0,.46,0,wallWhite,root);
+  box(w,.19,d,0,1.55,0,wallWhite,root);
+  box(longW,.07,longD,0,.79,0,tealLight,root,false);
+  box(longW,.07,longD,0,1.42,0,tealLight,root,false);
+  box(p.dir==='x'?.90:.054,.56,p.dir==='z'?.90:.054,
+   0,1.11,0,glass,root,false);
+  box(p.dir==='x'?.066:.09,.63,p.dir==='z'?.066:.09,
+   0,1.11,0,frameHighlight,root,false);
+  box(p.dir==='x'?.92:.12,.045,p.dir==='z'?.92:.12,
+   0,1.11,0,frameHighlight,root,false);
+  box(longW,.07,longD,0,.65,0,cutawayCap,root,false);
+  box(longW,.08,longD,0,1.68,0,cutawayCap,root,false);
+  box(longW,.045,longD,0,.29,0,wallSkirting,root,false)
  }
  constructionLayer.add(root);return root
 }
