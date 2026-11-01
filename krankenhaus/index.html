@@ -232,108 +232,185 @@ function setupFurniture(ctx){
  const remove=document.getElementById('furnitureDelete');
  const undo=document.getElementById('furnitureUndo');
  const material={
-  frame:mat(0x4b858a,.65),steel:mat(0x80979d,.48,.3),
-  pale:mat(0xf0f4ef,.84),fabric:mat(0x7eafb9,.9),dark:mat(0x365a65),
-  blanket:mat(0x9acbc5,.9),brown:mat(0xc79b6a,.83)
+  frame:mat(0x26969b,.63),steel:mat(0x8ca8b8,.46,.22),
+  pale:mat(0xfff9ec,.81),fabric:mat(0x63b9c9,.87),
+  dark:mat(0x294e66),blanket:mat(0x8fe2c4,.91),
+  brown:mat(0xd8ad78,.81),mint:mat(0x4bc1a9,.73),
+  coral:mat(0xf39a90,.84),lemon:mat(0xffd176,.79),
+  blue:mat(0x69b4de,.74),rubber:mat(0x3a5261,.9),
+  porcelain:mat(0xe1f7f5,.43),navy:mat(0x254e70,.73),
+  indicator:mat(0x69dc7c,.47),line:mat(0xfffefa,.79),
+  lamp:new THREE.MeshStandardMaterial({color:0xfff1c5,emissive:0xffd67f,emissiveIntensity:.42})
  };
  const selectionMaterial=new THREE.MeshBasicMaterial({
   color:0xffbd50,side:THREE.DoubleSide,transparent:true,opacity:.95,depthWrite:false
  });
  const status=(v)=>{hint.textContent=v;display.textContent=v};
  function model(type,root){
+  // Chunky pastel miniatures, designed to stay legible on an iPhone.
   const b=(w,h,d,x,y,z,m)=>box(w,h,d,x,y,z,m,root,false);
   const c=(rt,rb,h,x,y,z,m)=>cylinder(rt,rb,h,x,y,z,m,12,root);
   const ball=(r,x,y,z,m)=>sphere(r,x,y,z,m,root);
-  const legs=(w,d,h)=>{for(const x of [-w/2,w/2])for(const z of [-d/2,d/2])
-   b(.055,h-.18,.055,x,(h+.18)/2,z,material.steel)};
+  const legs=(w,d,h)=>{
+   for(const x of [-w/2,w/2])for(const z of [-d/2,d/2])
+    b(.067,h-.18,.067,x,(h+.18)/2,z,material.steel)
+  };
   switch(type){
-   case 'stuhl': case 'bank': case 'sofa':{
-    const w=type==='stuhl'?.49:type==='bank'?1.25:1.33,d=type==='sofa'?.57:.43;
-    legs(w-.12,d-.10,.48);
-    b(w,.14,d,0,.48,0,material.fabric);
-    b(w,.48,.11,0,.69,-d/2,material.fabric);
-    if(type==='sofa')for(const x of [-w/2+.07,w/2-.07])
-     b(.14,.38,d,x,.62,0,material.frame);
+   case 'stuhl':case 'bank':case 'sofa':{
+    const single=type==='stuhl',long=type==='sofa';
+    const w=single?.49:type==='bank'?1.25:1.33,d=long?.58:.46;
+    legs(w-.12,d-.1,.49);
+    b(w,.11,d,0,.46,0,material.frame);
+    b(w-.06,.11,d-.06,0,.54,.02,material.fabric);
+    b(w,.49,.11,0,.73,-d/2,material.frame);
+    b(w-.09,.32,.085,0,.75,-d/2+.01,material.fabric);
+    if(long)for(const x of [-w/2+.055,w/2-.055]){
+     b(.14,.42,d,x,.68,0,material.frame);
+     b(.13,.08,.32,x,.89,.015,material.pale)
+    }
+    if(single){
+     b(.24,.034,.035,0,.71,-d/2+.069,material.line);
+     for(const x of [-.17,.17])b(.06,.055,.065,x,.43,d*.25,material.steel)
+    }
     break
    }
-   case 'tisch': b(.94,.10,.69,0,.75,0,oak);legs(.77,.52,.71);break;
+   case 'tisch':
+    b(.96,.13,.72,0,.74,0,material.brown);legs(.77,.53,.68);
+    b(.92,.025,.68,0,.818,0,material.pale);
+    b(.78,.045,.055,0,.70,.34,material.frame);
+    break;
    case 'tresen':
     b(1.77,.79,.74,0,.59,0,material.frame);
-    b(1.88,.12,.88,0,1.03,0,material.pale);
-    for(const x of [-.50,.50])b(.53,.40,.025,x,.61,.386,tealLight);
-    b(.23,.19,.03,0,.65,.40,white);
-    b(.07,.17,.04,0,.65,.425,teal);b(.16,.07,.04,0,.65,.425,teal);break;
+    b(1.90,.12,.88,0,1.03,0,material.pale);
+    for(const x of [-.50,.50]){
+     b(.55,.42,.03,x,.60,.392,material.mint);
+     b(.48,.055,.04,x,.80,.419,material.line)
+    }
+    b(.23,.21,.035,0,.65,.419,material.line);
+    b(.07,.18,.043,0,.65,.452,material.coral);
+    b(.18,.068,.043,0,.65,.452,material.coral);
+    b(.78,.04,.06,0,.315,.41,material.lemon);
+    b(.40,.03,.17,-.36,1.11,-.1,material.blue);
+    break;
    case 'computer':
-    b(.63,.08,.48,0,.69,0,oak);legs(.49,.35,.65);
-    b(.50,.37,.07,0,1.04,-.12,material.dark);
-    b(.42,.29,.03,0,1.04,-.077,screenMat);
-    b(.32,.023,.13,0,.76,.15,material.pale);break;
+    b(.63,.08,.48,0,.69,0,material.brown);legs(.49,.35,.65);
+    b(.52,.40,.086,0,1.04,-.13,material.dark);
+    b(.44,.30,.027,0,1.055,-.076,screenMat);
+    b(.29,.023,.12,0,.77,.13,material.pale);
+    b(.035,.025,.025,0,1.26,-.07,material.line);
+    b(.12,.025,.10,.21,.765,.16,material.steel);
+    break;
    case 'wasser':
-    b(.42,.68,.42,0,.56,0,material.pale);
-    b(.37,.26,.35,0,1.02,0,material.frame);
+    b(.42,.70,.42,0,.56,0,material.pale);
+    b(.37,.25,.35,0,1.03,0,material.frame);
     c(.16,.17,.34,0,1.30,0,glass);
-    b(.11,.075,.12,0,.91,.23,material.dark);break;
-   case 'liege': case 'bett':{
+    c(.155,.155,.055,0,1.49,0,material.blue);
+    for(const x of [-.10,.10])b(.07,.065,.055,x,.985,.235,x<0?material.blue:material.coral);
+    b(.20,.04,.12,0,.82,.25,material.steel);
+    break;
+   case 'liege':case 'bett':{
     const big=type==='bett',w=big?1.03:.88,d=big?1.82:1.63;
     legs(w-.16,d-.18,.66);
-    b(w,.15,d,0,.67,0,material.frame);
-    b(w-.08,.10,d-.10,0,.80,0,material.pale);
-    b(w-.11,.022,d*.45,0,.864,d*.20,material.blanket);
-    b(w-.16,.10,.33,0,.91,-d*.32,white);
-    b(w,.31,.065,0,.96,-d/2,material.frame);
-    if(big)for(const x of [-w/2,w/2])
-     b(.055,.18,d-.1,x,.89,0,material.steel);
+    b(w,.17,d,0,.66,0,material.frame);
+    b(w-.08,.12,d-.11,0,.79,0,material.pale);
+    b(w-.12,.035,d*.43,0,.865,d*.19,material.blanket);
+    b(w-.16,.11,.34,0,.92,-d*.32,material.line);
+    b(w,.34,.07,0,.98,-d/2,material.frame);
+    b(w-.11,.07,.033,0,1.065,-d/2+.038,material.line);
+    if(big){
+     for(const x of [-w/2,w/2]){
+      b(.065,.20,d-.28,x,.91,0,material.steel);
+      b(.048,.055,d-.33,x,1.01,0,material.mint)
+     }
+     b(w,.20,.065,0,.88,d/2,material.frame)
+    }else{
+     b(.15,.028,.23,.28,.888,.12,material.lemon)
+    }
     break
    }
    case 'monitor':
     b(.55,.10,.52,0,.23,0,material.steel);
-    b(.065,.87,.065,0,.72,0,material.steel);
-    b(.56,.45,.12,0,1.24,0,material.dark);
-    b(.46,.34,.025,0,1.25,.071,screenMat);break;
+    b(.075,.90,.075,0,.72,0,material.steel);
+    b(.58,.46,.12,0,1.24,0,material.dark);
+    b(.48,.35,.028,0,1.25,.072,screenMat);
+    b(.34,.025,.03,0,1.23,.10,material.line);
+    b(.09,.023,.033,-.12,1.30,.10,material.indicator);
+    b(.09,.023,.033,.14,1.18,.10,material.lemon);
+    break;
    case 'wagen':
     for(const x of [-.26,.26])for(const z of [-.18,.18]){
-     b(.045,.70,.045,x,.55,z,material.steel);ball(.06,x,.20,z,black)
+     b(.048,.68,.048,x,.55,z,material.steel);
+     ball(.068,x,.20,z,material.rubber)
     }
-    for(const y of [.47,.84])b(.68,.06,.55,0,y,0,material.pale);
-    b(.22,.11,.14,-.12,.94,0,tealLight);
-    c(.07,.07,.13,.19,.96,.03,material.frame);break;
+    for(const y of [.47,.84]){
+     b(.68,.07,.55,0,y,0,material.pale);
+     b(.70,.045,.034,0,y+.047,.25,material.frame)
+    }
+    b(.23,.11,.15,-.13,.95,.02,material.mint);
+    c(.070,.080,.16,.17,.97,.04,material.blue);
+    b(.06,.11,.07,.30,.98,-.07,material.coral);
+    b(.09,.035,.40,-.31,.96,0,material.steel);
+    break;
    case 'schrank':
-    b(.89,1.44,.48,0,.90,0,material.pale);
-    b(.91,.055,.50,0,1.64,0,material.frame);
-    b(.05,1.25,.03,0,.93,.248,material.frame);
-    for(const x of [-.21,.21])b(.045,.18,.03,x,.85,.269,material.steel);
-    b(.74,.10,.027,0,1.38,.253,tealLight);break;
+    b(.90,1.44,.48,0,.90,0,material.pale);
+    b(.94,.07,.54,0,1.65,0,material.frame);
+    b(.05,1.26,.035,0,.93,.26,material.frame);
+    for(const x of [-.22,.22]){
+     b(.05,.22,.034,x,.88,.28,material.steel);
+     b(.34,.045,.03,x,1.39,.27,material.mint)
+    }
+    b(.38,.30,.029,0,1.21,.275,material.blue);
+    b(.08,.22,.033,0,1.21,.295,material.line);
+    b(.21,.075,.035,0,1.21,.30,material.line);
+    break;
    case 'becken':
-    b(.77,.63,.42,0,.55,0,material.pale);
-    b(.80,.10,.50,0,.91,.03,white);
-    b(.49,.018,.27,0,.97,.05,material.frame);
-    c(.04,.04,.23,0,1.07,-.08,material.steel);
-    b(.19,.04,.07,0,1.21,-.02,material.steel);break;
+    b(.77,.63,.42,0,.54,0,material.pale);
+    b(.81,.11,.50,0,.90,.03,material.porcelain);
+    b(.53,.025,.29,0,.959,.06,material.blue);
+    c(.035,.035,.25,0,1.08,-.08,material.steel);
+    b(.20,.04,.065,0,1.22,-.02,material.steel);
+    for(const x of [-.12,.12])ball(.045,x,.993,.13,x<0?material.blue:material.coral);
+    break;
    case 'spender':
-    b(.26,.64,.28,0,.53,0,material.steel);
-    b(.28,.28,.24,0,1.01,0,material.pale);
-    b(.20,.045,.09,0,1.18,.15,material.frame);
-    b(.16,.10,.14,0,1.26,0,tealLight);break;
+    b(.28,.64,.27,0,.53,0,material.steel);
+    b(.28,.30,.24,0,1.03,0,material.pale);
+    b(.21,.10,.044,0,1.05,.145,material.mint);
+    b(.11,.055,.07,0,1.23,0,material.steel);
+    b(.23,.035,.12,0,1.28,0,material.blue);
+    break;
    case 'pflanze':
-    c(.24,.19,.34,0,.38,0,soil);
-    c(.27,.27,.04,0,.56,0,oakDark);
-    for(let i=0;i<6;i++){const a=i*Math.PI/3;
-     ball(.22,Math.cos(a)*.17,.82,Math.sin(a)*.17,i%2?leaf:leaf2)}
-    ball(.24,0,1.03,0,leaf);break;
+    c(.24,.19,.34,0,.39,0,material.brown);
+    c(.26,.26,.055,0,.56,0,material.frame);
+    for(let i=0;i<6;i++){
+     const a=i*Math.PI/3;
+     ball(.23,Math.cos(a)*.17,.81,Math.sin(a)*.17,i%2?leaf:leaf2)
+    }
+    ball(.25,0,1.03,0,leaf);
+    ball(.11,.12,1.03,.12,material.mint);
+    break;
    case 'lampe':
-    c(.21,.21,.065,0,.24,0,material.steel);
-    c(.055,.06,1.28,0,.89,0,material.steel);
-    c(.29,.17,.28,0,1.64,0,gold);
-    ball(.13,0,1.50,0,material.pale);break;
+    c(.22,.22,.065,0,.24,0,material.steel);
+    c(.060,.065,1.28,0,.89,0,material.steel);
+    c(.30,.17,.28,0,1.64,0,material.lemon);
+    ball(.14,0,1.51,0,material.lamp);
+    c(.13,.13,.05,0,1.80,0,material.frame);
+    break;
    case 'eimer':
     c(.19,.22,.50,0,.43,0,material.steel);
-    c(.24,.24,.045,0,.70,0,material.dark);break;
+    c(.20,.20,.055,0,.67,0,material.frame);
+    c(.245,.245,.05,0,.715,0,material.dark);
+    b(.19,.045,.10,0,.225,.24,material.steel);
+    b(.10,.022,.08,0,.245,.29,material.lemon);
+    break;
    case 'schild':
-    b(.06,1.20,.06,0,.73,0,material.steel);
-    b(.88,.47,.13,0,1.36,0,tealLight);
-    b(.77,.34,.025,0,1.36,.080,material.pale);
-    b(.46,.05,.035,0,1.43,.106,material.frame);
-    b(.61,.04,.035,0,1.28,.106,material.frame);break;
+    b(.065,1.20,.065,0,.74,0,material.steel);
+    b(.88,.49,.13,0,1.36,0,material.frame);
+    b(.79,.37,.028,0,1.36,.080,material.pale);
+    b(.10,.24,.035,-.23,1.39,.105,material.coral);
+    b(.27,.085,.035,-.23,1.39,.107,material.coral);
+    for(const y of [1.43,1.29])
+     b(.28,.047,.035,.18,y,.106,material.blue);
+    break;
   }
  }
  const snapshot=()=>Array.from(records.values(),x=>({
