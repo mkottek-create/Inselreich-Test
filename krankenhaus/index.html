@@ -802,11 +802,11 @@ const originalInitialRoomIds=['reception','waiting','treatment'];
 const initialRooms=[
  {id:'reception',name:'🧑‍💻 Anmeldung',kind:'reception',x:-4.35,z:4.10,w:5.30,d:7.55,doorSide:'none',doorOffset:0},
  {id:'waiting',name:'🪑 Wartebereich',kind:'waiting',x:4.35,z:4.10,w:5.30,d:7.55,doorSide:'none',doorOffset:0},
- {id:'treatment',name:'🩺 Behandlungsraum 1',kind:'treatment',x:-4.05,z:-2.13,w:5.30,d:3.05,doorSide:'right',doorOffset:0},
- {id:'treatment2',name:'🩺 Behandlungsraum 2',kind:'treatment',x:4.05,z:-2.13,w:5.30,d:3.05,doorSide:'left',doorOffset:0},
- {id:'diagnostic',name:'🔬 Diagnoseraum',kind:'diagnostic',x:-4.05,z:-6.13,w:5.30,d:3.58,doorSide:'right',doorOffset:0},
- {id:'staff',name:'☕ Personalraum',kind:'staff',x:4.05,z:-6.13,w:5.30,d:3.58,doorSide:'left',doorOffset:0},
- {id:'toilet',name:'🚻 Toilette',kind:'toilet',x:-2.95,z:-10.01,w:3.10,d:2.65,doorSide:'right',doorOffset:0}
+ {id:'treatment',name:'🩺 Behandlungsraum 1',kind:'treatment',x:-4.05,z:-1.40,w:5.30,d:3.05,doorSide:'right',doorOffset:0},
+ {id:'treatment2',name:'🩺 Behandlungsraum 2',kind:'treatment',x:4.05,z:-1.40,w:5.30,d:3.05,doorSide:'left',doorOffset:0},
+ {id:'diagnostic',name:'🔬 Diagnoseraum',kind:'diagnostic',x:-4.05,z:-4.70,w:5.30,d:3.58,doorSide:'right',doorOffset:0},
+ {id:'staff',name:'☕ Personalraum',kind:'staff',x:4.05,z:-4.70,w:5.30,d:3.58,doorSide:'left',doorOffset:0},
+ {id:'toilet',name:'🚻 Toilette',kind:'toilet',x:-2.95,z:-7.80,w:3.10,d:2.65,doorSide:'right',doorOffset:0}
 ];
 const roomSpecs=initialRooms.map(r=>({...r}));
 const roomGroups=new Map();
@@ -885,14 +885,19 @@ for(const x of [-1.54,1.54])
  box(.045,.012,7.66,x,.174,4.15,foyerInlay,group,false);
 for(const z of [1.02,7.35])
  box(2.98,.012,.045,0,.174,z,foyerInlay,group,false);
-// The narrower main hall starts behind the foyer and continues into the clinic.
-groundRect(2.86,12.25,0,-5.87,mat(0xd7d7ca),.082);
-const corridorMap=tileHall.clone();corridorMap.needsUpdate=true;corridorMap.repeat.set(2.78/.85,12.18/.85);
-const hall=new THREE.Mesh(new THREE.PlaneGeometry(2.78,12.18),
+// Compact clinic: a single continuous corridor with rooms on BOTH sides.
+const hallCenterZ=-4.52,hallLength=9.28;
+groundRect(2.86,hallLength,0,hallCenterZ,mat(0xd7d7ca),.082);
+const corridorMap=tileHall.clone();corridorMap.needsUpdate=true;
+corridorMap.repeat.set(2.78/.85,(hallLength-.08)/.85);
+const hall=new THREE.Mesh(new THREE.PlaneGeometry(2.78,hallLength-.08),
  new THREE.MeshStandardMaterial({map:corridorMap,roughness:1,side:THREE.DoubleSide}));
-hall.rotation.x=-Math.PI/2;hall.position.set(0,.157,-5.87);hall.receiveShadow=true;group.add(hall);
-for(const x of [-1.36,1.36])box(.085,.015,12.17,x,.193,-5.87,tealLight,group,false);
-for(const z of [-.80,-4.45,-8.40])box(2.43,.014,.065,0,.194,z,foyerAccent,group,false);
+hall.rotation.x=-Math.PI/2;hall.position.set(0,.157,hallCenterZ);
+hall.receiveShadow=true;group.add(hall);
+for(const x of [-1.36,1.36])
+ box(.085,.015,hallLength-.10,x,.193,hallCenterZ,tealLight,group,false);
+for(const z of [-1.43,-2.93,-4.70,-6.49])
+ box(2.43,.014,.055,0,.194,z,foyerAccent,group,false);
 
 function makeRoomShell(r){
  const begin=group.children.length;
@@ -916,7 +921,8 @@ function makeRoomShell(r){
  const left=r.x-r.w/2,right=r.x+r.w/2,back=r.z-r.d/2,front=r.z+r.d/2;
  const accent=trimTint[r.kind]||tealLight;
  groundRect(r.w+.14,r.d+.14,r.x,r.z,concrete,.064);
- tiled(r.w-.13,r.d-.13,r.x,r.z,roomColors[r.kind]||tileTreatment);
+ // Floor tiles meet the wall edge without a false empty border.
+ tiled(r.w-.015,r.d-.015,r.x,r.z,roomColors[r.kind]||tileTreatment);
  // Colored room edging, masonry bases and roof-free cutaway walls.
  for(const x of [left+.13,right-.13])box(.09,.016,r.d-.26,x,.185,r.z,accent,group,false);
  for(const z of [back+.13,front-.13])box(r.w-.26,.016,.09,r.x,.185,z,accent,group,false);
@@ -972,6 +978,8 @@ function makeRoomShell(r){
  else wallWithWindow(left);
  if(side==='right')framedDoorOnSide(right);
  else wallWithWindow(right);
+ // Remember the front wall parts so a touching room can share one wall.
+ const frontWallStart=group.children.length;
  if(side==='front'){
   const door=clampRoomDoor(left,right,r.x+off);
   wallHorizontal(left,door-.65,front,.72);
@@ -979,6 +987,7 @@ function makeRoomShell(r){
   for(const x of [door-.64,door+.64])box(.09,1.30,.14,x,.825,front,accent);
   box(1.37,.12,.18,door,1.53,front,accent)
  }else wallHorizontal(left,right,front,.68);
+ const frontWallPieces=group.children.slice(frontWallStart);
  // Window strip on outward wall: gives every room recognizable cutaway windows.
  // Windows use actual gaps in the exterior walls, with tinted glass.
  // (The room walls face the central corridor through their doorways.)
@@ -1004,6 +1013,7 @@ function makeRoomShell(r){
   }));
  sign.position.set(r.x,1.62,back+.294);group.add(sign);
  const root=new THREE.Group();root.name='room-'+r.id;
+ root.userData.frontWallPieces=frontWallPieces;
  for(const part of group.children.slice(begin)){
   group.remove(part);part.position.x-=r.x;part.position.z-=r.z;root.add(part)
  }
@@ -1022,6 +1032,28 @@ function takeDecorIntoRoom(id,start){
  }
 }
 for(const r of roomSpecs)makeRoomShell(r);
+// Hide overlapping front walls only when rooms really share an edge.
+// If the player moves a room, its own wall appears again.
+function refreshSharedRoomWalls(){
+ for(const room of roomSpecs){
+  const root=roomGroups.get(room.id);
+  if(!root?.userData.frontWallPieces)continue;
+  const front=room.z+room.d/2;
+  const left=room.x-room.w/2,right=room.x+room.w/2;
+  const touchesFoyer=Math.abs(front-.12)<.09&&left>=-7.07&&right<=7.07&&
+   (right<=-1.37||left>=1.37);
+  const touchesRoom=roomSpecs.some(other=>{
+   if(other.id===room.id)return false;
+   const back=other.z-other.d/2;
+   const overlap=Math.min(right,other.x+other.w/2)-
+    Math.max(left,other.x-other.w/2);
+   return Math.abs(front-back)<.09&&overlap>=room.w-.09
+  });
+  for(const part of root.userData.frontWallPieces)
+   part.visible=!(touchesFoyer||touchesRoom)
+ }
+}
+refreshSharedRoomWalls();
 
 // Treatment rooms 1 + 2: matching furnished rooms on the same corridor row.
 // The room shell, side doors and custom room positions stay unchanged.
@@ -1491,20 +1523,22 @@ const floorplanToggle=document.getElementById('toggleFloorplan');
 const roomBuilder=document.getElementById('roomBuilder');
 const roomDelete=document.getElementById('roomDelete');
 const roomHint=document.getElementById('builderHint');
-function snapRoom(v){return Math.round(v*2)/2}
+function snapRoom(v){return Math.round(v*10)/10}
 function validRoomSpot(id,x,z){
  const r=roomSpecs.find(r=>r.id===id);
  if(!r||!Number.isFinite(x)||!Number.isFinite(z))return false;
  const halfW=r.w/2,halfD=r.d/2;
  if(x-halfW<-15.5||x+halfW>15.5||z-halfD<-14.5||z+halfD>15.5)return false;
  // Protect both the rear hallway and the common open foyer.
- if(Math.abs(x)<halfW+1.38&&z+halfD>-12.0&&z-halfD<.28)return false;
+ if(Math.abs(x)<halfW+1.34&&z+halfD>-9.16&&z-halfD<.14)return false;
+ // An adjacent room may touch the foyer's back wall.
  if(id!=='reception'&&id!=='waiting'&&
-  Math.abs(x)<halfW+7.10&&z+halfD>-.08&&z-halfD<8.36)return false;
+  Math.abs(x)<halfW+7.10&&z+halfD>.17&&z-halfD<8.36)return false;
  for(const other of roomSpecs){
   if(other.id===id)continue;
-  if(Math.abs(x-other.x)<(r.w+other.w)/2+.15 &&
-     Math.abs(z-other.z)<(r.d+other.d)/2+.15)return false
+  // No mandatory gaps: shared edges are valid, actual overlap is not.
+  if(Math.abs(x-other.x)<(r.w+other.w)/2-.04 &&
+     Math.abs(z-other.z)<(r.d+other.d)/2-.04)return false
  }
  // Keep the fixed entrance open except when it is the reception itself.
  if(id!=='reception'&&id!=='waiting'&&
@@ -1514,7 +1548,7 @@ function validRoomSpot(id,x,z){
 function moveRoomTo(id,x,z,force=false,relocateContents=true){
  const r=roomSpecs.find(r=>r.id===id),root=roomGroups.get(id);
  if(!r||!root)return false;
- x=snapRoom(x);z=snapRoom(z);
+ if(!force){x=snapRoom(x);z=snapRoom(z)}
  if(!force&&!validRoomSpot(id,x,z))return false;
  const dx=x-r.x,dz=z-r.z;
  r.x=x;r.z=z;root.position.set(x,0,z);
@@ -1523,6 +1557,7 @@ function moveRoomTo(id,x,z,force=false,relocateContents=true){
   receptionDesk.position.x+=dx;receptionDesk.position.z+=dz;
   syncDeskLimits()
  }
+ refreshSharedRoomWalls();
  renderer.shadowMap.needsUpdate=true;
  return true
 }
@@ -1576,7 +1611,7 @@ function applyFloorplanFromStorage(){
     }
    }
    if(validRoomSpot(r.id,r.x,r.z)){
-    makeRoomShell(r);added++;
+    makeRoomShell(r);refreshSharedRoomWalls();added++;
     nextRoomId=Math.max(nextRoomId,Number(r.id.slice(6)))
    }else roomSpecs.pop()
   }
@@ -1665,7 +1700,7 @@ document.getElementById('roomAdd').onclick=()=>{
  }
  if(!where){roomSpecs.pop();roomHint.textContent='Kein Platz: zuerst Raum verschieben oder kleinere Größe wählen.';return}
  r.x=where.x;r.z=where.z;
- makeRoomShell(r);extraRoomNumber++;
+ makeRoomShell(r);refreshSharedRoomWalls();extraRoomNumber++;
  selectedRoomId=id;saveFloorplan();showBuilder();
  focus.set(r.x,.1,r.z);placeCamera();
  renderer.shadowMap.needsUpdate=true;
@@ -1679,6 +1714,7 @@ roomDelete.onclick=()=>{
  const r=roomSpecs[i],root=roomGroups.get(r.id);
  if(root){group.remove(root);root.traverse(part=>{part.geometry?.dispose?.()})}
  roomSpecs.splice(i,1);roomGroups.delete(r.id);selectedRoomId=null;
+ refreshSharedRoomWalls();
  furnitureEditor.removeRoom(r.id);
  renderer.shadowMap.needsUpdate=true;saveFloorplan();showBuilder();
  document.getElementById('status').textContent='🗑 '+r.name+' entfernt.'
