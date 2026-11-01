@@ -25,17 +25,17 @@ main{max-width:1100px;margin:auto}
 #toggleFly.active{background:#c68b38!important}
 #flyControls{position:absolute;inset:0;z-index:7;pointer-events:none;user-select:none;-webkit-user-select:none}
 #flyControls[hidden]{display:none!important}
-#flyControls button{pointer-events:auto;border:2px solid #ffffffb8;background:#235771db;color:#fff;font-weight:900;border-radius:13px;min-height:51px;min-width:48px;font-size:21px;box-shadow:0 3px 12px #0004;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
-#flyControls button:active,#flyControls button.pressed{background:#f3b847;color:#193f4f;transform:scale(.97)}
-#flyReturn{position:absolute;top:12px;right:12px;min-height:44px!important;font-size:13px!important;padding:10px 13px;background:#ffdf8bee!important;color:#34525c!important}
-#flyHelp{position:absolute;left:50%;transform:translateX(-50%);bottom:80px;width:max-content;max-width:94%;background:#183f54bb;border-radius:11px;color:#fff;font-size:11px;font-weight:800;text-align:center;padding:7px 10px;pointer-events:none}
-#flyPad{position:absolute;bottom:12px;left:10px;right:10px;display:flex;align-items:flex-end;justify-content:space-between;gap:8px;pointer-events:none}
-#flyDirections{display:grid;grid-template-columns:repeat(4,minmax(43px,55px));gap:5px;pointer-events:none}
-#flyHeight{display:grid;grid-template-columns:repeat(2,minmax(45px,54px));gap:5px;pointer-events:none}
-#flyControls .flySmall{font-size:11px;font-weight:900;line-height:1.2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
-#flyControls .flySmall strong{font-size:21px}
-#flyCrosshair{position:absolute;top:50%;left:50%;width:14px;height:14px;margin:-7px;opacity:.58;border:2px solid white;border-radius:50%;box-shadow:0 0 2px #234;pointer-events:none}
+#flyReturn{position:absolute;top:12px;right:12px;pointer-events:auto;min-height:44px;padding:10px 13px;border:2px solid #fff9cb;border-radius:13px;background:#ffdf8bee;color:#34525c;font-size:13px;font-weight:900;box-shadow:0 3px 12px #0003;touch-action:manipulation}
+#flyHelp{position:absolute;left:50%;transform:translateX(-50%);bottom:155px;width:max-content;max-width:95%;background:#183f54bb;border-radius:10px;color:#fff;font-size:11px;font-weight:800;text-align:center;padding:7px 10px;pointer-events:none}
+#flyJoystick{position:absolute;left:20px;bottom:17px;width:128px;height:128px;border-radius:50%;border:3px solid #fff9;background:#2357718a;box-shadow:0 4px 17px #12364e77,inset 0 0 0 13px #fff2;pointer-events:auto;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;cursor:grab}
+#flyJoystick:active{background:#246b879e;cursor:grabbing}
+#flyStick{position:absolute;left:50%;top:50%;width:62px;height:62px;margin-left:-31px;margin-top:-31px;border-radius:50%;background:#ffdb81ef;border:3px solid #fff9f1;box-shadow:0 3px 11px #11384e70;transform:translate(0px,0px);pointer-events:none}
+#flyJoystickLabel{position:absolute;left:0;right:0;bottom:-15px;text-align:center;font-size:10px;font-weight:900;color:#fff;text-shadow:0 2px 4px #183f54;pointer-events:none}
+#flyLookHint{position:absolute;right:16px;bottom:54px;font-size:12px;font-weight:900;color:#fff;text-shadow:0 2px 5px #183e54bb;pointer-events:none;text-align:right}
+#flyCrosshair{position:absolute;top:50%;left:50%;width:14px;height:14px;margin:-7px;opacity:.60;border:2px solid white;border-radius:50%;box-shadow:0 0 2px #234;pointer-events:none}
 body.fly-active #topLegend,body.fly-active #roomInfo{display:none!important}
+@media(max-width:390px){#flyJoystick{left:13px;bottom:18px;width:112px;height:112px}#flyHelp{bottom:145px;font-size:10px}#flyLookHint{right:10px;bottom:34px;font-size:11px}}
+#roomInfo{display:none!important}
 @media(max-width:390px){#flyDirections{grid-template-columns:repeat(4,minmax(39px,49px));gap:4px}#flyHeight{grid-template-columns:repeat(2,minmax(42px,47px));gap:4px}#flyPad{left:7px;right:7px;gap:5px}#flyControls button{min-width:39px;padding:4px}}
 
 #roomInfo{position:absolute;top:12px;right:12px;z-index:2;padding:8px 10px;border-radius:12px;max-width:min(48vw,240px);background:#fffff4f2;box-shadow:0 4px 16px #244e5340;border:1px solid #fff;pointer-events:none}
@@ -106,22 +106,15 @@ body.furniture-active #stage{height:53dvh;min-height:275px;max-height:520px}
 <div id="stage" aria-label="Interaktive dreidimensionale Ansicht des Krankenhauses">
  <div id="topLegend"><strong>🏥 Klinik am Park</strong><small>🚪 Haupteingang · großes Foyer<br>🧑‍💻 Anmeldung links · 🪑 Warten rechts<br>⬆️ Dahinter der Hauptflur<br>🩺 Behandlung · 🔬 Diagnose · 🚻 WC</small></div>
  <div id="roomInfo" hidden role="status" aria-live="polite"><strong id="roomTitle"></strong><span id="roomDescription"></span></div>
- <div id="flyControls" hidden aria-label="Klinik-Rundgang steuern">
+ <div id="flyControls" hidden aria-label="Klinik-Rundgang mit Touch steuern">
   <button id="flyReturn" type="button">↩️ Zur Bauansicht</button>
   <span id="flyCrosshair" aria-hidden="true"></span>
-  <div id="flyHelp">☝️ Im Bild wischen: umsehen · Pfeile gedrückt halten: fliegen</div>
-  <div id="flyPad">
-   <div id="flyDirections" aria-label="Flugrichtung">
-    <button type="button" data-flymove="left" aria-label="Nach links fliegen">◀</button>
-    <button type="button" data-flymove="forward" aria-label="Vorwärts fliegen">▲</button>
-    <button type="button" data-flymove="backward" aria-label="Rückwärts fliegen">▼</button>
-    <button type="button" data-flymove="right" aria-label="Nach rechts fliegen">▶</button>
-   </div>
-   <div id="flyHeight" aria-label="Flughöhe">
-    <button type="button" data-flymove="up" class="flySmall" aria-label="Höher fliegen"><strong>↑</strong>Höher</button>
-    <button type="button" data-flymove="down" class="flySmall" aria-label="Tiefer fliegen"><strong>↓</strong>Tiefer</button>
-   </div>
+  <div id="flyHelp">🕹️ Links bewegen · ☝️ Rechts umschauen · ✌️ Zwei Finger hoch/runter: Flughöhe</div>
+  <div id="flyJoystick" role="group" aria-label="Touch-Joystick zum Bewegen">
+   <span id="flyStick" aria-hidden="true"></span>
+   <span id="flyJoystickLabel">BEWEGEN</span>
   </div>
+  <div id="flyLookHint">☝️ UMSEHEN</div>
  </div>
 </div>
 <div id="gestureHint">☝️ Karte verschieben · ✌️ Zwei Finger nach links/rechts: Drehen · ✌️ Spreizen: Zoomen</div>
@@ -1323,7 +1316,7 @@ const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 const flyMode={
  active:false,pos:new THREE.Vector3(0,1.7,10.7),yaw:0,pitch:-.035,
  input:{forward:false,backward:false,left:false,right:false,up:false,down:false},
- touch:null,pointer:null,lastFrame:0
+ touch:null,pointer:null,joystick:{x:0,y:0,id:null},lastFrame:0
 };
 function positionTourCamera(){
  camera.position.copy(flyMode.pos);
@@ -1340,8 +1333,8 @@ function updateTourLook(dx,dy){
 function moveTour(seconds){
  if(!flyMode.active)return;
  const actions=flyMode.input;
- let f=Number(actions.forward)-Number(actions.backward);
- let side=Number(actions.right)-Number(actions.left);
+ let f=Number(actions.forward)-Number(actions.backward)-flyMode.joystick.y;
+ let side=Number(actions.right)-Number(actions.left)+flyMode.joystick.x;
  const length=Math.hypot(f,side);
  if(length>1){f/=length;side/=length}
  const speed=3.4*clamp(seconds,0,.12);
@@ -1352,7 +1345,9 @@ function moveTour(seconds){
 }
 function releaseTourButtons(){
  for(const key of Object.keys(flyMode.input))flyMode.input[key]=false;
- document.querySelectorAll('[data-flymove]').forEach(b=>b.classList.remove('pressed'))
+ flyMode.joystick.x=0;flyMode.joystick.y=0;flyMode.joystick.id=null;
+ const stick=document.getElementById('flyStick');
+ stick.style.transform='translate(0px,0px)'
 }
 // View version bump applies the better entrance/reception angle once; no town data is reset.
 const storedKey='klinik-am-park-kamera-v4'; // Preserve the earlier v3 view as a backup.
@@ -2003,15 +1998,15 @@ function setTourMode(enabled){
   setCameraMode('pan');
   flyMode.active=true;
   flyMode.pos.set(0,1.7,10.7);flyMode.yaw=0;flyMode.pitch=-.035;
-  flyMode.touch=null;flyMode.pointer=null;
+  flyMode.touch=null;flyMode.pointer=null;releaseTourButtons();
   camera.fov=73;camera.updateProjectionMatrix();
   document.body.classList.add('fly-active');
   flyControls.hidden=false;
   flyToggle.classList.add('active');
   flyToggle.setAttribute('aria-pressed','true');
   flyToggle.textContent='↩️ Zur Bauansicht';
-  gestureHint.textContent='🚶 Rundgang: im 3D-Bild umsehen · mit den Pfeilen fliegen · ↑↓ Höhe ändern';
-  document.getElementById('status').textContent='🚶 Du stehst am Haupteingang. Mit ▲ fliegst du hinein und mit einem Finger schaust du dich um.';
+  gestureHint.textContent='🚶 Links: Touch-Joystick bewegen · rechts wischen: umsehen · zwei Finger hoch/runter: Flughöhe';
+  document.getElementById('status').textContent='🚶 Du stehst am Haupteingang. Linken Daumen im Joystick nach oben schieben, rechts umsehen.';
   hideRoomInfo();positionTourCamera()
  }else{
   releaseTourButtons();
@@ -2028,22 +2023,41 @@ function setTourMode(enabled){
 }
 flyToggle.onclick=()=>setTourMode(!flyMode.active);
 document.getElementById('flyReturn').onclick=()=>setTourMode(false);
-document.querySelectorAll('[data-flymove]').forEach(button=>{
- const direction=button.dataset.flymove;
- const release=()=>{
-  flyMode.input[direction]=false;button.classList.remove('pressed')
- };
- button.addEventListener('pointerdown',e=>{
-  if(!flyMode.active)return;
-  e.preventDefault();e.stopPropagation();
-  flyMode.input[direction]=true;button.classList.add('pressed');
-  button.setPointerCapture?.(e.pointerId);
-  moveTour(.10) // A short tap also takes a visible step.
- });
- for(const name of ['pointerup','pointercancel','lostpointercapture','pointerleave'])
-  button.addEventListener(name,release);
- button.addEventListener('contextmenu',e=>e.preventDefault())
+// Mobile joystick: left thumb controls analog movement; the other thumb
+// can look around on the canvas at the same time without interfering.
+const tourJoystick=document.getElementById('flyJoystick');
+const tourStick=document.getElementById('flyStick');
+function applyTourJoystick(clientX,clientY){
+ const bounds=tourJoystick.getBoundingClientRect();
+ const radius=Math.min(bounds.width,bounds.height)*.32;
+ let dx=clientX-(bounds.left+bounds.width/2);
+ let dy=clientY-(bounds.top+bounds.height/2);
+ const length=Math.hypot(dx,dy);
+ if(length>radius){dx*=radius/length;dy*=radius/length}
+ flyMode.joystick.x=dx/radius;
+ flyMode.joystick.y=dy/radius;
+ tourStick.style.transform='translate('+dx.toFixed(1)+'px,'+dy.toFixed(1)+'px)'
+}
+tourJoystick.addEventListener('pointerdown',e=>{
+ if(!flyMode.active||flyMode.joystick.id!==null)return;
+ e.preventDefault();e.stopPropagation();
+ flyMode.joystick.id=e.pointerId;
+ tourJoystick.setPointerCapture(e.pointerId);
+ applyTourJoystick(e.clientX,e.clientY)
 });
+tourJoystick.addEventListener('pointermove',e=>{
+ if(!flyMode.active||flyMode.joystick.id!==e.pointerId)return;
+ e.preventDefault();applyTourJoystick(e.clientX,e.clientY)
+});
+function endTourJoystick(e){
+ if(flyMode.joystick.id!==e.pointerId)return;
+ flyMode.joystick.id=null;
+ flyMode.joystick.x=0;flyMode.joystick.y=0;
+ tourStick.style.transform='translate(0px,0px)'
+}
+for(const name of ['pointerup','pointercancel','lostpointercapture'])
+ tourJoystick.addEventListener(name,endTourJoystick);
+tourJoystick.addEventListener('contextmenu',e=>e.preventDefault());
 const tourKeyboard={w:'forward',arrowup:'forward',s:'backward',arrowdown:'backward',
  a:'left',arrowleft:'left',d:'right',arrowright:'right',r:'up',f:'down'};
 window.addEventListener('keydown',e=>{
@@ -2125,9 +2139,14 @@ let touchState=null;
 function startTouch(e){
  e.preventDefault();
  if(flyMode.active){
-  if(e.touches.length){
-   const t=e.touches[0];flyMode.touch={x:t.clientX,y:t.clientY}
-  }
+  // targetTouches ignores the other thumb on the joystick overlay.
+  const touches=e.targetTouches;
+  if(touches.length>=2){
+   const midY=(touches[0].clientY+touches[1].clientY)/2;
+   flyMode.touch={mode:'height',y:midY}
+  }else if(touches.length===1){
+   flyMode.touch={mode:'look',x:touches[0].clientX,y:touches[0].clientY}
+  }else flyMode.touch=null;
   return
  }
  if(e.touches.length>=2){
@@ -2145,11 +2164,20 @@ function startTouch(e){
 function moveTouch(e){
  e.preventDefault();
  if(flyMode.active){
-  const t=e.touches[0];
-  if(t){
-   if(flyMode.touch)updateTourLook(t.clientX-flyMode.touch.x,t.clientY-flyMode.touch.y);
-   flyMode.touch={x:t.clientX,y:t.clientY}
-  }
+  const touches=e.targetTouches;
+  if(touches.length>=2){
+   const midY=(touches[0].clientY+touches[1].clientY)/2;
+   if(flyMode.touch?.mode==='height'){
+    flyMode.pos.y=clamp(flyMode.pos.y-(midY-flyMode.touch.y)*.017,.85,4.3);
+    positionTourCamera()
+   }
+   flyMode.touch={mode:'height',y:midY}
+  }else if(touches.length===1){
+   const t=touches[0];
+   if(flyMode.touch?.mode==='look')
+    updateTourLook(t.clientX-flyMode.touch.x,t.clientY-flyMode.touch.y);
+   flyMode.touch={mode:'look',x:t.clientX,y:t.clientY}
+  }else flyMode.touch=null;
   return
  }
  if(!touchState)return;
@@ -2204,8 +2232,12 @@ function moveTouch(e){
 function endTouch(e){
  e.preventDefault();
  if(flyMode.active){
-  const t=e.touches[0];
-  flyMode.touch=t?{x:t.clientX,y:t.clientY}:null;
+  const touches=e.targetTouches;
+  if(touches.length>=2)
+   flyMode.touch={mode:'height',y:(touches[0].clientY+touches[1].clientY)/2};
+  else if(touches.length===1)
+   flyMode.touch={mode:'look',x:touches[0].clientX,y:touches[0].clientY};
+  else flyMode.touch=null;
   return
  }
  if(e.type==='touchcancel'){
