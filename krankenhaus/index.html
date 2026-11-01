@@ -90,7 +90,7 @@ body.furniture-active #stage{height:53dvh;min-height:275px;max-height:520px}
  <div id="topLegend"><strong>🏥 Klinik am Park</strong><small>🚪 Haupteingang · großes Foyer<br>🧑‍💻 Anmeldung links · 🪑 Warten rechts<br>⬆️ Dahinter der Hauptflur<br>🩺 Behandlung · 🔬 Diagnose · 🚻 WC</small></div>
  <div id="roomInfo" hidden role="status" aria-live="polite"><strong id="roomTitle"></strong><span id="roomDescription"></span></div>
 </div>
-<div id="gestureHint">☝️ Verschieben · ✌️ Links/rechts: Drehen · ✌️ Hoch/runter: Neigen · ✌️ Spreizen: Zoomen</div>
+<div id="gestureHint">☝️ Karte verschieben · ✌️ Zwei Finger nach links/rechts: Drehen · ✌️ Spreizen: Zoomen</div>
 <div id="status" role="status" aria-live="polite">🏥 Frisch gestalteter Haupteingang: helles Foyer, Anmeldung links, Wartebereich rechts, freier Mittelweg.</div>
 <div id="layoutTools" aria-label="Einrichtungsmodus">
  <button id="viewTreatments" type="button">🩺 Beide Behandlungsräume ansehen</button>
@@ -1925,7 +1925,7 @@ function setCameraMode(mode){
  hideRoomInfo();
  cameraMode=mode==='build'&&cameraActiveEditor()?'build':'pan';
  clearConstructionPreview();
- const gestures='☝️ Freie Fläche wischen: Karte bewegen · ✌️ Drehen/Neigen/Zoomen';
+ const gestures='☝️ Karte verschieben · ✌️ Links/rechts drehen, hoch/runter neigen, spreizen zoomen';
  gestureHint.textContent=cameraMode==='build'
   ?(furnitureEditor.editing?'☝️ Möbel antippen/ziehen · '+gestures
     :editingFloorplan?'☝️ Raum/Bauteil bearbeiten · '+gestures
@@ -1977,9 +1977,8 @@ function snapshot(touches){
 }
 const angleDifference=(a,b)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
 function beginTwoFingerGesture(touches){
- const t=snapshot(touches);
- return {mode:2,gesture:'pending',...t,
-  firstX:t.midX,firstY:t.midY,firstDistance:t.distance,firstAngle:t.angle}
+ // Start the camera gesture immediately instead of waiting for a mode decision.
+ return {mode:2,...snapshot(touches)}
 }
 let touchState=null;
 function startTouch(e){
@@ -2006,33 +2005,24 @@ function moveTouch(e){
   // Re-baseline when a second finger joins a drag: no camera jump.
   if(previous.mode!==2){touchState=beginTwoFingerGesture(e.touches);return}
   const n=snapshot(e.touches);
-  let gesture=previous.gesture;
-  if(gesture==='pending'){
-   // Decide by what BOTH fingers actually did, rather than mixing rotation
-   // and zoom in every frame. Keep the chosen gesture until release.
-   const slide=Math.hypot(n.midX-previous.firstX,n.midY-previous.firstY);
-   const pinch=Math.abs(n.distance-previous.firstDistance);
-   const twist=Math.abs(angleDifference(n.angle,previous.firstAngle))*
-    Math.max(40,previous.firstDistance/2)*2;
-   if(Math.max(slide,pinch,twist)<5)return;
-   gesture=pinch>slide*1.20&&pinch>twist*.90?'zoom':
-    twist>slide*1.20&&twist>pinch*1.12?'twist':'slide';
-  }
-  if(gesture==='zoom'){
-   // Two fingers together/apart: zoom with a stable center point.
-   distance=clamp(distance*previous.distance/n.distance,7,42);
-  }else if(gesture==='twist'){
-   // Twisting two fingertips turns the building in place.
-   orbit-=angleDifference(n.angle,previous.angle)*1.08;
-  }else{
-   // Sliding BOTH fingers horizontally rotates. Sliding them up/down
-   // tilts. No accidental camera pan or zoom during either action.
+  if(previous.mode===2){
    const dx=n.midX-previous.midX,dy=n.midY-previous.midY;
-   orbit-=dx*.009;
-   elevation=clamp(elevation-dy*.0054,.50,1.43);
+   const pinch=n.distance-previous.distance;
+   const twist=angleDifference(n.angle,previous.angle);
+   // Two fingers together left/right: rotate the building instantly.
+   // Twisting the fingers also rotates; up/down tilts the camera.
+   // A clear pinch zooms without accidental sideways rotation.
+   const zooming=Math.abs(pinch)>Math.max(1.7,Math.hypot(dx,dy)*.9);
+   if(zooming){
+    distance=clamp(distance*previous.distance/n.distance,7,42);
+   }else{
+    orbit-=dx*.012+twist*.80;
+    elevation=clamp(elevation-dy*.0055,.50,1.43)
+   }
+   hideRoomInfo();
+   placeCamera();
   }
-  placeCamera();
-  touchState={...previous,...n,mode:2,gesture};
+  touchState={mode:2,...n};
  }else if(e.touches.length===1){
   const t=e.touches[0];
   if(touchState.mode==='furnitureMove'||touchState.mode==='furniturePlace'){
