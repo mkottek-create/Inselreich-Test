@@ -905,9 +905,12 @@ function makeRoomShell(r){
  // registration from the waiting area. A 3.4m-wide central aisle now leads
  // from the main doors to the 2.8m corridor behind the large shared foyer.
  if(r.id==='reception'||r.id==='waiting'){
-  groundRect(r.w+.045,r.d+.045,r.x,r.z,
+  // Colored foyer areas join directly against the central walking aisle.
+  const towardsAisle=r.id==='reception'?.11:-.11,zoneW=r.w+.24;
+  groundRect(zoneW+.045,r.d+.045,r.x+towardsAisle,r.z,
    r.id==='reception'?mat(0xddece7):mat(0xd9eaf0),.093);
-  tiled(r.w-.13,r.d-.13,r.x,r.z,r.id==='reception'?tileBase:tileWaiting);
+  tiled(zoneW-.02,r.d-.02,r.x+towardsAisle,r.z,
+   r.id==='reception'?tileBase:tileWaiting);
   const line=r.id==='reception'?mat(0x52a993):mat(0x55aaba);
   for(const z of [r.z-r.d/2+.12,r.z+r.d/2-.12])
    box(r.w-.38,.018,.06,r.x,.186,z,line,group,false);
@@ -951,13 +954,20 @@ function makeRoomShell(r){
   wallVertical(x,back,middle-.62,.91);
   wallVertical(x,middle+.62,front,.91);
   const frame=trimTint[r.kind]||tealLight;
-  for(const z of [middle-.63,middle+.63])box(.20,1.43,.09,x,.885,z,frame);
+  for(const z of [middle-.63,middle+.63]){
+   box(.20,1.43,.09,x,.885,z,frame);
+   box(.24,.10,.13,x,.22,z,cutawayCap,group,false)
+  }
   box(.21,.13,1.41,x,1.62,middle,frame);
+  box(.27,.04,1.38,x,1.71,middle,cutawayCap,group,false);
   const leaf=box(.035,1.20,.90,x+(side==='right'?-.26:.26),.78,middle-.14,glass,group,false);
   leaf.rotation.y=(side==='right'?-.25:.25);
   box(.075,.10,.065,x+(side==='right'?-.26:.26),.92,middle+.19,gold,group,false);
-  // Bright arrow tile leads from the hallway through the opening.
-  box(.29,.012,1.06,x+(side==='right'?.19:-.19),.193,middle,accent,group,false)
+  // Color-coded threshold joins the room floor directly to the corridor.
+  const towardsHall=side==='right'?1:-1;
+  box(.43,.014,1.16,x,.194,middle,cutawayCap,group,false);
+  box(.32,.016,1.05,x+towardsHall*.22,.203,middle,accent,group,false);
+  box(.095,.019,.72,x+towardsHall*.45,.205,middle,tealLight,group,false)
  }
  function wallWithWindow(x){
   const halfOpening=Math.min(.73,(r.d-1.30)/2);
