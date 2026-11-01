@@ -695,12 +695,21 @@ function tiled(w,d,x,z,base){
  o.rotation.x=-Math.PI/2;o.position.set(x,.151,z);o.receiveShadow=true;group.add(o);return o
 }
 function wallX(x1,x2,z,h=1.65,m=wallWhite){
- box(x2-x1,h,.16,(x1+x2)/2,.17+h/2,z,m);
- box(x2-x1+.03,.06,.24,(x1+x2)/2,.17+h,z,wallTrim,group,false)
+ const w=x2-x1,x=(x1+x2)/2;
+ box(w,h,.16,x,.17+h/2,z,m);
+ box(w+.03,.07,.25,x,.17+h,z,frameHighlight,group,false);
+ box(w,.025,.22,x,.17+h+.052,z,wallTrim,group,false);
+ // Colored, easy-to-read skirting on both sides of the wall.
+ box(w,.095,.195,x,.29,z,wallSkirting,group,false);
+ box(w,.025,.205,x,.355,z,wallTrim,group,false)
 }
 function wallZ(x,z1,z2,h=1.1,m=wallWhite){
- box(.17,h,z2-z1,x,.17+h/2,(z1+z2)/2,m);
- box(.23,.05,z2-z1,x,.17+h,(z1+z2)/2,wallTrim,group,false)
+ const d=z2-z1,z=(z1+z2)/2;
+ box(.17,h,d,x,.17+h/2,z,m);
+ box(.25,.07,d,x,.17+h,z,frameHighlight,group,false);
+ box(.22,.025,d,x,.17+h+.052,z,wallTrim,group,false);
+ box(.20,.095,d,x,.29,z,wallSkirting,group,false);
+ box(.21,.025,d,x,.355,z,wallTrim,group,false)
 }
 function plane(w,h,x,y,z,material,rotation=0){
  const o=new THREE.Mesh(new THREE.PlaneGeometry(w,h),material);
@@ -818,6 +827,9 @@ const trimTint={reception:mat(0x38baa7),waiting:mat(0x42bde0),
  diagnostic:mat(0xb58be2),lab:mat(0xb58be2),
  staff:mat(0xf1ae60),toilet:mat(0x62bbef),empty:mat(0x8dc8cb)};
 const brickLower=mat(0xe8c3a7);
+const wallSkirting=mat(0x98c9be,.85);
+const doorMetal=mat(0x98b0bc,.42,.22);
+const frameHighlight=mat(0xf5fff9,.56);
 const cutawayCap=mat(0xfffef6,.56);
 const floorSpot=mat(0xfff8e8,.8);
 const plusMark=mat(0xffffff,.72);
@@ -954,16 +966,29 @@ function makeRoomShell(r){
   wallVertical(x,back,middle-.62,.91);
   wallVertical(x,middle+.62,front,.91);
   const frame=trimTint[r.kind]||tealLight;
+  // Chunky beveled entrance: colored jambs, pale top and contrast edge.
   for(const z of [middle-.63,middle+.63]){
-   box(.20,1.43,.09,x,.885,z,frame);
+   box(.21,1.43,.11,x,.885,z,frame);
+   box(.11,1.25,.065,x,.88,z,frameHighlight,group,false);
    box(.24,.10,.13,x,.22,z,cutawayCap,group,false)
   }
-  box(.21,.13,1.41,x,1.62,middle,frame);
-  box(.27,.04,1.38,x,1.71,middle,cutawayCap,group,false);
-  const leaf=box(.035,1.20,.90,x+(side==='right'?-.26:.26),.78,middle-.14,glass,group,false);
-  leaf.rotation.y=(side==='right'?-.25:.25);
-  box(.075,.10,.065,x+(side==='right'?-.26:.26),.92,middle+.19,gold,group,false);
-  // Color-coded threshold joins the room floor directly to the corridor.
+  box(.23,.14,1.43,x,1.62,middle,frame);
+  box(.28,.045,1.47,x,1.71,middle,cutawayCap,group,false);
+  box(.13,.028,1.43,x,1.756,middle,frame,group,false);
+  // Hinged glazed door with its own frame and handle. It stays attached
+  // to the movable room but never blocks the center of the doorway.
+  const door=new THREE.Group();
+  door.position.set(x+(side==='right'?-.24:.24),.20,middle-.13);
+  door.rotation.y=side==='right'?-.24:.24;group.add(door);
+  box(.042,1.17,.87,0,.62,0,glass,door,false);
+  for(const z of [-.45,.45])
+   box(.075,1.23,.055,0,.64,z,frame,door,false);
+  for(const y of [.08,1.22])
+   box(.08,.09,.92,0,y,0,frame,door,false);
+  box(.065,.065,.90,0,.50,0,frame,door,false);
+  box(.08,.16,.105,.046,.70,.22,gold,door,false);
+  box(.08,.035,.22,.045,.72,.22,doorMetal,door,false);
+  // Clean, warm threshold joining the room to the central corridor.
   const towardsHall=side==='right'?1:-1;
   box(.43,.014,1.16,x,.194,middle,cutawayCap,group,false);
   box(.32,.016,1.05,x+towardsHall*.22,.203,middle,accent,group,false);
@@ -975,14 +1000,23 @@ function makeRoomShell(r){
   wallVertical(x,back,middle-halfOpening,1.12);
   wallVertical(x,middle+halfOpening,front,1.12);
   const span=halfOpening*2;
-  // Brown brick sill below, pale lintel above and a true glazed cutout.
-  box(.18,.40,span,x,.38,middle,brickLower,group,false);
-  box(.18,.15,span,x,1.24,middle,wallWhite,group,false);
-  box(.055,.59,span-.14,x,.91,middle,glass,group,false);
-  for(const z of [middle-halfOpening,middle+halfOpening])
-   box(.21,.67,.08,x,.89,z,accent,group,false);
-  box(.215,.05,span,x,1.24,middle,accent,group,false);
-  box(.215,.05,span,x,.58,middle,accent,group,false);
+  // Real cut-through window: stone sill, tinted double-panel glazing,
+  // pale mullions and colorful room-specific edge trim.
+  box(.22,.40,span,x,.38,middle,brickLower,group,false);
+  box(.23,.15,span,x,1.24,middle,wallWhite,group,false);
+  box(.067,.61,span-.12,x,.91,middle,glass,group,false);
+  for(const z of [middle-halfOpening,middle+halfOpening]){
+   box(.23,.70,.075,x,.89,z,accent,group,false);
+   box(.10,.54,.043,x,.89,z,frameHighlight,group,false)
+  }
+  for(const y of [.60,1.23]){
+   box(.25,.07,span+.05,x,y,middle,accent,group,false);
+   box(.12,.028,span-.09,x,y+.048,middle,frameHighlight,group,false)
+  }
+  box(.10,.60,.065,x,.92,middle,frameHighlight,group,false);
+  box(.11,.045,span-.09,x,.94,middle,frameHighlight,group,false);
+  box(.32,.065,span+.19,x,.54,middle,cutawayCap,group,false);
+  box(.14,.03,span+.12,x,1.37,middle,cutawayCap,group,false)
  }
  if(side==='left')framedDoorOnSide(left);
  else wallWithWindow(left);
@@ -994,8 +1028,13 @@ function makeRoomShell(r){
   const door=clampRoomDoor(left,right,r.x+off);
   wallHorizontal(left,door-.65,front,.72);
   wallHorizontal(door+.65,right,front,.72);
-  for(const x of [door-.64,door+.64])box(.09,1.30,.14,x,.825,front,accent);
-  box(1.37,.12,.18,door,1.53,front,accent)
+  for(const x of [door-.64,door+.64]){
+   box(.13,1.34,.16,x,.83,front,accent);
+   box(.055,1.26,.18,x,.82,front+.01,frameHighlight,group,false)
+  }
+  box(1.40,.13,.19,door,1.53,front,accent);
+  box(1.44,.04,.21,door,1.625,front,cutawayCap,group,false);
+  box(1.24,.023,.27,door,.20,front,accent,group,false)
  }else wallHorizontal(left,right,front,.68);
  const frontWallPieces=group.children.slice(frontWallStart);
  // Window strip on outward wall: gives every room recognizable cutaway windows.
