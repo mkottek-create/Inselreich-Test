@@ -825,22 +825,121 @@ function lobbyChair(x,z,angle=0,m=chairBlue){
  box(.54,.04,.10,0,.49,.16,wallTrim,chair);
  return chair
 }
-function visitor(x,z,shirt=teal,scale=1,angle=0){
- const g=new THREE.Group();g.position.set(x,.18,z);g.rotation.y=angle;g.scale.setScalar(scale);group.add(g);
- const skin=mat(0xf2c49e),shoes=mat(0x475572),hair=mat(0x6b4b42);
- // Friendly toy-like visitors, with faces and bright chunky clothes.
- for(const side of [-1,1]){
-  box(.12,.30,.14,.12*side,.23,0,black,g);
-  box(.18,.09,.23,.12*side,.092,.075,shoes,g);
-  box(.105,.32,.115,.30*side,.64,0,shirt,g);
-  sphere(.095,.30*side,.45,.02,skin,g)
+// Expressive low-poly people, with human silhouettes and animated joints.
+// Inspired by the readable isometric hospital-game figures, not copied sprites.
+const characterActors=[];
+let characterSerial=0;
+const characterPalettes=[
+ {skin:0xf0c59e,hair:0x533a32,pants:0x405a79,style:'short'},
+ {skin:0xb87b57,hair:0x28242b,pants:0x41416a,style:'bob'},
+ {skin:0xf4d0ac,hair:0xa65a36,pants:0x46748b,style:'swept'},
+ {skin:0xd49d79,hair:0x342e2a,pants:0x505e80,style:'short'},
+ {skin:0xe8b993,hair:0xcf9859,pants:0x486c77,style:'ponytail'},
+ {skin:0x9a664f,hair:0x252b33,pants:0x6a526b,style:'bob'}
+];
+function visitor(x,z,shirt=teal,scale=1,angle=0,role='patient'){
+ const profile=characterPalettes[characterSerial++%characterPalettes.length];
+ const staff=role==='receptionist';
+ const skin=mat(staff?0xf1b88f:profile.skin,.84);
+ const hair=mat(staff?0x6a4134:profile.hair,.91);
+ const trouser=mat(staff?0x345e75:profile.pants,.92);
+ const shoe=mat(0x35465c,.65),sleeve=shirt;
+ const pale=mat(0xfff9ec,.88),eye=mat(0x28343d,.55);
+ const lip=mat(0xc36c67,.90),highlight=mat(0xffffff,.68);
+ const g=new THREE.Group();g.name=staff?'Empfangsdame':'Patientenfigur';
+ g.position.set(x,.18,z);g.rotation.y=angle;g.scale.setScalar(scale);group.add(g);
+ // Rounded oval pieces are much more natural than square sticks.
+ function oval(r,x,y,z,sx,sy,sz,m,parent=g){
+  const o=new THREE.Mesh(new THREE.SphereGeometry(r,12,9),m);
+  o.position.set(x,y,z);o.scale.set(sx,sy,sz);
+  o.castShadow=true;parent.add(o);return o
  }
- cylinder(.24,.26,.43,0,.60,0,shirt,10,g);
- sphere(.24,0,1.01,0,skin,g);
- sphere(.18,0,1.18,-.045,hair,g);
- box(.09,.13,.018,-.12,.69,.246,white,g,false);
- for(const eye of [-.085,.085])sphere(.026,eye,1.04,.220,black,g);
- sphere(.032,0,.94,.227,mat(0xd47e79),g);
+ // Trousers, shoes and hip joints, pivoting at the waist for walking.
+ const hips=oval(.24,0,.62,0,1.05,.67,.82,trouser);
+ const legs=[];
+ for(const side of [-1,1]){
+  const leg=new THREE.Group();leg.position.set(side*.135,.55,0);g.add(leg);
+  oval(.115,0,-.185,0,1.04,2.10,1.03,trouser,leg);
+  oval(.12,0,-.38,.05,.87,.77,1.10,trouser,leg);
+  oval(.125,0,-.49,.095,1.08,.53,1.65,shoe,leg);
+  legs.push(leg)
+ }
+ // Waist, tapered shirt, shoulders, contrasting collar and buttons.
+ const torso=new THREE.Group();torso.position.y=.91;g.add(torso);
+ oval(.25,0,-.02,0,1.04,1.12,.76,sleeve,torso);
+ oval(.23,0,-.17,.006,1.08,.84,.83,sleeve,torso);
+ oval(.235,0,.17,0,1.16,.54,.84,sleeve,torso);
+ oval(.13,0,.285,0,.78,.34,.72,skin,torso);
+ for(const side of [-1,1]){
+  const lapel=box(.10,.15,.027,side*.09,1.115,.195,pale,g,false);
+  lapel.rotation.z=side*.25
+ }
+ for(const y of [.87,1.00,1.10])
+  oval(.018,0,y,.217,1,.8,.45,staff?mat(0xf6d784):pale);
+ // Arms are rigged groups with elbows, hands and real sleeve shapes.
+ const arms=[];
+ for(const side of [-1,1]){
+  const arm=new THREE.Group();arm.position.set(side*.272,1.10,0);g.add(arm);
+  arm.rotation.z=side*.15;
+  oval(.12,0,-.11,0,1.15,1.43,1.07,sleeve,arm);
+  oval(.082,0,-.285,.01,.86,1.44,.90,skin,arm);
+  oval(.088,0,-.41,.03,1.01,1.10,.83,skin,arm);
+  arms.push(arm)
+ }
+ // Distinct face with curved cheeks, forehead and friendly expression.
+ oval(.237,0,1.47,.005,1,1.09,.86,skin);
+ for(const side of [-1,1])
+  oval(.068,side*.233,1.438,-.004,.60,1.05,.64,skin);
+ oval(.060,0,1.429,.208,.72,.72,.91,skin); // nose
+ const eyes=[];
+ for(const side of [-1,1]){
+  oval(.049,side*.088,1.49,.201,1.08,.93,.40,pale);
+  const pupil=oval(.029,side*.088,1.483,.222,.84,1.1,.50,eye);
+  oval(.011,side*.098,1.493,.237,1,1,.55,highlight);
+  eyes.push(pupil);
+  const brow=box(.075,.018,.024,side*.091,1.570,.203,hair,g,false);
+  brow.rotation.z=side*.11;
+  oval(.035,side*.157,1.400,.176,.9,.42,.42,mat(0xe8a198,.91))
+ }
+ // Small smile drawn as a real shallow 3D curve, not a round dot.
+ const smile=new THREE.Mesh(new THREE.TubeGeometry(
+  new THREE.QuadraticBezierCurve3(
+   new THREE.Vector3(-.068,1.355,.198),
+   new THREE.Vector3(0,1.327,.237),
+   new THREE.Vector3(.068,1.355,.198)),6,.012,4,false),lip);
+ g.add(smile);
+ // Rounded hair cap, side locks and varied fringe/ponytail profiles.
+ oval(.248,0,1.655,-.035,1.07,.66,.92,hair);
+ const hairstyle=staff?'ponytail':profile.style;
+ if(hairstyle==='bob'||hairstyle==='ponytail'){
+  for(const side of [-1,1])
+   oval(.091,side*.209,1.50,-.063,.84,1.85,1.02,hair);
+ }
+ if(hairstyle==='short'||hairstyle==='swept'){
+  oval(.19,-.063,1.660,.111,.94,.44,.62,hair);
+  if(hairstyle==='swept')
+   oval(.085,.126,1.61,.144,1.0,1.35,.80,hair)
+ }else{
+  oval(.191,.035,1.655,.093,.93,.38,.60,hair);
+ }
+ if(hairstyle==='ponytail'){
+  oval(.104,.153,1.53,-.217,.98,1.88,.94,hair);
+  oval(.045,.153,1.62,-.279,1.05,.70,1.00,mat(0xe8c278))
+ }
+ if(staff){
+  // Distinct staff uniform: white collar, nameplate and a small badge.
+  box(.18,.105,.031,-.100,.996,.219,mat(0xffe19a),g,false);
+  box(.13,.025,.035,-.100,.996,.241,mat(0x39748b),g,false);
+  box(.16,.035,.04,.095,.840,.212,pale,g,false);
+  oval(.018,.19,1.655,.186,1.2,1.2,.5,mat(0xf7d678))
+ }else if(characterSerial%3===0){
+  // A small shoulder bag adds a recognizable patient silhouette.
+  box(.21,.28,.12,.275,.76,.095,mat(0xc39463),g,false);
+  box(.035,.42,.035,.23,.98,.063,trouser,g,false)
+ }
+ g.userData.characterRig={legs,arms,torso,eyes,walk:false,staff,
+  idleSeed:characterSerial*.81};
+ characterActors.push(g);
  return g
 }
 function lightPost(x,z){
@@ -1502,18 +1601,10 @@ for(const z of [3.12,3.70])
  box(.48,.014,.035,-1.40,.184,z,tealLight,group,false);
 // The receptionist belongs to the movable counter, wearing a bright mint
 // uniform and a name badge. Her little waving hand is animated independently.
-const receptionistUniform=mat(0x40bdac),receptionistSkin=mat(0xf3c5a7);
-const receptionistHair=mat(0x5c3d38),receptionistBadge=mat(0xffed95);
-const receptionist=visitor(-1.53,.81,receptionistUniform,1.0,0);
+const receptionistUniform=mat(0x40bdac);
+const receptionist=visitor(-1.53,.81,receptionistUniform,.96,0,'receptionist');
 receptionist.name='Empfangsdame';
-sphere(.13,.14,1.15,-.13,receptionistHair,receptionist);
-box(.18,.12,.026,-.12,.71,.248,receptionistBadge,receptionist,false);
-box(.11,.035,.030,-.12,.70,.27,deepTeal,receptionist,false);
-// Local arm pivot lets her greet guests while the whole desk moves and turns.
-const receptionWave=new THREE.Group();
-receptionWave.position.set(.35,.85,.035);receptionist.add(receptionWave);
-box(.13,.32,.12,0,.15,.03,receptionistUniform,receptionWave,false);
-sphere(.095,0,.35,.04,receptionistSkin,receptionWave);
+const receptionWave=receptionist.userData.characterRig.arms[1];
 const greetingBubble=new THREE.Mesh(new THREE.PlaneGeometry(1.38,.40),
  new THREE.MeshBasicMaterial({
   map:labelTexture('WILLKOMMEN!','#176d74','#fffde9',48),
@@ -1545,8 +1636,8 @@ box(.88,.13,.57,5.38,.47,4.36,oak);
 for(const x of [5.06,5.68])for(const z of [4.13,4.57])
  box(.041,.31,.041,x,.29,z,oakDark);
 box(.54,.013,.28,5.38,.55,4.36,mat(0xf8f4e7),group,false);
-visitor(3.43,5.56,mat(0xdf9f87),.62,Math.PI);
-visitor(2.42,3.08,mat(0xe6c67c),.62,0);
+visitor(3.43,5.56,mat(0xdf9f87),.80,Math.PI);
+visitor(2.42,3.08,mat(0xe6c67c),.80,0);
 plant(6.12,6.91,.59);plant(6.14,1.22,.60);
 box(.37,.84,.36,5.88,.60,2.52,white);
 box(.26,.30,.026,5.88,.77,2.73,screenMat);
@@ -1555,13 +1646,13 @@ box(1.00,.66,.09,5.40,1.39,.55,black);
 box(.88,.55,.10,5.40,1.40,.62,screenMat);
 takeDecorIntoRoom('waiting',waitingDecorStart);
 // Static people remain in the central corridor when room modules are moved.
-visitor(.40,5.67,mat(0xb0d1e7),.71,.3);
-visitor(-.31,2.48,mat(0xeca8a2),.65,Math.PI);
-visitor(.24,-2.67,mat(0x77b8ac),.69,0);
-visitor(-.25,-6.42,mat(0xe6c67c),.70,0);
+visitor(.40,5.67,mat(0xb0d1e7),.85,.3);
+visitor(-.31,2.48,mat(0xeca8a2),.82,Math.PI);
+visitor(.24,-2.67,mat(0x77b8ac),.85,0);
+visitor(-.25,-6.42,mat(0xe6c67c),.85,0);
 // One first patient repeatedly demonstrates a simple registration workflow.
 // Existing static visitors remain unchanged; no new furniture/save data is used.
-const firstPatient=visitor(0,8.04,mat(0xf2b776),.77,Math.PI);
+const firstPatient=visitor(0,8.04,mat(0xf2b776),.88,Math.PI);
 firstPatient.name='Erster Patient – Anmeldung';
 const registrationScene={phase:'approach',wait:0,waypoint:0,
  lastPos:new THREE.Vector3(),patient:firstPatient};
@@ -1578,6 +1669,7 @@ function moveRegistrationPatient(target,step){
  const remaining=Math.hypot(dx,dz);
  if(remaining>.05){
   const moved=Math.min(remaining,step);
+  if(person.userData.characterRig)person.userData.characterRig.walk=true;
   person.position.x+=dx/remaining*moved;
   person.position.z+=dz/remaining*moved;
   person.rotation.y=Math.atan2(dx,dz);
@@ -1587,12 +1679,13 @@ function moveRegistrationPatient(target,step){
 }
 function updateRegistrationScene(delta,elapsed){
  const sceneState=registrationScene,person=sceneState.patient;
+ if(person.userData.characterRig)person.userData.characterRig.walk=false;
  const speed=1.30*Math.min(.08,Math.max(0,delta));
  // A gentle idle animation, with a clear wave while a patient is greeted.
  receptionist.position.y=.18+Math.sin(elapsed*2.1)*.013;
  receptionWave.rotation.z=sceneState.phase==='greet'
-  ?-.30+Math.sin(elapsed*7)*.34
-  :-.09+Math.sin(elapsed*2.8)*.06;
+  ?-1.75+Math.sin(elapsed*7)*.28
+  :-.13+Math.sin(elapsed*2.8)*.04;
  greetingBubble.visible=sceneState.phase==='greet';
  if(sceneState.phase==='approach'){
   if(moveRegistrationPatient(registrationGoal(),speed)){
@@ -2786,6 +2879,27 @@ function resize(){
  renderer.setSize(w,h,false);camera.aspect=w/Math.max(h,1);camera.updateProjectionMatrix();placeCamera()
 }
 new ResizeObserver(resize).observe(stage);resize();
+// Gentle life in every character, plus recognizable swinging legs when walking.
+function animateCharacterActors(seconds){
+ for(const person of characterActors){
+  const rig=person.userData.characterRig;
+  if(!rig)continue;
+  const idle=seconds*1.8+rig.idleSeed;
+  const stride=Math.sin(seconds*9.2+rig.idleSeed);
+  const walkAmount=rig.walk?1:0;
+  rig.torso.rotation.z=Math.sin(idle)*.018+stride*.045*walkAmount;
+  rig.torso.scale.y=1+Math.sin(idle)*.015;
+  rig.legs[0].rotation.x=stride*.42*walkAmount;
+  rig.legs[1].rotation.x=-stride*.42*walkAmount;
+  rig.arms[0].rotation.x=-stride*.30*walkAmount;
+  if(!rig.staff)rig.arms[1].rotation.x=stride*.30*walkAmount;
+  rig.arms[0].rotation.z=-.13+Math.sin(idle)*.027;
+  if(!rig.staff)rig.arms[1].rotation.z=.13-Math.sin(idle)*.027;
+  // Quick individual blinks on the little faces.
+  const blinking=Math.sin(seconds*.89+rig.idleSeed*3)>.997;
+  for(const eye of rig.eyes)eye.scale.y=blinking?.16:1.1
+ }
+}
 let frame=0;
 let tourLastTime=0,registrationLastTime=0;
 function animate(time=0){
@@ -2794,6 +2908,7 @@ function animate(time=0){
   ?Math.min(Math.max((time-registrationLastTime)/1000,0),.075):0;
  registrationLastTime=time;
  updateRegistrationScene(seconds,time/1000);
+ animateCharacterActors(time/1000);
  if(flyMode.active){
   if(tourLastTime)moveTour(Math.min((time-tourLastTime)/1000,.07));
   tourLastTime=time
