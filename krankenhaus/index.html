@@ -43,6 +43,10 @@ body.fly-active #topLegend,body.fly-active #roomInfo{display:none!important}
 #roomInfo span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:#526f74;font-size:10px;line-height:1.35;margin-top:3px}
 #roomInfo[hidden]{display:none}
 #status{padding:11px 15px;background:#d8f0e7;color:#326d64;text-align:center;font-size:12px;font-weight:750}
+#vendingEconomy{padding:9px 14px;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:5px 14px;background:#f4fff3;border-bottom:1px solid #b8e6cd;color:#2e665a;font-size:12px;font-weight:750;font-variant-numeric:tabular-nums}
+#vendingEconomy strong{font-weight:950;color:#198665;font-size:14px}
+#vendingSales{color:#4b7580}
+#vendingSale{color:#9d671e;font-weight:900;min-width:20px}
 section{padding:15px 15px 20px}
 section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
 .rooms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
@@ -102,6 +106,11 @@ body.furniture-active #stage{height:53dvh;min-height:275px;max-height:520px}
 </head>
 <body>
 <header><div><div class="eyebrow">🏥 Eigenes Krankenhaus-Spiel</div><h1>Klinik am Park <span aria-hidden="true">✚</span></h1><p class="subtitle">Krankenhaus 3D · Großes Foyer und Hauptflur</p></div><span class="pill">KLINIK BAUEN</span></header>
+<div id="vendingEconomy" aria-label="Einnahmen aus Getränkeautomaten">
+ <span>💶 Automaten-Einnahmen: <strong id="vendingEarnings">0,00 €</strong></span>
+ <span id="vendingSales">☕ 0 · 🥤 0 verkauft</span>
+ <span id="vendingSale" aria-live="polite"></span>
+</div>
 <main>
 <div id="stage" aria-label="Interaktive dreidimensionale Ansicht des Krankenhauses">
  <div id="topLegend"><strong>🏥 Klinik am Park</strong><small>🚪 Haupteingang · großes Foyer<br>🧑‍💻 Anmeldung links · 🪑 Warten rechts<br>⬆️ Dahinter der Hauptflur<br>🩺 Behandlung · 🔬 Diagnose · 🚻 WC</small></div>
@@ -1865,6 +1874,189 @@ cylinder(.065,.078,.15,5.88,1.08,2.52,glass,12);
 box(1.00,.66,.09,5.40,1.39,.55,black);
 box(.88,.55,.10,5.40,1.40,.62,screenMat);
 takeDecorIntoRoom('waiting',waitingDecorStart);
+
+// Two permanent vending machines belong to the movable waiting room.
+// Put them along the RIGHT wall, safely behind the seats and clear of the
+// central foyer aisle. They do not occupy editable furniture-save slots.
+const vendingSpecs=[
+ {id:'coffee',name:'KAFFEE',price:250,emoji:'☕',x:1.96,z:1.42},
+ {id:'drinks',name:'GETRÄNKE',price:180,emoji:'🥤',x:1.96,z:-.90}
+];
+const vendingMachines=new Map();
+const vendingCashKey='klinik-am-park-automaten-v1';
+const vendingCash={earnedCents:0,coffee:0,drinks:0};
+try{
+ const saved=JSON.parse(localStorage.getItem(vendingCashKey)||'null');
+ if(saved){
+  for(const key of ['earnedCents','coffee','drinks'])
+   if(Number.isSafeInteger(saved[key])&&saved[key]>=0&&saved[key]<1e12)
+    vendingCash[key]=saved[key]
+ }
+}catch(e){}
+const euros=new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'});
+function showVendingCash(message=''){
+ document.getElementById('vendingEarnings').textContent=euros.format(vendingCash.earnedCents/100);
+ document.getElementById('vendingSales').textContent=
+  '☕ '+vendingCash.coffee+' · 🥤 '+vendingCash.drinks+' verkauft';
+ document.getElementById('vendingSale').textContent=message
+}
+function vendingPurchase(type){
+ const machine=vendingSpecs.find(item=>item.id===type);
+ if(!machine)return;
+ vendingCash.earnedCents+=machine.price;
+ vendingCash[machine.id]++;
+ try{localStorage.setItem(vendingCashKey,JSON.stringify(vendingCash))}catch(e){}
+ showVendingCash(machine.emoji+' +'+euros.format(machine.price/100));
+ const model=vendingMachines.get(type);
+ if(model)model.userData.flash=1.6
+}
+function makeVendingMachine(spec){
+ const waiting=roomGroups.get('waiting');if(!waiting)return;
+ const root=new THREE.Group();
+ root.name='Automat '+spec.name;
+ root.position.set(spec.x,0,spec.z);
+ root.rotation.y=-Math.PI/2;waiting.add(root);
+ root.userData.flash=0;
+ const cabinet=mat(spec.id==='coffee'?0xa86a40:0x328dc8,.62);
+ const accent=mat(spec.id==='coffee'?0xf2bd6b:0x64dce6,.61);
+ const darkVending=mat(0x284e65,.41,.10);
+ const metallic=mat(0xc8e3e5,.35,.25);
+ const illuminated=new THREE.MeshStandardMaterial({
+  color:spec.id==='coffee'?0xffe4ac:0xa7eeff,
+  emissive:spec.id==='coffee'?0xb76a22:0x2b86a8,
+  emissiveIntensity:.20,roughness:.35
+ });
+ const windowGlass=new THREE.MeshPhysicalMaterial({
+  color:0xc7f1f2,transparent:true,opacity:.30,roughness:.16,
+  metalness:0,depthWrite:false
+ });
+ // Cabinet and display. Front faces into the waiting room.
+ box(.67,1.68,.61,0,1.025,0,cabinet,root);
+ box(.74,.08,.66,0,1.88,0,metallic,root);
+ box(.70,.12,.66,0,.23,0,darkVending,root);
+ box(.59,1.22,.058,0,1.13,.326,darkVending,root,false);
+ box(.43,.76,.043,-.085,1.31,.358,illuminated,root,false);
+ const glassScreen=box(.40,.72,.013,-.085,1.31,.385,windowGlass,root,false);
+ glassScreen.renderOrder=1;
+ // Distinct coffee cups or colorful drink bottles in a showcase.
+ for(let row=0;row<2;row++){
+  for(let col=0;col<3;col++){
+   const px=-.23+col*.15,py=1.15+row*.25;
+   if(spec.id==='coffee'){
+    cylinder(.062,.052,.16,px,py,.343,mat(row?0xf8f1dc:0xd6a76b),9,root);
+    cylinder(.064,.064,.019,px,py+.088,.343,mat(0x4a312a),9,root)
+   }else{
+    const bottleMat=mat([0x75c9e8,0xedbe71,0x81d5ae][col],.34);
+    cylinder(.052,.058,.19,px,py,.347,bottleMat,10,root);
+    cylinder(.025,.025,.05,px,py+.121,.347,metallic,10,root)
+   }
+  }
+ }
+ box(.13,.40,.05,.258,1.30,.36,metallic,root,false);
+ box(.075,.12,.019,.254,1.44,.393,darkVending,root,false);
+ for(const yy of [1.30,1.18])
+  for(const zz of [-.03,.04])
+   box(.027,.026,.021,.247+zz,yy,.398,accent,root,false);
+ box(.16,.049,.027,.235,1.00,.393,darkVending,root,false);
+ box(.15,.055,.037,.235,.89,.393,metallic,root,false);
+ box(.43,.18,.08,-.055,.56,.344,darkVending,root,false);
+ box(.34,.040,.064,-.055,.59,.392,metallic,root,false);
+ box(.48,.025,.11,-.085,.24,.385,accent,root,false);
+ // Price/brand header is readable both overhead and in the touch tour.
+ const title=new THREE.Mesh(new THREE.PlaneGeometry(.60,.17),
+  new THREE.MeshBasicMaterial({
+   map:labelTexture(spec.name,'#224d5c','#fff8dd',spec.id==='coffee'?70:57),
+   transparent:true,side:THREE.DoubleSide,depthWrite:false
+  }));
+ title.position.set(0,1.755,.342);root.add(title);
+ const price=new THREE.Mesh(new THREE.PlaneGeometry(.39,.12),
+  new THREE.MeshBasicMaterial({
+   map:labelTexture(euros.format(spec.price/100),'#1f6652','#fffef3',77),
+   transparent:true,side:THREE.DoubleSide,depthWrite:false
+  }));
+ price.position.set(.195,.77,.385);root.add(price);
+ const light=new THREE.Mesh(new THREE.PlaneGeometry(.39,.035),illuminated);
+ light.position.set(-.085,.68,.396);root.add(light);
+ root.userData.light=light;
+ vendingMachines.set(spec.id,root)
+}
+for(const machine of vendingSpecs)makeVendingMachine(machine);
+showVendingCash();
+
+// Existing guests visit the machines instead of creating disposable
+// dummy customers. Local coordinates mean purchases still work when the
+// user moves the complete waiting room in floorplan mode.
+const vendingShoppers=[
+ {person:waitingGuest1,type:'coffee',seat:[-.92,1.46],
+  route:[[-.92,2.38],[.88,2.38],[1.22,1.42]],timer:5,
+  state:'rest',index:0,drinkTime:0},
+ {person:waitingGuest2,type:'drinks',seat:[-1.93,-1.02],
+  route:[[-1.93,-.26],[.52,-.26],[1.20,-.90]],timer:12,
+  state:'rest',index:0,drinkTime:0}
+];
+function updateVendingShoppers(dt,elapsed){
+ const stepTime=Math.max(0,Math.min(.075,dt));
+ for(const customer of vendingShoppers){
+  const p=customer.person,ambient=p.userData.ambientMotion;
+  const rig=p.userData.characterRig;
+  if(!ambient||!rig)continue;
+  if(customer.state==='rest'){
+   customer.timer-=stepTime;
+   if(customer.timer<=0){
+    customer.state='out';customer.index=0;
+    ambient.mode='shopping';
+    p.position.y=ambient.baseY
+   }
+   continue
+  }
+  if(customer.state==='buy'){
+   rig.walk=false;
+   customer.drinkTime-=stepTime;
+   // Turn gently toward the machine and inspect the products.
+   p.rotation.y=Math.PI/2;
+   rig.arms[1].rotation.x=-.48+Math.sin(elapsed*3.5)*.055;
+   if(customer.drinkTime<=0){
+    vendingPurchase(customer.type);
+    customer.state='back';
+    customer.index=customer.route.length-2
+   }
+   continue
+  }
+  const goingOut=customer.state==='out';
+  const target=goingOut?customer.route[customer.index]:
+   customer.index<0?customer.seat:customer.route[customer.index];
+  const dx=target[0]-p.position.x,dz=target[1]-p.position.z;
+  const distance=Math.hypot(dx,dz);
+  if(distance<.045){
+   if(goingOut){
+    customer.index++;
+    if(customer.index>=customer.route.length){
+     customer.state='buy';customer.drinkTime=1.9;rig.walk=false
+    }
+   }else if(customer.index>=0)customer.index--;
+   else{
+    customer.state='rest';ambient.mode='seated';
+    customer.timer=customer.type==='coffee'?27:33;
+    p.position.x=customer.seat[0];p.position.z=customer.seat[1];
+    p.rotation.y=ambient.baseAngle;rig.walk=false
+   }
+  }else{
+   const move=Math.min(distance,stepTime*.89);
+   p.position.x+=dx/distance*move;p.position.z+=dz/distance*move;
+   p.rotation.y=Math.atan2(dx,dz);
+   rig.walk=true
+  }
+  p.position.y=ambient.baseY+Math.sin(elapsed*10)*.007
+ }
+}
+function animateVendingLights(dt,elapsed){
+ for(const model of vendingMachines.values()){
+  model.userData.flash=Math.max(0,model.userData.flash-dt);
+  const material=model.userData.light.material;
+  material.emissiveIntensity=model.userData.flash>0
+   ?.83:.21+Math.sin(elapsed*1.6)*.06
+ }
+}
 // Four guests stroll along short, wall-free sections of foyer and corridor.
 // They never wander at random into treatment rooms, the desk or furniture.
 addAmbientActor(visitor(.40,5.67,mat(0xb0d1e7),.85,.3),'patrol',[
@@ -3207,7 +3399,9 @@ function animate(time=0){
  registrationLastTime=time;
  updateRegistrationScene(seconds,time/1000);
  updateAmbientActors(seconds,time/1000);
+ updateVendingShoppers(seconds,time/1000);
  animateCharacterActors(time/1000);
+ animateVendingLights(seconds,time/1000);
  animateGeneralPractice(time/1000);
  if(flyMode.active){
   if(tourLastTime)moveTour(Math.min((time-tourLastTime)/1000,.07));
