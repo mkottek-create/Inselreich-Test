@@ -2198,7 +2198,8 @@ function receiveClinicIncome(cents,reason){
  clinicStaffState.balanceCents+=cents;
  clinicStaffState.totalRevenueCents+=cents;
  saveClinicLedger();
- showClinicFinance('💶 '+reason+': +'+euros.format(cents/100))
+ showClinicFinance('💶 '+reason+': +'+euros.format(cents/100));
+ if(!document.getElementById('staffPanel').hidden)renderStaffCandidates()
 }
 function refreshStaffActors(){
  const docs=clinicEmployees('doctor'),assistants=clinicEmployees('assistant');
@@ -2263,10 +2264,10 @@ function showStaffOffice(message){
   '🩺 '+clinicEmployees('doctor').length+' Ärzte · 🧑‍💼 '+
   clinicEmployees('assistant').length+' Assistenten · 💸 '+
   euros.format(clinicMonthlySalaryCents()/100)+' monatlich';
- const remaining=clinicMonthSeconds-clinicStaffState.elapsedSeconds;
+ const remaining=Math.ceil(clinicMonthSeconds-clinicStaffState.elapsedSeconds);
  document.getElementById('staffMonthTimer').textContent=
   '⏱️ Nächster Gehaltstag in '+Math.floor(remaining/60)+':'+
-  String(Math.ceil(remaining%60)).padStart(2,'0')+
+  String(remaining%60).padStart(2,'0')+
   ' · 6 Minuten aktive Spielzeit = 1 Spielmonat';
  document.getElementById('staffIncome').textContent=
   '🩺 Untersuchung: 180,00 € · ☕ Kaffee: 2,50 € · 🥤 Getränke: 1,80 €';
@@ -2325,10 +2326,10 @@ function advanceClinicMonthClock(dt){
  const second=Math.floor(clinicStaffState.elapsedSeconds);
  if(second!==staffRenderedSecond){
   staffRenderedSecond=second;
-  const remaining=clinicMonthSeconds-clinicStaffState.elapsedSeconds;
+  const remaining=Math.ceil(clinicMonthSeconds-clinicStaffState.elapsedSeconds);
   document.getElementById('staffMonthTimer').textContent=
    '⏱️ Nächster Gehaltstag in '+Math.floor(remaining/60)+':'+
-   String(Math.ceil(remaining%60)).padStart(2,'0')+
+   String(remaining%60).padStart(2,'0')+
    ' · 6 Minuten aktive Spielzeit = 1 Spielmonat'
  }
  const tick=Math.floor(clinicStaffState.elapsedSeconds/15);
@@ -2350,7 +2351,7 @@ document.getElementById('staffPayMonth').addEventListener('click',()=>payClinicM
 window.addEventListener('pagehide',saveClinicLedger);
 refreshStaffActors();
 showClinicFinance('🏥 Startbudget 60.000 € · Patienten & Automaten bringen Einnahmen');
-showStaffOffice('Ein Arzt und eine Assistentin sind bereits angestellt.');
+showStaffOffice('Startteam oder gespeicherte Mitarbeiter geladen.');
 // Four guests stroll along short, wall-free sections of foyer and corridor.
 // They never wander at random into treatment rooms, the desk or furniture.
 addAmbientActor(visitor(.40,5.67,mat(0xb0d1e7),.85,.3),'patrol',[
@@ -2455,6 +2456,7 @@ function updateRegistrationScene(delta,elapsed){
    sceneState.phase='toDoctor';sceneState.waypoint=0
   }
  }else if(sceneState.phase==='toDoctor'){
+  if(!clinicHasStaff('doctor'))return;
   const path=generalVisitPath();
   if(moveRegistrationPatient(path[sceneState.waypoint],speed)){
    sceneState.waypoint++;
@@ -2463,6 +2465,7 @@ function updateRegistrationScene(delta,elapsed){
    }
   }
  }else if(sceneState.phase==='exam'){
+  if(!clinicHasStaff('doctor'))return;
   // Small face-to-face consultation while the doctor gestures and nods.
   const doctor=generalPractitioner;
   if(doctor){
