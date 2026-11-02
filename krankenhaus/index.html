@@ -3173,6 +3173,34 @@ function applyFloorplanFromStorage(){
     if(initialRooms.some(r=>r.id===data.id))moveRoomTo(data.id,data.x,data.z,true,false)
    }
   }
+  // When loading an older saved floorplan, the new cleaning room must not
+  // overwrite an already player-built room. Find a nearby free spot first.
+  const cleaner=roomSpecs.find(r=>r.id==='cleaning');
+  if(cleaner&&!raw.some(data=>data?.id==='cleaning')){
+   const conflictsSave=(x,z)=>raw.some(data=>
+    data&&data.id!=='cleaning'&&!initialRooms.some(r=>r.id===data.id)&&
+    Number.isFinite(data.x)&&Number.isFinite(data.z)&&
+    Number.isFinite(data.w)&&Number.isFinite(data.d)&&
+    Math.abs(x-data.x)<(cleaner.w+data.w)/2-.05&&
+    Math.abs(z-data.z)<(cleaner.d+data.d)/2-.05);
+   if(!validRoomSpot(cleaner.id,cleaner.x,cleaner.z)||
+      conflictsSave(cleaner.x,cleaner.z)){
+    const x0=cleaner.x,z0=cleaner.z;
+    let found=false;
+    for(let radius=1;radius<=19&&!found;radius++){
+     for(let xi=-radius;xi<=radius&&!found;xi++){
+      for(let zi=-radius;zi<=radius;zi++){
+       if(Math.max(Math.abs(xi),Math.abs(zi))!==radius)continue;
+       const xx=x0+xi,zz=z0+zi;
+       if(validRoomSpot(cleaner.id,xx,zz)&&!conflictsSave(xx,zz)){
+        moveRoomTo(cleaner.id,xx,zz,true,false);
+        found=true;break
+       }
+      }
+     }
+    }
+   }
+  }
   let added=0;
   for(const data of raw){
    if(!data||typeof data.id!=='string'||initialRooms.some(r=>r.id===data.id))continue;
