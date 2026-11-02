@@ -2120,6 +2120,237 @@ function animateVendingLights(dt,elapsed){
    ?.83:.21+Math.sin(elapsed*1.6)*.06
  }
 }
+// Personnel office and active-play monthly finances. The initial team is
+// already paid staff, so the established receptionist and GP stay on screen.
+// One game month is six minutes of actively played time, not calendar time.
+const clinicStaffCandidates=[
+ {id:'dr-lara',role:'doctor',name:'Dr. Lara Neumann',salary:4300,
+  skill:'Hausärztin · sehr freundlich',icon:'👩‍⚕️'},
+ {id:'dr-jonas',role:'doctor',name:'Dr. Jonas Weber',salary:5100,
+  skill:'Erfahrener Allgemeinmediziner',icon:'👨‍⚕️'},
+ {id:'dr-mila',role:'doctor',name:'Dr. Mila Fischer',salary:4700,
+  skill:'Diagnostik & Vorsorge',icon:'👩‍⚕️'},
+ {id:'dr-ben',role:'doctor',name:'Dr. Ben Krüger',salary:3900,
+  skill:'Junger Hausarzt · motiviert',icon:'👨‍⚕️'},
+ {id:'as-mia',role:'assistant',name:'Mia Berger',salary:2600,
+  skill:'Anmeldung & Patientenempfang',icon:'👩‍💼'},
+ {id:'as-lea',role:'assistant',name:'Lea Sommer',salary:2900,
+  skill:'Patientenorganisation',icon:'👩‍💼'},
+ {id:'as-tom',role:'assistant',name:'Tom Richter',salary:2500,
+  skill:'Anmeldung & Service',icon:'🧑‍💼'},
+ {id:'as-sara',role:'assistant',name:'Sara Hoffmann',salary:3100,
+  skill:'Erfahrene medizinische Assistenz',icon:'👩‍⚕️'}
+];
+const clinicLedgerKey='klinik-am-park-personal-finanz-v1';
+const clinicMonthSeconds=360;
+const clinicStaffState={
+ balanceCents:6000000,month:1,elapsedSeconds:0,
+ totalRevenueCents:0,totalSalariesCents:0,
+ hired:['dr-lara','as-mia']
+};
+try{
+ const loaded=JSON.parse(localStorage.getItem(clinicLedgerKey)||'null');
+ if(loaded&&typeof loaded==='object'){
+  for(const key of ['balanceCents','totalRevenueCents','totalSalariesCents']){
+   if(Number.isSafeInteger(loaded[key])&&Math.abs(loaded[key])<1e13)
+    clinicStaffState[key]=loaded[key]
+  }
+  if(Number.isSafeInteger(loaded.month)&&loaded.month>=1&&loaded.month<100000)
+   clinicStaffState.month=loaded.month;
+  if(Number.isFinite(loaded.elapsedSeconds)&&loaded.elapsedSeconds>=0&&loaded.elapsedSeconds<clinicMonthSeconds)
+   clinicStaffState.elapsedSeconds=loaded.elapsedSeconds;
+  if(Array.isArray(loaded.hired)){
+   const allowed=new Set(clinicStaffCandidates.map(p=>p.id));
+   clinicStaffState.hired=[...new Set(loaded.hired.filter(id=>typeof id==='string'&&allowed.has(id)))];
+   for(const role of ['doctor','assistant']){
+    const selected=clinicStaffState.hired.filter(id=>
+     clinicStaffCandidates.find(c=>c.id===id)?.role===role);
+    if(selected.length>2)clinicStaffState.hired=clinicStaffState.hired.filter(id=>
+     !selected.slice(2).includes(id))
+   }
+  }
+ }
+}catch(e){}
+let staffSelectedRole='doctor',staffRenderedSecond=-1,staffSavedTick=-1;
+let secondClinicDoctor=null,secondClinicAssistant=null;
+function clinicEmployees(role){
+ return clinicStaffCandidates.filter(c=>
+  clinicStaffState.hired.includes(c.id)&&(!role||c.role===role))
+}
+function clinicHasStaff(role){return clinicEmployees(role).length>0}
+function clinicMonthlySalaryCents(){
+ return clinicEmployees().reduce((total,person)=>total+person.salary*100,0)
+}
+function saveClinicLedger(){
+ try{localStorage.setItem(clinicLedgerKey,JSON.stringify(clinicStaffState))}catch(e){}
+}
+function showClinicFinance(message){
+ const money=document.getElementById('clinicBalance');
+ money.textContent=euros.format(clinicStaffState.balanceCents/100);
+ money.classList.toggle('negative',clinicStaffState.balanceCents<0);
+ document.getElementById('clinicMonth').textContent=String(clinicStaffState.month);
+ document.getElementById('clinicPayroll').textContent=
+  euros.format(clinicMonthlySalaryCents()/100)+' / Monat';
+ if(message!==undefined)document.getElementById('clinicFinanceMessage').textContent=message;
+}
+function receiveClinicIncome(cents,reason){
+ if(!Number.isSafeInteger(cents)||cents<=0)return;
+ clinicStaffState.balanceCents+=cents;
+ clinicStaffState.totalRevenueCents+=cents;
+ saveClinicLedger();
+ showClinicFinance('💶 '+reason+': +'+euros.format(cents/100))
+}
+function refreshStaffActors(){
+ const docs=clinicEmployees('doctor'),assistants=clinicEmployees('assistant');
+ generalPractitioner.visible=docs.length>0;
+ receptionist.visible=assistants.length>0;
+ if(docs.length)generalPractitioner.name='🩺 '+docs[0].name;
+ if(assistants.length)receptionist.name='🧑‍💼 '+assistants[0].name;
+ // Second doctor works in treatment room 2, rather than occupying the same
+ // workstation as the main GP. Both remain attached to movable room modules.
+ if(docs.length>1&&!secondClinicDoctor){
+  const actor=visitor(0,0,mat(0x78c0b2),.87,Math.PI,'doctor');
+  group.remove(actor);
+  roomGroups.get('treatment2').add(actor);
+  actor.position.set(-.20,.18,.38);
+  secondClinicDoctor=actor
+ }
+ if(secondClinicDoctor){
+  secondClinicDoctor.visible=docs.length>1;
+  if(docs.length>1)secondClinicDoctor.name='🩺 '+docs[1].name
+ }
+ if(assistants.length>1&&!secondClinicAssistant){
+  const actor=visitor(0,0,mat(0x5bbdb7),.88,0,'receptionist');
+  group.remove(actor);
+  roomGroups.get('reception').add(actor);
+  actor.position.set(-1.54,.18,-1.46);
+  secondClinicAssistant=actor
+ }
+ if(secondClinicAssistant){
+  secondClinicAssistant.visible=assistants.length>1;
+  if(assistants.length>1)secondClinicAssistant.name='🧑‍💼 '+assistants[1].name
+ }
+}
+function renderStaffCandidates(){
+ const container=document.getElementById('staffCandidates');
+ container.replaceChildren();
+ for(const person of clinicStaffCandidates.filter(p=>p.role===staffSelectedRole)){
+  const hired=clinicStaffState.hired.includes(person.id);
+  const full=clinicEmployees(person.role).length>=2;
+  const card=document.createElement('div');
+  card.className='staffCandidate';
+  const title=document.createElement('strong');
+  title.textContent=person.icon+' '+person.name;
+  const subtitle=document.createElement('small');
+  subtitle.textContent=person.skill;
+  const wage=document.createElement('span');
+  wage.className='salary';
+  wage.textContent='💶 '+euros.format(person.salary)+' / Monat';
+  const button=document.createElement('button');
+  button.type='button';
+  button.className=hired?'fire':'hire';
+  button.textContent=hired?'✖ Entlassen':full?'Team voll (max. 2)':'➕ Einstellen';
+  button.disabled=!hired&&(full||clinicStaffState.balanceCents<person.salary*100);
+  if(!hired&&!full&&clinicStaffState.balanceCents<person.salary*100)
+   button.textContent='💸 Zu wenig Geld';
+  button.addEventListener('click',()=>changeClinicEmployee(person.id));
+  card.append(title,subtitle,wage,button);
+  container.append(card)
+ }
+}
+function showStaffOffice(message){
+ document.getElementById('staffRoster').textContent=
+  '🩺 '+clinicEmployees('doctor').length+' Ärzte · 🧑‍💼 '+
+  clinicEmployees('assistant').length+' Assistenten · 💸 '+
+  euros.format(clinicMonthlySalaryCents()/100)+' monatlich';
+ const remaining=clinicMonthSeconds-clinicStaffState.elapsedSeconds;
+ document.getElementById('staffMonthTimer').textContent=
+  '⏱️ Nächster Gehaltstag in '+Math.floor(remaining/60)+':'+
+  String(Math.ceil(remaining%60)).padStart(2,'0')+
+  ' · 6 Minuten aktive Spielzeit = 1 Spielmonat';
+ document.getElementById('staffIncome').textContent=
+  '🩺 Untersuchung: 180,00 € · ☕ Kaffee: 2,50 € · 🥤 Getränke: 1,80 €';
+ if(message!==undefined)document.getElementById('staffNotice').textContent=message;
+ for(const button of document.querySelectorAll('[data-staffrole]')){
+  const active=button.dataset.staffrole===staffSelectedRole;
+  button.classList.toggle('active',active);
+  button.setAttribute('aria-pressed',String(active))
+ }
+ renderStaffCandidates()
+}
+function changeClinicEmployee(id){
+ const person=clinicStaffCandidates.find(item=>item.id===id);
+ if(!person)return;
+ const hired=clinicStaffState.hired.includes(id);
+ if(hired){
+  clinicStaffState.hired=clinicStaffState.hired.filter(v=>v!==id)
+ }else{
+  if(clinicEmployees(person.role).length>=2)return;
+  if(clinicStaffState.balanceCents<person.salary*100){
+   showStaffOffice('Nicht genügend Geld für den ersten Monatslohn.');return
+  }
+  clinicStaffState.hired.push(id)
+ }
+ saveClinicLedger();
+ refreshStaffActors();
+ const action=hired?'entlassen':'eingestellt';
+ showClinicFinance('👩‍⚕️ '+person.name+' '+action);
+ showStaffOffice(person.name+' '+action+
+  (clinicHasStaff('doctor')&&clinicHasStaff('assistant')
+   ?' – Betrieb läuft.':' – Achtung: Arzt und Assistenz werden für Behandlungen benötigt.'))
+}
+function payClinicMonth(manual=false){
+ const cost=clinicMonthlySalaryCents();
+ clinicStaffState.balanceCents-=cost;
+ clinicStaffState.totalSalariesCents+=cost;
+ clinicStaffState.month++;
+ clinicStaffState.elapsedSeconds=0;
+ staffRenderedSecond=-1;
+ staffSavedTick=-1;
+ saveClinicLedger();
+ const suffix=cost?'-'+euros.format(cost/100):'Keine Angestellten';
+ showClinicFinance('🗓️ Monat '+(clinicStaffState.month-1)+
+  ': Gehälter '+suffix+
+  (clinicStaffState.balanceCents<0?' · ⚠️ Kasse im Minus!':''));
+ showStaffOffice('Monat '+(clinicStaffState.month-1)+
+  ' abgerechnet: '+(cost?euros.format(cost/100):'0 €')+
+  ' Gehälter bezahlt.'+(manual?' (manuell)':''));
+}
+function advanceClinicMonthClock(dt){
+ if(!(dt>0))return;
+ clinicStaffState.elapsedSeconds+=Math.min(dt,.075);
+ if(clinicStaffState.elapsedSeconds>=clinicMonthSeconds){
+  payClinicMonth();return
+ }
+ const second=Math.floor(clinicStaffState.elapsedSeconds);
+ if(second!==staffRenderedSecond){
+  staffRenderedSecond=second;
+  const remaining=clinicMonthSeconds-clinicStaffState.elapsedSeconds;
+  document.getElementById('staffMonthTimer').textContent=
+   '⏱️ Nächster Gehaltstag in '+Math.floor(remaining/60)+':'+
+   String(Math.ceil(remaining%60)).padStart(2,'0')+
+   ' · 6 Minuten aktive Spielzeit = 1 Spielmonat'
+ }
+ const tick=Math.floor(clinicStaffState.elapsedSeconds/15);
+ if(tick!==staffSavedTick){staffSavedTick=tick;saveClinicLedger()}
+}
+const staffToggle=document.getElementById('toggleStaff');
+const staffPanel=document.getElementById('staffPanel');
+staffToggle.addEventListener('click',()=>{
+ staffPanel.hidden=!staffPanel.hidden;
+ staffToggle.classList.toggle('active',!staffPanel.hidden);
+ staffToggle.setAttribute('aria-expanded',String(!staffPanel.hidden))
+});
+for(const button of document.querySelectorAll('[data-staffrole]'))
+ button.addEventListener('click',()=>{
+  staffSelectedRole=button.dataset.staffrole;
+  showStaffOffice()
+ });
+document.getElementById('staffPayMonth').addEventListener('click',()=>payClinicMonth(true));
+window.addEventListener('pagehide',saveClinicLedger);
+refreshStaffActors();
+showClinicFinance('🏥 Startbudget 60.000 € · Patienten & Automaten bringen Einnahmen');
+showStaffOffice('Ein Arzt und eine Assistentin sind bereits angestellt.');
 // Four guests stroll along short, wall-free sections of foyer and corridor.
 // They never wander at random into treatment rooms, the desk or furniture.
 addAmbientActor(visitor(.40,5.67,mat(0xb0d1e7),.85,.3),'patrol',[
@@ -3462,6 +3693,7 @@ function animate(time=0){
  const seconds=registrationLastTime
   ?Math.min(Math.max((time-registrationLastTime)/1000,0),.075):0;
  registrationLastTime=time;
+ advanceClinicMonthClock(seconds);
  updateRegistrationScene(seconds,time/1000);
  updateAmbientActors(seconds,time/1000);
  updateVendingShoppers(seconds,time/1000);
