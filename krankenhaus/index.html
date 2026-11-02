@@ -51,6 +51,9 @@ body.fly-active #topLegend,body.fly-active #roomInfo{display:none!important}
 #clinicFinance strong{font-size:14px;font-weight:950;color:#146c5d}
 #clinicBalance.negative{color:#b94546}
 #clinicFinanceMessage{flex-basis:100%;font-size:11px;text-align:center;color:#956a29}
+#patientEconomy{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:5px 15px;padding:8px 12px;background:#fff9e9;color:#6d613f;border-bottom:1px solid #e9d7ae;font-size:12px;font-weight:750;font-variant-numeric:tabular-nums}
+#patientEconomy strong{font-weight:900;color:#277d67}
+#patientLastPayment{font-weight:900;color:#b67e30}
 #toggleStaff{width:calc(100% - 24px);margin:10px 12px 7px;background:#3e749b;color:white;border:0;border-radius:13px;padding:13px;font-weight:900;font-size:15px;min-height:49px;cursor:pointer}
 #toggleStaff.active{background:#c88b40}
 #staffPanel[hidden]{display:none!important}
@@ -137,6 +140,12 @@ body.furniture-active #stage{height:53dvh;min-height:275px;max-height:520px}
  <span>🗓️ Monat <strong id="clinicMonth">1</strong></span>
  <span>💸 Gehälter: <strong id="clinicPayroll">0,00 € / Monat</strong></span>
  <small id="clinicFinanceMessage"></small>
+</div>
+<div id="patientEconomy" aria-label="Bezahlte Patienten und Behandlungseinnahmen">
+ <span>💳 Patienten bezahlt: <strong id="patientPaidCount">0</strong></span>
+ <span>🩺 Behandlungen: <strong id="patientIncome">0,00 €</strong></span>
+ <span>⭐ Trinkgeld: <strong id="patientTips">0,00 €</strong></span>
+ <span id="patientLastPayment" aria-live="polite"></span>
 </div>
 <div id="vendingEconomy" aria-label="Einnahmen aus Getränkeautomaten">
  <span>💶 Automaten-Einnahmen: <strong id="vendingEarnings">0,00 €</strong></span>
@@ -1890,6 +1899,14 @@ const greetingBubble=new THREE.Mesh(new THREE.PlaneGeometry(1.38,.40),
  }));
 greetingBubble.position.set(-.05,1.99,.18);
 greetingBubble.visible=false;receptionist.add(greetingBubble);
+const paymentBubble=new THREE.Mesh(new THREE.PlaneGeometry(1.46,.40),
+ new THREE.MeshBasicMaterial({
+  map:labelTexture('💳 BEZAHLT','#21775d','#fff8df',48),
+  transparent:true,side:THREE.DoubleSide,depthWrite:false
+ }));
+paymentBubble.position.set(-.05,1.97,.19);
+paymentBubble.visible=false;receptionist.add(paymentBubble);
+const paymentBubbleLabels=new Map();
 // Reparent existing desk, signs, chairs and receptionist as a single movable unit.
 const receptionDesk=new THREE.Group();
 receptionDesk.name='receptionDesk';
@@ -1901,6 +1918,19 @@ for(const part of group.children.slice(deskStartIndex)){
 }
 receptionDesk.position.set(-3.76,0,4.82); // The reception counter stands on the LEFT side of the spacious foyer.
 group.add(receptionDesk);
+// Contactless card terminal belongs to the freely movable desk.
+const paymentDeviceBody=mat(0x344b61,.54),paymentDeviceScreen=mat(0x7fe1c6,.38);
+box(.23,.11,.29,.79,1.137,.14,paymentDeviceBody,receptionDesk);
+box(.19,.018,.22,.79,1.205,.15,paymentDeviceScreen,receptionDesk,false);
+box(.17,.014,.035,.79,1.216,.053,white,receptionDesk,false);
+for(const x of [.73,.79,.85])for(const z of [.19,.23])
+ box(.035,.009,.021,x,1.218,z,mat(0xffe5a2),receptionDesk,false);
+const paymentSign=new THREE.Mesh(new THREE.PlaneGeometry(.42,.18),
+ new THREE.MeshBasicMaterial({
+  map:labelTexture('💳 KASSE','#275c67','#fff4d6',62),
+  transparent:true,side:THREE.DoubleSide,depthWrite:false
+ }));
+paymentSign.position.set(.79,1.38,.29);receptionDesk.add(paymentSign);
 plant(-6.04,2.02,.65);
 plant(-6.04,6.88,.57);
 takeDecorIntoRoom('reception',receptionDecorStart);
@@ -2148,12 +2178,14 @@ const clinicMonthSeconds=360;
 const clinicStaffState={
  balanceCents:120000,month:1,elapsedSeconds:0,
  totalRevenueCents:0,totalSalariesCents:0,
+ patientsPaid:0,patientIncomeCents:0,tipsEarnedCents:0,
  hired:['dr-lara','as-mia'],econVersion:2
 };
 try{
  const loaded=JSON.parse(localStorage.getItem(clinicLedgerKey)||'null');
  if(loaded&&typeof loaded==='object'){
-  for(const key of ['balanceCents','totalRevenueCents','totalSalariesCents']){
+  for(const key of ['balanceCents','totalRevenueCents','totalSalariesCents',
+    'patientsPaid','patientIncomeCents','tipsEarnedCents']){
    if(Number.isSafeInteger(loaded[key])&&Math.abs(loaded[key])<1e13)
     clinicStaffState[key]=loaded[key]
   }
@@ -2203,6 +2235,19 @@ function clinicTreatmentFeeCents(){
  const best=clinicEmployees('doctor').reduce((top,doctor)=>
   !top||doctor.stars>top.stars?doctor:top,null);
  return best?best.fee*100:0
+}
+function clinicBestDoctorStars(){
+ return clinicEmployees('doctor').reduce((best,doctor)=>Math.max(best,doctor.stars),0)
+}
+function showPatientPayments(message){
+ document.getElementById('patientPaidCount').textContent=
+  String(clinicStaffState.patientsPaid);
+ document.getElementById('patientIncome').textContent=
+  euros.format(clinicStaffState.patientIncomeCents/100);
+ document.getElementById('patientTips').textContent=
+  euros.format(clinicStaffState.tipsEarnedCents/100);
+ if(message!==undefined)
+  document.getElementById('patientLastPayment').textContent=message
 }
 function saveClinicLedger(){
  try{localStorage.setItem(clinicLedgerKey,JSON.stringify(clinicStaffState))}catch(e){}
@@ -2294,8 +2339,8 @@ function showStaffOffice(message){
   String(remaining%60).padStart(2,'0')+
   ' · 6 Minuten aktive Spielzeit = 1 Spielmonat';
  document.getElementById('staffIncome').textContent=
-  '🩺 Behandlung: '+euros.format(clinicTreatmentFeeCents()/100)+
-  ' je Termin · ☕ 2,50 € · 🥤 1,80 €';
+  '💳 Zahlung am Empfang: '+euros.format(clinicTreatmentFeeCents()/100)+
+  ' je Termin · ⭐ manchmal 2–5 € Trinkgeld · ☕ 2,50 € · 🥤 1,80 €';
  if(message!==undefined)document.getElementById('staffNotice').textContent=message;
  for(const button of document.querySelectorAll('[data-staffrole]')){
   const active=button.dataset.staffrole===staffSelectedRole;
@@ -2377,6 +2422,7 @@ window.addEventListener('pagehide',saveClinicLedger);
 refreshStaffActors();
 showClinicFinance('🎮 Fun-Wirtschaft: Gehälter 90–250 € · gute Ärzte verdienen mehr pro Behandlung');
 showStaffOffice('Startteam oder gespeicherte Mitarbeiter geladen.');
+showPatientPayments();
 // Four guests stroll along short, wall-free sections of foyer and corridor.
 // They never wander at random into treatment rooms, the desk or furniture.
 addAmbientActor(visitor(.40,5.67,mat(0xb0d1e7),.85,.3),'patrol',[
@@ -2392,7 +2438,9 @@ addAmbientActor(visitor(-.25,-6.42,mat(0xe6c67c),.85,0),'patrol',[
 const firstPatient=visitor(0,8.04,mat(0xf2b776),.88,Math.PI);
 firstPatient.name='Erster Patient – Anmeldung';
 const registrationScene={phase:'approach',wait:0,waypoint:0,
- lastPos:new THREE.Vector3(),patient:firstPatient};
+ lastPos:new THREE.Vector3(),patient:firstPatient,
+ waitingSeconds:0,pendingFeeCents:0,pendingBonusCents:0,
+ paymentPaid:false,paymentTime:0};
 const registrationWaitingPath=[
  new THREE.Vector3(0,0,6.45),
  new THREE.Vector3(2.06,0,6.05),
@@ -2418,15 +2466,47 @@ function generalVisitPath(){
   generalRoomWorld(.95,.66)  // stop beside the examination chair
  ]
 }
-function generalExitPath(){
+function generalPaymentPath(){
  const room=roomSpecs.find(r=>r.id==='treatment');
  return [
   generalRoomWorld(1.95,0),
   generalRoomWorld(2.95,0),
   new THREE.Vector3(.04,0,room?.z??-1.4),
   new THREE.Vector3(.04,0,4.65),
+  new THREE.Vector3(.04,0,6.85),
+  registrationGoal()
+ ]
+}
+function generalExitPath(){
+ return [
+  new THREE.Vector3(0,0,7.57),
   new THREE.Vector3(0,0,8.80)
  ]
+}
+function settlePatientBill(state,elapsed){
+ // Charging happens at exactly one point: at the desk, after treatment.
+ // Existing income at the doctor's office is intentionally removed.
+ if(state.paymentPaid||!clinicHasStaff('assistant')||
+  !Number.isSafeInteger(state.pendingFeeCents)||state.pendingFeeCents<=0)return false;
+ state.paymentPaid=true;
+ const fee=state.pendingFeeCents;
+ const bonus=state.pendingBonusCents;
+ const total=fee+bonus;
+ clinicStaffState.patientsPaid++;
+ clinicStaffState.patientIncomeCents+=total;
+ clinicStaffState.tipsEarnedCents+=bonus;
+ receiveClinicIncome(total,'💳 Patient bezahlt');
+ showPatientPayments('💳 +'+euros.format(total/100)+(bonus?' · ⭐ +'+euros.format(bonus/100):''));
+ const label='+'+euros.format(total/100)+(bonus?' ⭐':'');
+ let texture=paymentBubbleLabels.get(label);
+ if(!texture){
+  texture=labelTexture(label,'#17694e','#fff5c8',52);
+  paymentBubbleLabels.set(label,texture)
+ }
+ paymentBubble.material.map=texture;
+ paymentBubble.material.needsUpdate=true;
+ state.paymentTime=elapsed;
+ return true
 }
 function moveRegistrationPatient(target,step){
  const person=registrationScene.patient;
@@ -2450,8 +2530,13 @@ function updateRegistrationScene(delta,elapsed){
  receptionist.position.y=.18+Math.sin(elapsed*2.1)*.013;
  receptionWave.rotation.z=sceneState.phase==='greet'
   ?-1.75+Math.sin(elapsed*7)*.28
-  :-.13+Math.sin(elapsed*2.8)*.04;
+  :sceneState.phase==='checkout'||sceneState.phase==='paid'
+   ?-.57+Math.sin(elapsed*5)*.10
+   :-.13+Math.sin(elapsed*2.8)*.04;
  greetingBubble.visible=clinicHasStaff('assistant')&&sceneState.phase==='greet';
+ paymentBubble.visible=clinicHasStaff('assistant')&&sceneState.phase==='paid';
+ if(paymentBubble.visible)paymentBubble.position.y=
+  1.97+Math.min(.20,(elapsed-sceneState.paymentTime)*.065);
  if(sceneState.phase==='approach'){
   if(!clinicHasStaff('assistant'))return;
   if(moveRegistrationPatient(registrationGoal(),speed)){
@@ -2475,7 +2560,8 @@ function updateRegistrationScene(delta,elapsed){
    }
   }
  }else if(sceneState.phase==='seated'){
-  // The patient waits briefly for their turn at the general practitioner.
+  // Long queues reduce the chance of a happy bonus.
+  sceneState.waitingSeconds+=delta;
   sceneState.wait-=delta;
   if(sceneState.wait<=0&&clinicHasStaff('doctor')){
    sceneState.phase='toDoctor';sceneState.waypoint=0
@@ -2500,7 +2586,37 @@ function updateRegistrationScene(delta,elapsed){
   }
   sceneState.wait-=delta;
   if(sceneState.wait<=0){
-   receiveClinicIncome(clinicTreatmentFeeCents(),'🩺 Hausarztbehandlung');
+   sceneState.pendingFeeCents=clinicTreatmentFeeCents();
+   // Better doctors and a short wait make occasional 2–5 € tips possible.
+   const stars=clinicBestDoctorStars();
+   const eligible=stars>=3&&sceneState.waitingSeconds<9&&
+    (clinicStaffState.patientsPaid+1)%3!==0;
+   sceneState.pendingBonusCents=eligible
+    ?(2+(stars+clinicStaffState.patientsPaid)%4)*100:0;
+   sceneState.paymentPaid=false;
+   sceneState.phase='toPayment';sceneState.waypoint=0
+  }
+ }else if(sceneState.phase==='toPayment'){
+  const path=generalPaymentPath();
+  if(moveRegistrationPatient(path[sceneState.waypoint],speed)){
+   sceneState.waypoint++;
+   if(sceneState.waypoint>=path.length){
+    sceneState.phase='checkout';sceneState.wait=.8
+   }
+  }
+ }else if(sceneState.phase==='checkout'){
+  const counter=receptionDesk.localToWorld(new THREE.Vector3(0,0,0));
+  person.rotation.y=Math.atan2(counter.x-person.position.x,
+   counter.z-person.position.z);
+  if(clinicHasStaff('assistant')){
+   sceneState.wait-=delta;
+   if(sceneState.wait<=0&&settlePatientBill(sceneState,elapsed)){
+    sceneState.phase='paid';sceneState.wait=2.7
+   }
+  }
+ }else if(sceneState.phase==='paid'){
+  sceneState.wait-=delta;
+  if(sceneState.wait<=0){
    sceneState.phase='leaving';sceneState.waypoint=0
   }
  }else if(sceneState.phase==='leaving'){
@@ -2510,7 +2626,9 @@ function updateRegistrationScene(delta,elapsed){
    if(sceneState.waypoint>=path.length){
     person.position.set(0,.18,8.04);
     sceneState.phase='approach';
-    sceneState.waypoint=0;sceneState.wait=0
+    sceneState.waypoint=0;sceneState.wait=0;
+    sceneState.waitingSeconds=0;sceneState.pendingFeeCents=0;
+    sceneState.pendingBonusCents=0;sceneState.paymentPaid=false
    }
   }
  }
