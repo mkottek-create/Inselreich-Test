@@ -979,6 +979,60 @@ function visitor(x,z,shirt=teal,scale=1,angle=0,role='patient'){
  characterActors.push(g);
  return g
 }
+// Lightweight, deterministic activity roles for the supporting population.
+// Each strolling guest stays in one open, predefined corridor section.
+// The existing registration patient keeps the scripted appointment route.
+const ambientActors=[];
+function addAmbientActor(person,mode,waypoints=[]){
+ const m={mode,waypoints,index:1,pause:0,
+  speed:.58+(ambientActors.length%3)*.11,
+  baseY:person.position.y,baseAngle:person.rotation.y,
+  seed:person.userData.characterRig.idleSeed};
+ person.userData.ambientMotion=m;
+ ambientActors.push(person);
+ return person
+}
+function updateAmbientActors(dt,elapsed){
+ const stepTime=Math.max(0,Math.min(dt,.075));
+ for(const person of ambientActors){
+  const m=person.userData.ambientMotion;
+  const rig=person.userData.characterRig;
+  if(!m||!rig)continue;
+  rig.walk=false;
+  const t=elapsed*1.28+m.seed;
+  if(m.mode==='patrol'&&m.waypoints.length>1){
+   if(m.pause>0)m.pause=Math.max(0,m.pause-stepTime);
+   else {
+    const target=m.waypoints[m.index];
+    const dx=target[0]-person.position.x,dz=target[1]-person.position.z;
+    const dist=Math.hypot(dx,dz);
+    if(dist<.045){
+     m.index=(m.index+1)%m.waypoints.length;
+     m.pause=.7+(m.seed%1.4)
+    }else {
+     const distance=Math.min(dist,stepTime*m.speed);
+     person.position.x+=dx/dist*distance;
+     person.position.z+=dz/dist*distance;
+     const angle=Math.atan2(dx,dz);
+     // Keep turning smooth rather than snapping around at each waypoint.
+     let diff=Math.atan2(Math.sin(angle-person.rotation.y),
+      Math.cos(angle-person.rotation.y));
+     person.rotation.y+=diff*Math.min(1,stepTime*5);
+     rig.walk=true
+    }
+   }
+   person.position.y=m.baseY+Math.sin(t*1.7)*.011
+  }else if(m.mode==='seated'){
+   // A real chair posture: raised knees, short leg projection, little fidgets.
+   person.position.y=m.baseY-.12+Math.sin(t)*.008;
+   person.rotation.y=m.baseAngle+Math.sin(t*.55)*.045
+  }else{
+   // Standing guests and staff: breathing and small weight changes.
+   person.position.y=m.baseY+Math.sin(t)*.012;
+   person.rotation.y=m.baseAngle+Math.sin(t*.62)*.090
+  }
+ }
+}
 function lightPost(x,z){
  cylinder(.06,.08,1.6,x,.86,z,mat(0x627b7a),9);
  sphere(.15,x,1.72,z,mat(0xfce6ae));
@@ -1800,8 +1854,10 @@ box(.88,.13,.57,5.38,.47,4.36,oak);
 for(const x of [5.06,5.68])for(const z of [4.13,4.57])
  box(.041,.31,.041,x,.29,z,oakDark);
 box(.54,.013,.28,5.38,.55,4.36,mat(0xf8f4e7),group,false);
-visitor(3.43,5.56,mat(0xdf9f87),.80,Math.PI);
-visitor(2.42,3.08,mat(0xe6c67c),.80,0);
+const waitingGuest1=addAmbientActor(
+ visitor(3.43,5.56,mat(0xdf9f87),.80,Math.PI),'seated');
+const waitingGuest2=addAmbientActor(
+ visitor(2.42,3.08,mat(0xe6c67c),.80,0),'seated');
 plant(6.12,6.91,.59);plant(6.14,1.22,.60);
 box(.37,.84,.36,5.88,.60,2.52,white);
 box(.26,.30,.026,5.88,.77,2.73,screenMat);
@@ -1809,11 +1865,16 @@ cylinder(.065,.078,.15,5.88,1.08,2.52,glass,12);
 box(1.00,.66,.09,5.40,1.39,.55,black);
 box(.88,.55,.10,5.40,1.40,.62,screenMat);
 takeDecorIntoRoom('waiting',waitingDecorStart);
-// Static people remain in the central corridor when room modules are moved.
-visitor(.40,5.67,mat(0xb0d1e7),.85,.3);
-visitor(-.31,2.48,mat(0xeca8a2),.82,Math.PI);
-visitor(.24,-2.67,mat(0x77b8ac),.85,0);
-visitor(-.25,-6.42,mat(0xe6c67c),.85,0);
+// Four guests stroll along short, wall-free sections of foyer and corridor.
+// They never wander at random into treatment rooms, the desk or furniture.
+addAmbientActor(visitor(.40,5.67,mat(0xb0d1e7),.85,.3),'patrol',[
+ [.40,5.67],[.28,7.13],[-.21,7.13],[-.10,5.70]]);
+addAmbientActor(visitor(-.31,2.48,mat(0xeca8a2),.82,Math.PI),'patrol',[
+ [-.31,2.48],[.35,1.35],[-.12,.52],[-.48,1.48]]);
+addAmbientActor(visitor(.24,-2.67,mat(0x77b8ac),.85,0),'patrol',[
+ [.24,-2.67],[.23,-4.15],[-.22,-4.48],[-.23,-2.80]]);
+addAmbientActor(visitor(-.25,-6.42,mat(0xe6c67c),.85,0),'patrol',[
+ [-.25,-6.42],[.21,-7.63],[.23,-8.46],[-.20,-8.04]]);
 // One first patient repeatedly demonstrates a simple registration workflow.
 // Existing static visitors remain unchanged; no new furniture/save data is used.
 const firstPatient=visitor(0,8.04,mat(0xf2b776),.88,Math.PI);
@@ -3118,16 +3179,20 @@ function animateCharacterActors(seconds){
   const idle=seconds*1.8+rig.idleSeed;
   const stride=Math.sin(seconds*9.2+rig.idleSeed);
   const walkAmount=rig.walk?1:0;
-  rig.torso.rotation.z=Math.sin(idle)*.010+stride*.022*walkAmount;
-  rig.torso.scale.y=1+Math.sin(idle)*.008;
-  rig.head.rotation.z=Math.sin(idle*.67)*.014;
-  rig.head.rotation.y=Math.sin(idle*.50)*.023;
-  rig.legs[0].rotation.x=stride*.32*walkAmount;
-  rig.legs[1].rotation.x=-stride*.32*walkAmount;
-  rig.arms[0].rotation.x=-stride*.24*walkAmount;
-  if(!rig.staff)rig.arms[1].rotation.x=stride*.24*walkAmount;
-  rig.arms[0].rotation.z=-.08+Math.sin(idle)*.020;
-  if(!rig.staff)rig.arms[1].rotation.z=.08-Math.sin(idle)*.020;
+  const seated=person.userData.ambientMotion?.mode==='seated';
+  rig.torso.rotation.z=Math.sin(idle)*.018+stride*.025*walkAmount;
+  rig.torso.rotation.x=seated?-.06+Math.sin(idle*.7)*.017:Math.sin(idle*.55)*.010;
+  rig.torso.scale.y=1+Math.sin(idle)*.011;
+  rig.head.rotation.z=Math.sin(idle*.67)*.025;
+  rig.head.rotation.y=Math.sin(idle*.50)*.085;
+  rig.legs[0].scale.y=seated?.78:1;
+  rig.legs[1].scale.y=seated?.78:1;
+  rig.legs[0].rotation.x=seated?-.70+Math.sin(idle)*.045:stride*.37*walkAmount;
+  rig.legs[1].rotation.x=seated?-.70-Math.sin(idle)*.045:-stride*.37*walkAmount;
+  rig.arms[0].rotation.x=seated?-.31+Math.sin(idle*.8)*.065:-stride*.25*walkAmount;
+  if(!rig.staff)rig.arms[1].rotation.x=seated?-.32-Math.sin(idle*.7)*.065:stride*.25*walkAmount;
+  rig.arms[0].rotation.z=-.09+Math.sin(idle)*.038;
+  if(!rig.staff)rig.arms[1].rotation.z=.09-Math.sin(idle)*.038;
   // Quick individual blinks on the little faces.
   const blinking=Math.sin(seconds*.89+rig.idleSeed*3)>.997;
   for(const eye of rig.eyes)eye.scale.y=blinking?.16:1.1
@@ -3141,6 +3206,7 @@ function animate(time=0){
   ?Math.min(Math.max((time-registrationLastTime)/1000,0),.075):0;
  registrationLastTime=time;
  updateRegistrationScene(seconds,time/1000);
+ updateAmbientActors(seconds,time/1000);
  animateCharacterActors(time/1000);
  animateGeneralPractice(time/1000);
  if(flyMode.active){
