@@ -841,7 +841,7 @@ const characterPalettes=[
 function visitor(x,z,shirt=teal,scale=1,angle=0,role='patient'){
  const variant=characterSerial++;
  const profile=characterPalettes[variant%characterPalettes.length];
- const staff=role==='receptionist';
+ const staff=role==='receptionist'||role==='doctor';
  const face=mat(staff?0xeab991:profile.skin,.78);
  const blush=mat(0xe2a08f,.87);
  const hair=mat(staff?0x85513b:profile.hair,.72);
@@ -856,7 +856,7 @@ function visitor(x,z,shirt=teal,scale=1,angle=0,role='patient'){
  const dark=mat(0x26323e,.47,.05);
  const badge=mat(0xf7d385,.75);
  const coat=mat(0xf3f6f2,.85);
- const g=new THREE.Group();g.name=staff?'Empfangsdame':'Patientenfigur';
+ const g=new THREE.Group();g.name=role==='doctor'?'Arzt Allgemeinmedizin':staff?'Empfangsdame':'Patientenfigur';
  g.position.set(x,.18,z);g.rotation.y=angle;g.scale.setScalar(scale);group.add(g);
  function oval(radius,x,y,z,sx,sy,sz,material,parent=g){
   const o=new THREE.Mesh(new THREE.SphereGeometry(radius,12,9),material);
@@ -935,7 +935,7 @@ function visitor(x,z,shirt=teal,scale=1,angle=0,role='patient'){
   oval(.010,side*.063,-.129,.194,.80,.90,.70,lips,head);
  // Shape the haircut around the skull: thin hair cap, a real parting,
  // fine fringe and restrained side locks instead of big stacked balls.
- const hairstyle=staff?'ponytail':profile.style;
+ const hairstyle=role==='receptionist'?'ponytail':role==='doctor'?'side':profile.style;
  oval(.253,0,.151,-.047,1.04,.58,.97,hair,head);
  oval(.153,hairstyle==='side'?-.070:0,.191,.111,1.06,.40,.64,hair,head);
  if(hairstyle==='side'||hairstyle==='cropped'){
@@ -1024,7 +1024,7 @@ const originalInitialRoomIds=['reception','waiting','treatment'];
 const initialRooms=[
  {id:'reception',name:'🧑‍💻 Anmeldung',kind:'reception',x:-4.35,z:4.10,w:5.30,d:7.55,doorSide:'none',doorOffset:0},
  {id:'waiting',name:'🪑 Wartebereich',kind:'waiting',x:4.35,z:4.10,w:5.30,d:7.55,doorSide:'none',doorOffset:0},
- {id:'treatment',name:'🩺 Allgemeinmedizin',kind:'treatment',x:-4.05,z:-1.40,w:5.30,d:3.05,doorSide:'right',doorOffset:0},
+ {id:'treatment',name:'🩺 Allgemeinmedizin',kind:'treatment',x:-4.05,z:-1.40,w:5.30,d:3.05,doorSide:'right',doorOffset:0,details:'Hausarztpraxis mit Arzt, Untersuchungsliege, Schreibtisch, Waschplatz und Patientenbesuch.'},
  {id:'treatment2',name:'🩺 Behandlungsraum 2',kind:'treatment',x:4.05,z:-1.40,w:5.30,d:3.05,doorSide:'left',doorOffset:0},
  {id:'diagnostic',name:'🔬 Diagnoseraum',kind:'diagnostic',x:-4.05,z:-4.70,w:5.30,d:3.58,doorSide:'right',doorOffset:0},
  {id:'staff',name:'☕ Personalraum',kind:'staff',x:4.05,z:-4.70,w:5.30,d:3.58,doorSide:'left',doorOffset:0},
@@ -1416,7 +1416,7 @@ const familyDoctorScreen=new THREE.MeshStandardMaterial({
  color:0x9be5e9,emissive:0x328f98,emissiveIntensity:.43,roughness:.31
 });
 const familyDoctorPost=mat(0xeafaf6,.90);
-let generalPractitioner=null;
+let generalPractitioner=null,generalDoctorBubble=null;
 function furnishGeneralMedicineRoom(){
  const room=roomGroups.get('treatment');
  if(!room)return;
@@ -1520,6 +1520,13 @@ function furnishGeneralMedicineRoom(){
    transparent:true,side:THREE.DoubleSide,depthWrite:false
   }));
  doctorLabel.position.set(.43,1.57,-1.40);decor.add(doctorLabel);
+ generalDoctorBubble=new THREE.Mesh(new THREE.PlaneGeometry(1.12,.33),
+  new THREE.MeshBasicMaterial({
+   map:labelTexture('GUTEN TAG!','#226b74','#fffdf1',62),
+   transparent:true,side:THREE.DoubleSide,depthWrite:false
+  }));
+ generalDoctorBubble.position.set(.1,1.90,.20);
+ generalDoctorBubble.visible=false;doctor.add(generalDoctorBubble);
 }
 furnishGeneralMedicineRoom();
 
@@ -1813,12 +1820,40 @@ const firstPatient=visitor(0,8.04,mat(0xf2b776),.88,Math.PI);
 firstPatient.name='Erster Patient – Anmeldung';
 const registrationScene={phase:'approach',wait:0,waypoint:0,
  lastPos:new THREE.Vector3(),patient:firstPatient};
-const registrationWaitingPath=[new THREE.Vector3(0,0,6.45),
- new THREE.Vector3(2.06,0,6.05),new THREE.Vector3(2.80,0,4.60)];
+const registrationWaitingPath=[
+ new THREE.Vector3(0,0,6.45),
+ new THREE.Vector3(2.06,0,6.05),
+ new THREE.Vector3(2.80,0,4.60)
+];
+function generalRoomWorld(x,z){
+ const room=roomGroups.get('treatment');
+ return room?room.localToWorld(new THREE.Vector3(x,0,z)):new THREE.Vector3(x-4.05,0,z-1.4)
+}
 function registrationGoal(){
- // Transform local counter-front position with its world matrix, so the
- // patient still greets the receptionist after moving or rotating the desk.
+ // Transform the counter-front position so moving / rotating the reception
+ // doesn't break the greeting scene.
  return receptionDesk.localToWorld(new THREE.Vector3(0,0,1.52))
+}
+function generalVisitPath(){
+ const room=roomSpecs.find(r=>r.id==='treatment');
+ return [
+  new THREE.Vector3(1.04,0,4.65),
+  new THREE.Vector3(.04,0,4.15),
+  new THREE.Vector3(.04,0,room?.z??-1.4),
+  generalRoomWorld(2.95,0),   // corridor-side approach to the real doorway
+  generalRoomWorld(1.95,0),   // walk through the door
+  generalRoomWorld(.95,.66)  // stop beside the examination chair
+ ]
+}
+function generalExitPath(){
+ const room=roomSpecs.find(r=>r.id==='treatment');
+ return [
+  generalRoomWorld(1.95,0),
+  generalRoomWorld(2.95,0),
+  new THREE.Vector3(.04,0,room?.z??-1.4),
+  new THREE.Vector3(.04,0,4.65),
+  new THREE.Vector3(0,0,8.80)
+ ]
 }
 function moveRegistrationPatient(target,step){
  const person=registrationScene.patient;
@@ -1838,7 +1873,7 @@ function updateRegistrationScene(delta,elapsed){
  const sceneState=registrationScene,person=sceneState.patient;
  if(person.userData.characterRig)person.userData.characterRig.walk=false;
  const speed=1.30*Math.min(.08,Math.max(0,delta));
- // A gentle idle animation, with a clear wave while a patient is greeted.
+ // Welcome at the desk and show a little animated wave.
  receptionist.position.y=.18+Math.sin(elapsed*2.1)*.013;
  receptionWave.rotation.z=sceneState.phase==='greet'
   ?-1.75+Math.sin(elapsed*7)*.28
@@ -1849,33 +1884,72 @@ function updateRegistrationScene(delta,elapsed){
    sceneState.phase='greet';sceneState.wait=2.9;
   }
  }else if(sceneState.phase==='greet'){
-  // Face the counter while the receptionist greets the patient.
   const counter=receptionDesk.localToWorld(new THREE.Vector3(0,0,0));
   person.rotation.y=Math.atan2(counter.x-person.position.x,
    counter.z-person.position.z);
   sceneState.wait-=delta;
   if(sceneState.wait<=0){
-   sceneState.phase='waiting';sceneState.waypoint=0;
+   sceneState.phase='waiting';sceneState.waypoint=0
   }
  }else if(sceneState.phase==='waiting'){
   const goal=registrationWaitingPath[sceneState.waypoint];
   if(moveRegistrationPatient(goal,speed)){
    sceneState.waypoint++;
    if(sceneState.waypoint>=registrationWaitingPath.length){
-    sceneState.phase='seated';sceneState.wait=9;
+    sceneState.phase='seated';sceneState.wait=5;
     person.rotation.y=Math.PI
    }
   }
  }else if(sceneState.phase==='seated'){
-  // Small breathing motion while waiting for an appointment.
-  person.position.y=.18+Math.sin(elapsed*2.0)*.012;
+  // The patient waits briefly for their turn at the general practitioner.
   sceneState.wait-=delta;
   if(sceneState.wait<=0){
-   person.position.set(0,.18,8.04);
-   sceneState.phase='approach';sceneState.waypoint=0;sceneState.wait=0
+   sceneState.phase='toDoctor';sceneState.waypoint=0
+  }
+ }else if(sceneState.phase==='toDoctor'){
+  const path=generalVisitPath();
+  if(moveRegistrationPatient(path[sceneState.waypoint],speed)){
+   sceneState.waypoint++;
+   if(sceneState.waypoint>=path.length){
+    sceneState.phase='exam';sceneState.wait=8.5
+   }
+  }
+ }else if(sceneState.phase==='exam'){
+  // Small face-to-face consultation while the doctor gestures and nods.
+  const doctor=generalPractitioner;
+  if(doctor){
+   const worldPos=doctor.getWorldPosition(new THREE.Vector3());
+   person.rotation.y=Math.atan2(worldPos.x-person.position.x,
+    worldPos.z-person.position.z)
+  }
+  sceneState.wait-=delta;
+  if(sceneState.wait<=0){
+   sceneState.phase='leaving';sceneState.waypoint=0
+  }
+ }else if(sceneState.phase==='leaving'){
+  const path=generalExitPath();
+  if(moveRegistrationPatient(path[sceneState.waypoint],speed)){
+   sceneState.waypoint++;
+   if(sceneState.waypoint>=path.length){
+    person.position.set(0,.18,8.04);
+    sceneState.phase='approach';
+    sceneState.waypoint=0;sceneState.wait=0
+   }
   }
  }
- if(sceneState.phase!=='seated')person.position.y=.18;
+ person.position.y=.18;
+}
+function animateGeneralPractice(elapsed){
+ if(!generalPractitioner)return;
+ const rig=generalPractitioner.userData.characterRig;
+ const examining=registrationScene.phase==='exam';
+ generalDoctorBubble.visible=examining;
+ rig.arms[1].rotation.z=examining
+  ?-.48+Math.sin(elapsed*3.1)*.15
+  :.08+Math.sin(elapsed*1.7)*.03;
+ rig.arms[1].rotation.x=examining
+  ?.16+Math.sin(elapsed*2.6)*.14:.04;
+ if(examining)rig.head.rotation.y=Math.sin(elapsed*1.6)*.06
 }
 // Outdoor detail to suggest future expansion, without prematurely adding new departments.
 for(const [x,z] of [[-8,-2],[-8,2],[8,-2],[8,3],[-7,-5.8],[7.4,-5.9]]){
@@ -3068,6 +3142,7 @@ function animate(time=0){
  registrationLastTime=time;
  updateRegistrationScene(seconds,time/1000);
  animateCharacterActors(time/1000);
+ animateGeneralPractice(time/1000);
  if(flyMode.active){
   if(tourLastTime)moveTour(Math.min((time-tourLastTime)/1000,.07));
   tourLastTime=time
