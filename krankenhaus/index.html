@@ -47,6 +47,32 @@ body.fly-active #topLegend,body.fly-active #roomInfo{display:none!important}
 #vendingEconomy strong{font-weight:950;color:#198665;font-size:14px}
 #vendingSales{color:#4b7580}
 #vendingSale{color:#9d671e;font-weight:900;min-width:20px}
+#clinicFinance{display:flex;gap:7px 15px;flex-wrap:wrap;justify-content:center;align-items:center;padding:9px 11px;background:#e4f6f0;border-bottom:1px solid #b5dfd2;color:#295a59;font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}
+#clinicFinance strong{font-size:14px;font-weight:950;color:#146c5d}
+#clinicBalance.negative{color:#b94546}
+#clinicFinanceMessage{flex-basis:100%;font-size:11px;text-align:center;color:#956a29}
+#toggleStaff{width:calc(100% - 24px);margin:10px 12px 7px;background:#3e749b;color:white;border:0;border-radius:13px;padding:13px;font-weight:900;font-size:15px;min-height:49px;cursor:pointer}
+#toggleStaff.active{background:#c88b40}
+#staffPanel[hidden]{display:none!important}
+#staffPanel{margin:0 12px 12px;padding:12px;background:#f9fffb;border:2px solid #b9e2d6;border-radius:15px;box-shadow:0 6px 17px #366f6c19}
+#staffPanel h2{margin:0 0 8px;font-size:16px}
+#staffPanel p{margin:5px 0 10px;color:#51747b;font-size:12px}
+#staffOverview{background:#e9f5ef;padding:10px;border-radius:11px;display:grid;gap:5px;font-size:12px;font-weight:750}
+#staffTabs{display:flex;gap:8px;margin:11px 0 8px}
+#staffTabs button{flex:1;min-height:44px;border:1px solid #96cfc8;background:#eff8f5;color:#2e6572;font-weight:850;border-radius:10px;font-size:13px}
+#staffTabs button.active{background:#257b84;color:white}
+#staffCandidates{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px}
+.staffCandidate{border:1px solid #c4ddd7;border-radius:11px;background:#fff;padding:10px;display:flex;gap:6px;flex-direction:column}
+.staffCandidate strong{font-size:14px;color:#284e59}
+.staffCandidate small{font-size:11px;color:#53747a;line-height:1.4}
+.staffCandidate .salary{font-size:13px;font-weight:900;color:#2b8069}
+.staffCandidate button{border:0;background:#267b69;color:white;padding:10px;border-radius:9px;min-height:42px;font-weight:850;font-size:12px}
+.staffCandidate button.fire{background:#a75454}
+.staffCandidate button:disabled{opacity:.5;cursor:not-allowed}
+#payrollActions{margin-top:10px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+#payrollActions button{min-height:43px;background:#dbad5a;color:#423918;border:0;border-radius:10px;font-weight:900;padding:9px 13px}
+#staffNotice{font-weight:800;color:#50746a;font-size:12px;flex:1}
+
 section{padding:15px 15px 20px}
 section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
 .rooms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
@@ -106,6 +132,12 @@ body.furniture-active #stage{height:53dvh;min-height:275px;max-height:520px}
 </head>
 <body>
 <header><div><div class="eyebrow">🏥 Eigenes Krankenhaus-Spiel</div><h1>Klinik am Park <span aria-hidden="true">✚</span></h1><p class="subtitle">Krankenhaus 3D · Großes Foyer und Hauptflur</p></div><span class="pill">KLINIK BAUEN</span></header>
+<div id="clinicFinance" aria-label="Krankenhaus-Finanzen">
+ <span>🏦 Klinikkasse: <strong id="clinicBalance">60.000,00 €</strong></span>
+ <span>🗓️ Monat <strong id="clinicMonth">1</strong></span>
+ <span>💸 Gehälter: <strong id="clinicPayroll">0,00 € / Monat</strong></span>
+ <small id="clinicFinanceMessage"></small>
+</div>
 <div id="vendingEconomy" aria-label="Einnahmen aus Getränkeautomaten">
  <span>💶 Automaten-Einnahmen: <strong id="vendingEarnings">0,00 €</strong></span>
  <span id="vendingSales">☕ 0 · 🥤 0 verkauft</span>
@@ -136,6 +168,25 @@ body.furniture-active #stage{height:53dvh;min-height:275px;max-height:520px}
  <button id="editReception" type="button">🛠️ Anmeldung verschieben</button>
  <button id="rotateReception" type="button" hidden>🔄 Tresen drehen</button>
  <button id="finishReception" type="button" hidden>✓ Fertig</button>
+</div>
+<button id="toggleStaff" type="button" aria-expanded="false" aria-controls="staffPanel">👩‍⚕️ Personal einstellen & Gehälter</button>
+<div id="staffPanel" hidden aria-label="Mitarbeiterverwaltung">
+ <h2>👩‍⚕️ Personalbüro</h2>
+ <p>Stelle Ärzte und Assistenten ein oder entlasse sie. Monatliche Gehälter werden automatisch aus der Klinikkasse bezahlt.</p>
+ <div id="staffOverview">
+  <span id="staffRoster">🩺 1 Arzt · 🧑‍💼 1 Assistentin</span>
+  <span id="staffMonthTimer">⏱️ Nächster Gehaltstag: 6:00 Spielminuten</span>
+  <span id="staffIncome">💶 Behandlung: 180,00 € · Kaffee: 2,50 € · Getränke: 1,80 €</span>
+ </div>
+ <div id="staffTabs">
+  <button type="button" data-staffrole="doctor" class="active" aria-pressed="true">🩺 Ärzte auswählen</button>
+  <button type="button" data-staffrole="assistant" aria-pressed="false">🧑‍💼 Assistenten auswählen</button>
+ </div>
+ <div id="staffCandidates" aria-live="polite"></div>
+ <div id="payrollActions">
+  <button id="staffPayMonth" type="button">🗓️ Monat abschließen & Gehälter zahlen</button>
+  <span id="staffNotice" role="status">Ein Arzt und eine Assistentin sind bereits angestellt.</span>
+ </div>
 </div>
 <div id="furniturePanel" hidden aria-label="Möbel-Baumodus">
  <h2>🪑 Möbel auswählen und im Zimmer antippen</h2>
@@ -1906,6 +1957,7 @@ function vendingPurchase(type){
  vendingCash.earnedCents+=machine.price;
  vendingCash[machine.id]++;
  try{localStorage.setItem(vendingCashKey,JSON.stringify(vendingCash))}catch(e){}
+ receiveClinicIncome(machine.price,machine.emoji+' Automat');
  showVendingCash(machine.emoji+' +'+euros.format(machine.price/100));
  const model=vendingMachines.get(type);
  if(model)model.userData.flash=1.6
@@ -2142,8 +2194,9 @@ function updateRegistrationScene(delta,elapsed){
  receptionWave.rotation.z=sceneState.phase==='greet'
   ?-1.75+Math.sin(elapsed*7)*.28
   :-.13+Math.sin(elapsed*2.8)*.04;
- greetingBubble.visible=sceneState.phase==='greet';
+ greetingBubble.visible=clinicHasStaff('assistant')&&sceneState.phase==='greet';
  if(sceneState.phase==='approach'){
+  if(!clinicHasStaff('assistant'))return;
   if(moveRegistrationPatient(registrationGoal(),speed)){
    sceneState.phase='greet';sceneState.wait=2.9;
   }
@@ -2167,7 +2220,7 @@ function updateRegistrationScene(delta,elapsed){
  }else if(sceneState.phase==='seated'){
   // The patient waits briefly for their turn at the general practitioner.
   sceneState.wait-=delta;
-  if(sceneState.wait<=0){
+  if(sceneState.wait<=0&&clinicHasStaff('doctor')){
    sceneState.phase='toDoctor';sceneState.waypoint=0
   }
  }else if(sceneState.phase==='toDoctor'){
@@ -2188,6 +2241,7 @@ function updateRegistrationScene(delta,elapsed){
   }
   sceneState.wait-=delta;
   if(sceneState.wait<=0){
+   receiveClinicIncome(18000,'🩺 Hausarztbehandlung');
    sceneState.phase='leaving';sceneState.waypoint=0
   }
  }else if(sceneState.phase==='leaving'){
@@ -2206,7 +2260,7 @@ function updateRegistrationScene(delta,elapsed){
 function animateGeneralPractice(elapsed){
  if(!generalPractitioner)return;
  const rig=generalPractitioner.userData.characterRig;
- const examining=registrationScene.phase==='exam';
+ const examining=registrationScene.phase==='exam'&&clinicHasStaff('doctor');
  generalDoctorBubble.visible=examining;
  rig.arms[1].rotation.z=examining
   ?-.48+Math.sin(elapsed*3.1)*.15
