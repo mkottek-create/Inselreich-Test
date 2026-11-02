@@ -1024,7 +1024,7 @@ const originalInitialRoomIds=['reception','waiting','treatment'];
 const initialRooms=[
  {id:'reception',name:'🧑‍💻 Anmeldung',kind:'reception',x:-4.35,z:4.10,w:5.30,d:7.55,doorSide:'none',doorOffset:0},
  {id:'waiting',name:'🪑 Wartebereich',kind:'waiting',x:4.35,z:4.10,w:5.30,d:7.55,doorSide:'none',doorOffset:0},
- {id:'treatment',name:'🩺 Behandlungsraum 1',kind:'treatment',x:-4.05,z:-1.40,w:5.30,d:3.05,doorSide:'right',doorOffset:0},
+ {id:'treatment',name:'🩺 Allgemeinmedizin',kind:'treatment',x:-4.05,z:-1.40,w:5.30,d:3.05,doorSide:'right',doorOffset:0},
  {id:'treatment2',name:'🩺 Behandlungsraum 2',kind:'treatment',x:4.05,z:-1.40,w:5.30,d:3.05,doorSide:'left',doorOffset:0},
  {id:'diagnostic',name:'🔬 Diagnoseraum',kind:'diagnostic',x:-4.05,z:-4.70,w:5.30,d:3.58,doorSide:'right',doorOffset:0},
  {id:'staff',name:'☕ Personalraum',kind:'staff',x:4.05,z:-4.70,w:5.30,d:3.58,doorSide:'left',doorOffset:0},
@@ -1400,8 +1400,128 @@ function furnishTreatmentRoom(id,number){
   }));
  idLabel.position.set(inner*.94,1.20,-1.405);decor.add(idLabel);
 }
-furnishTreatmentRoom('treatment',1);
 furnishTreatmentRoom('treatment2',2);
+
+// First playable department: general medical practice in the existing first
+// treatment room. All decorations and the physician belong to its movable
+// room group. Existing user furniture and save keys are left untouched.
+const familyDoctorSkin=mat(0xe0ae86,.84);
+const familyDoctorShirt=mat(0x7bb6d3,.77);
+const familyDoctorTeal=mat(0x38a796,.70);
+const familyDoctorWood=mat(0xcaa97d,.82);
+const familyDoctorSteel=mat(0x97b4ba,.43,.18);
+const familyDoctorPale=mat(0xfffcf4,.76);
+const familyDoctorInk=mat(0x315866,.70);
+const familyDoctorScreen=new THREE.MeshStandardMaterial({
+ color:0x9be5e9,emissive:0x328f98,emissiveIntensity:.43,roughness:.31
+});
+const familyDoctorPost=mat(0xeafaf6,.90);
+let generalPractitioner=null;
+function furnishGeneralMedicineRoom(){
+ const room=roomGroups.get('treatment');
+ if(!room)return;
+ const decor=new THREE.Group();decor.name='🩺 Allgemeinmedizin – Praxis und Arzt';
+ room.add(decor);
+ // Exam couch on the outer side: upholstered mint mattress and pillow.
+ for(const x of [-1.97,-1.28])for(const z of [-.78,.49])
+  box(.065,.49,.065,x,.41,z,familyDoctorSteel,decor);
+ box(.87,.15,1.65,-1.63,.66,-.14,treatmentCotFrame,decor);
+ box(.82,.13,1.59,-1.63,.80,-.14,familyDoctorPale,decor);
+ box(.78,.025,.83,-1.63,.88,.22,treatmentBlanket,decor,false);
+ box(.67,.12,.31,-1.63,.90,-.70,familyDoctorPale,decor);
+ box(.89,.27,.08,-1.63,.93,-1.02,treatmentCotFrame,decor);
+ // Examination-step stool and folding privacy panel.
+ cylinder(.18,.21,.31,-2.03,.34,.94,familyDoctorSteel,12,decor);
+ cylinder(.22,.22,.055,-2.03,.51,.94,familyDoctorShirt,12,decor);
+ for(const z of [-.78,.18]){
+  box(.045,1.12,.045,-.81,.75,z,familyDoctorSteel,decor);
+  sphere(.058,-.81,1.29,z,familyDoctorSteel,decor)
+ }
+ box(.05,.78,.91,-.81,.89,-.30,mat(0xbde5e3,.85),decor,false);
+ box(.06,.085,.95,-.81,1.33,-.30,familyDoctorTeal,decor,false);
+ // Doctor's desk, tucked against the rear wall with a visitor chair opposite.
+ const dx=.70,dz=-.97;
+ for(const x of [dx-.52,dx+.52])for(const z of [dz-.24,dz+.24])
+  box(.065,.62,.065,x,.48,z,familyDoctorWood,decor);
+ box(1.27,.11,.64,dx,.80,dz,familyDoctorWood,decor);
+ box(1.30,.036,.66,dx,.878,dz,familyDoctorPale,decor,false);
+ box(.49,.36,.070,dx+.18,1.12,dz-.14,familyDoctorInk,decor);
+ box(.41,.28,.075,dx+.18,1.13,dz-.096,familyDoctorScreen,decor,false);
+ box(.36,.027,.16,dx+.17,.914,dz+.16,familyDoctorPale,decor,false);
+ box(.18,.018,.13,dx-.34,.918,dz+.10,white,decor,false);
+ for(const z of [dz+.035,dz+.10,dz+.16])
+  box(.135,.010,.017,dx-.34,.936,z,familyDoctorTeal,decor,false);
+ // Medical chart, desk pen, mouse and desk lamp.
+ box(.28,.026,.18,dx-.32,.90,dz-.07,mat(0x87c8d9),decor,false);
+ box(.075,.022,.10,dx+.45,.914,dz+.13,familyDoctorSteel,decor,false);
+ cylinder(.035,.043,.29,dx-.50,1.04,dz-.22,familyDoctorSteel,10,decor);
+ cylinder(.13,.08,.13,dx-.50,1.22,dz-.22,mat(0xffdb90),12,decor);
+ // Patient chair in front of desk (left of the entry walk-through).
+ const cx=.31,cz=.40;
+ for(const x of [cx-.20,cx+.20])for(const z of [cz-.18,cz+.18])
+  box(.047,.40,.047,x,.36,z,familyDoctorSteel,decor);
+ box(.48,.12,.46,cx,.58,cz,chairBlue,decor);
+ box(.48,.43,.095,cx,.82,cz+.20,chairBlue,decor);
+ box(.50,.035,.05,cx,.58,cz-.22,familyDoctorTeal,decor,false);
+ // Wall-mounted sink, soap, mirror and medicine cabinet.
+ box(.62,.55,.35,-.11,.49,-1.32,familyDoctorPale,decor);
+ box(.70,.075,.41,-.11,.81,-1.28,white,decor);
+ box(.42,.017,.23,-.11,.865,-1.23,mat(0xa0dada),decor,false);
+ cylinder(.035,.035,.22,-.11,.99,-1.37,familyDoctorSteel,10,decor);
+ box(.16,.039,.08,-.11,1.08,-1.31,familyDoctorSteel,decor,false);
+ box(.17,.25,.13,-.56,.90,-1.34,familyDoctorTeal,decor);
+ box(.18,.32,.14,-.55,1.16,-1.37,familyDoctorPale,decor);
+ box(.48,.42,.06,-.10,1.36,-1.44,mat(0x9ccdd9,.4),decor,false);
+ box(.73,.83,.35,-2.18,.72,1.19,familyDoctorPale,decor);
+ box(.76,.065,.40,-2.18,1.16,1.19,familyDoctorTeal,decor);
+ box(.65,.035,.04,-2.18,.79,1.38,familyDoctorTeal,decor,false);
+ for(const x of [-2.37,-1.99])
+  box(.05,.14,.036,x,.83,1.40,familyDoctorSteel,decor,false);
+ // Small medical trolley with medicine, blood pressure cuff and tray.
+ for(const x of [1.18,1.66])for(const z of [.60,1.02]){
+  box(.042,.55,.042,x,.46,z,familyDoctorSteel,decor);
+  sphere(.064,x,.19,z,mat(0x536c77),decor)
+ }
+ for(const y of [.51,.79])box(.63,.046,.54,1.42,y,.81,familyDoctorPale,decor);
+ cylinder(.075,.078,.13,1.24,.89,.78,familyDoctorTeal,12,decor);
+ box(.15,.070,.15,1.55,.86,.82,mat(0xf3b78f),decor);
+ // Anatomical poster, first-aid cross and green department sign.
+ box(.78,.54,.05,-1.59,1.17,-1.46,familyDoctorTeal,decor,false);
+ box(.70,.46,.058,-1.59,1.17,-1.422,familyDoctorPost,decor,false);
+ const poster=new THREE.Mesh(new THREE.PlaneGeometry(.66,.40),
+  new THREE.MeshBasicMaterial({
+   map:labelTexture('GESUNDHEIT','#287a80','#f8fffa',54),
+   transparent:true,side:THREE.DoubleSide,depthWrite:false
+  }));
+ poster.position.set(-1.59,1.18,-1.383);decor.add(poster);
+ box(.28,.055,.055,1.73,1.23,-1.42,mat(0xe98687),decor,false);
+ box(.055,.28,.056,1.73,1.23,-1.42,mat(0xe98687),decor,false);
+ // Medical waste bin and a small washable floor marker.
+ cylinder(.14,.18,.37,1.92,.38,-.98,familyDoctorSteel,12,decor);
+ cylinder(.18,.18,.035,1.92,.59,-.98,familyDoctorInk,12,decor);
+ box(.62,.010,.05,1.95,.198,.40,familyDoctorTeal,decor,false);
+ // Physician is a fully rigged person, parented into the room so changing
+ // the room position keeps the doctor standing at their own workstation.
+ const doctor=visitor(0,0,familyDoctorShirt,.88,0,'doctor');
+ group.remove(doctor);
+ decor.add(doctor);
+ doctor.position.set(1.35,.18,-1.08);
+ doctor.rotation.y=.28;
+ doctor.name='👨‍⚕️ Arzt – Allgemeinmedizin';
+ generalPractitioner=doctor;
+ // His white coat and stethoscope distinguish staff from patients.
+ const scopeMat=mat(0x3d687c,.45),scopeEnd=mat(0xb3cbd2,.35,.34);
+ const scope=new THREE.Mesh(new THREE.TorusGeometry(.125,.017,7,16,Math.PI*1.35),scopeMat);
+ scope.rotation.x=.16;scope.position.set(0,1.04,.14);doctor.add(scope);
+ sphere(.055,.11,1.0,.16,scopeEnd,doctor);
+ const doctorLabel=new THREE.Mesh(new THREE.PlaneGeometry(1.18,.26),
+  new THREE.MeshBasicMaterial({
+   map:labelTexture('ALLGEMEINMEDIZIN','#1b6572','#f8fff3',53),
+   transparent:true,side:THREE.DoubleSide,depthWrite:false
+  }));
+ doctorLabel.position.set(.43,1.57,-1.40);decor.add(doctorLabel);
+}
+furnishGeneralMedicineRoom();
 
 // Ready-to-use hospital bathroom. Fixtures are local to the room's 3D group,
 // so they follow the bathroom when the player moves its module. This adds no
