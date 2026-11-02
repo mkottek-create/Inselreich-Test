@@ -825,120 +825,153 @@ function lobbyChair(x,z,angle=0,m=chairBlue){
  box(.54,.04,.10,0,.49,.16,wallTrim,chair);
  return chair
 }
-// Expressive low-poly people, with human silhouettes and animated joints.
-// Inspired by the readable isometric hospital-game figures, not copied sprites.
+// Friendly sculpted 3D caricatures. Inspired by the rounded, expressive
+// management-game look: oversized faces, glossy eyes, toothy smiles, hair
+// shapes and clear uniforms. All geometry is generated here, with no downloads.
 const characterActors=[];
 let characterSerial=0;
 const characterPalettes=[
- {skin:0xf0c59e,hair:0x533a32,pants:0x405a79,style:'short'},
- {skin:0xb87b57,hair:0x28242b,pants:0x41416a,style:'bob'},
- {skin:0xf4d0ac,hair:0xa65a36,pants:0x46748b,style:'swept'},
- {skin:0xd49d79,hair:0x342e2a,pants:0x505e80,style:'short'},
- {skin:0xe8b993,hair:0xcf9859,pants:0x486c77,style:'ponytail'},
- {skin:0x9a664f,hair:0x252b33,pants:0x6a526b,style:'bob'}
+ {skin:0xf0c49e,hair:0x613b2c,pants:0x405a79,iris:0x5b8c65,style:'swept'},
+ {skin:0xb67b58,hair:0x29262d,pants:0x41416a,iris:0x796044,style:'quiff'},
+ {skin:0xf4cba9,hair:0xb36b36,pants:0x46748b,iris:0x398c9b,style:'bob'},
+ {skin:0xd69e7b,hair:0x342c2a,pants:0x505e80,iris:0x74543c,style:'short'},
+ {skin:0xe8b993,hair:0xcf9859,pants:0x486c77,iris:0x558e5a,style:'ponytail'},
+ {skin:0x9a6750,hair:0x252a32,pants:0x6a526b,iris:0x876a45,style:'quiff'}
 ];
 function visitor(x,z,shirt=teal,scale=1,angle=0,role='patient'){
- const profile=characterPalettes[characterSerial++%characterPalettes.length];
+ const variant=characterSerial++;
+ const profile=characterPalettes[variant%characterPalettes.length];
  const staff=role==='receptionist';
- const skin=mat(staff?0xf1b88f:profile.skin,.84);
- const hair=mat(staff?0x6a4134:profile.hair,.91);
- const trouser=mat(staff?0x345e75:profile.pants,.92);
- const shoe=mat(0x35465c,.65),sleeve=shirt;
- const pale=mat(0xfff9ec,.88),eye=mat(0x28343d,.55);
- const lip=mat(0xc36c67,.90),highlight=mat(0xffffff,.68);
+ const skin=mat(staff?0xeec19c:profile.skin,.81);
+ const blush=mat(staff?0xeaac9b:0xe5a08f,.92);
+ const hair=mat(staff?0x8a5232:profile.hair,.69);
+ const hairLight=mat(staff?0xb27047:profile.hair,.72);
+ const trousers=mat(staff?0x3c6675:profile.pants,.84);
+ const shoe=mat(0x30465b,.58),pale=mat(0xffffff,.76);
+ const lipstick=mat(staff?0xc75d72:0xb76b65,.77);
+ const mouthDark=mat(0x673a47,.76),tooth=mat(0xfffcf4,.52);
+ const iris=mat(staff?0x428d86:profile.iris,.43,.06);
+ const pupilMat=mat(0x232e38,.40,.04);
+ const coat=mat(0xfaf8f0,.81),badge=mat(0xf9ce66,.72);
  const g=new THREE.Group();g.name=staff?'Empfangsdame':'Patientenfigur';
  g.position.set(x,.18,z);g.rotation.y=angle;g.scale.setScalar(scale);group.add(g);
- // Rounded oval pieces are much more natural than square sticks.
  function oval(r,x,y,z,sx,sy,sz,m,parent=g){
-  const o=new THREE.Mesh(new THREE.SphereGeometry(r,12,9),m);
+  const o=new THREE.Mesh(new THREE.SphereGeometry(r,14,10),m);
   o.position.set(x,y,z);o.scale.set(sx,sy,sz);
   o.castShadow=true;parent.add(o);return o
  }
- // Trousers, shoes and hip joints, pivoting at the waist for walking.
- const hips=oval(.24,0,.62,0,1.05,.67,.82,trouser);
+ function bar(w,h,d,x,y,z,m,parent=g){
+  return box(w,h,d,x,y,z,m,parent,false)
+ }
+ // Clear rounded shoes, jointed legs, soft hip silhouette.
+ oval(.24,0,.64,0,1.05,.73,.82,trousers);
  const legs=[];
  for(const side of [-1,1]){
-  const leg=new THREE.Group();leg.position.set(side*.135,.55,0);g.add(leg);
-  oval(.115,0,-.185,0,1.04,2.10,1.03,trouser,leg);
-  oval(.12,0,-.38,.05,.87,.77,1.10,trouser,leg);
-  oval(.125,0,-.49,.095,1.08,.53,1.65,shoe,leg);
+  const leg=new THREE.Group();leg.position.set(side*.135,.57,0);g.add(leg);
+  oval(.118,0,-.175,0,1.03,1.95,1.05,trousers,leg);
+  oval(.124,0,-.36,.035,.89,.88,1.05,trousers,leg);
+  oval(.125,0,-.48,.075,1.13,.58,1.65,shoe,leg);
   legs.push(leg)
  }
- // Waist, tapered shirt, shoulders, contrasting collar and buttons.
+ // Tapered, more sculpted torso with distinct shoulders, seam and collar.
  const torso=new THREE.Group();torso.position.y=.91;g.add(torso);
- oval(.25,0,-.02,0,1.04,1.12,.76,sleeve,torso);
- oval(.23,0,-.17,.006,1.08,.84,.83,sleeve,torso);
- oval(.235,0,.17,0,1.16,.54,.84,sleeve,torso);
- oval(.13,0,.285,0,.78,.34,.72,skin,torso);
+ oval(.268,0,-.03,0,1.08,1.03,.77,shirt,torso);
+ oval(.235,0,-.175,.006,1.08,.86,.84,shirt,torso);
+ oval(.242,0,.145,0,1.19,.57,.89,shirt,torso);
+ oval(.12,0,.285,0,.75,.39,.71,skin,torso);
+ // A little shirt V and buttons keep civilian clothes readable from above.
  for(const side of [-1,1]){
-  const lapel=box(.10,.15,.027,side*.09,1.115,.195,pale,g,false);
-  lapel.rotation.z=side*.25
+  const collar=bar(.11,.14,.038,side*.072,1.139,.206,staff?coat:pale);
+  collar.rotation.z=side*.28
  }
- for(const y of [.87,1.00,1.10])
-  oval(.018,0,y,.217,1,.8,.45,staff?mat(0xf6d784):pale);
- // Arms are rigged groups with elbows, hands and real sleeve shapes.
+ for(const y of [.87,.98,1.08])
+  oval(.014,0,y,.223,1,1,.70,staff?badge:pale);
+ // Proper arms with hands, each attached to a pivot for waving/walking.
  const arms=[];
  for(const side of [-1,1]){
-  const arm=new THREE.Group();arm.position.set(side*.272,1.10,0);g.add(arm);
-  arm.rotation.z=side*.15;
-  oval(.12,0,-.11,0,1.15,1.43,1.07,sleeve,arm);
-  oval(.082,0,-.285,.01,.86,1.44,.90,skin,arm);
-  oval(.088,0,-.41,.03,1.01,1.10,.83,skin,arm);
+  const arm=new THREE.Group();arm.position.set(side*.285,1.13,0);g.add(arm);
+  arm.rotation.z=side*.16;
+  oval(.129,0,-.12,0,1.09,1.43,1.01,staff?coat:shirt,arm);
+  oval(.091,0,-.291,.012,.83,1.34,.86,skin,arm);
+  oval(.095,0,-.418,.035,1.00,1.08,.80,skin,arm);
+  // A distinct cuff separates coat sleeves from exposed hands.
+  if(staff)oval(.098,0,-.278,.006,.96,.33,.90,coat,arm);
   arms.push(arm)
  }
- // Distinct face with curved cheeks, forehead and friendly expression.
- oval(.237,0,1.47,.005,1,1.09,.86,skin);
- for(const side of [-1,1])
-  oval(.068,side*.233,1.438,-.004,.60,1.05,.64,skin);
- oval(.060,0,1.429,.208,.72,.72,.91,skin); // nose
+ // Larger head, shorter chin, gentle ears and rounded pronounced nose.
+ const head=new THREE.Group();head.position.set(0,1.49,0);g.add(head);
+ oval(.295,0,0,0,1.03,1.08,.90,skin,head);
+ oval(.20,0,-.205,.040,1.07,.39,.87,skin,head);
+ for(const side of [-1,1]){
+  oval(.074,side*.306,-.035,-.012,.67,1.20,.80,skin,head);
+  oval(.032,side*.312,-.044,.045,.65,.85,.43,blush,head);
+  oval(.060,side*.204,-.117,.190,1.05,.64,.48,blush,head)
+ }
+ oval(.076,0,-.075,.276,.86,.88,.90,skin,head);
+ oval(.038,0,-.109,.319,.98,.60,.66,skin,head);
+ // Expressive oversized eyes with white sclera, colored irises, black pupils
+ // and two specular catches. The complete eyes squash during blinks.
  const eyes=[];
  for(const side of [-1,1]){
-  oval(.049,side*.088,1.49,.201,1.08,.93,.40,pale);
-  const pupil=oval(.029,side*.088,1.483,.222,.84,1.1,.50,eye);
-  oval(.011,side*.098,1.493,.237,1,1,.55,highlight);
-  eyes.push(pupil);
-  const brow=box(.075,.018,.024,side*.091,1.570,.203,hair,g,false);
-  brow.rotation.z=side*.11;
-  oval(.035,side*.157,1.400,.176,.9,.42,.42,mat(0xe8a198,.91))
+  const socket=new THREE.Group();
+  socket.position.set(side*.116,.065,.241);
+  head.add(socket);
+  oval(.083,0,0,0,.99,1.17,.64,pale,socket);
+  oval(.048,side*.006,-.002,.065,.95,1.05,.43,iris,socket);
+  oval(.028,side*.006,-.004,.085,.96,1.05,.45,pupilMat,socket);
+  oval(.013,-.012,.017,.100,1.1,1.1,.66,pale,socket);
+  oval(.006,.015,-.015,.108,1,1,1,pale,socket);
+  eyes.push(socket);
+  // Thick animated-looking eyebrows give each face personality.
+  const eyebrow=oval(.073,side*.122,.190,.235,1.15,.19,.30,hair,head);
+  eyebrow.rotation.z=side*(staff?-.09:.12)
  }
- // Small smile drawn as a real shallow 3D curve, not a round dot.
- const smile=new THREE.Mesh(new THREE.TubeGeometry(
-  new THREE.QuadraticBezierCurve3(
-   new THREE.Vector3(-.068,1.355,.198),
-   new THREE.Vector3(0,1.327,.237),
-   new THREE.Vector3(.068,1.355,.198)),6,.012,4,false),lip);
- g.add(smile);
- // Rounded hair cap, side locks and varied fringe/ponytail profiles.
- oval(.248,0,1.655,-.035,1.07,.66,.92,hair);
- const hairstyle=staff?'ponytail':profile.style;
- if(hairstyle==='bob'||hairstyle==='ponytail'){
-  for(const side of [-1,1])
-   oval(.091,side*.209,1.50,-.063,.84,1.85,1.02,hair);
- }
- if(hairstyle==='short'||hairstyle==='swept'){
-  oval(.19,-.063,1.660,.111,.94,.44,.62,hair);
-  if(hairstyle==='swept')
-   oval(.085,.126,1.61,.144,1.0,1.35,.80,hair)
+ // Wide crescent smile with a real dark opening and white teeth.
+ oval(.138,0,-.169,.246,1.10,.42,.41,mouthDark,head);
+ oval(.115,0,-.144,.282,1.15,.23,.50,tooth,head);
+ bar(.200,.017,.016,0,-.143,.325,mat(0xd8d8d1,.8),head);
+ oval(.061,0,-.198,.271,.94,.19,.40,lipstick,head);
+ for(const side of [-1,1])
+  oval(.015,side*.143,-.164,.248,1,1,.90,lipstick,head);
+ // Smooth, thicker hair with layered locks and distinct per-person shapes.
+ const hairstyle=staff?'bob':profile.style;
+ oval(.294,0,.219,-.060,1.05,.61,.92,hair,head);
+ oval(.240,0,.243,.066,1.14,.35,.84,hair,head);
+ if(hairstyle==='quiff'||hairstyle==='swept'||hairstyle==='short'){
+  oval(.179,-.085,.270,.151,1.12,.55,.77,hairLight,head);
+  oval(.133,.055,.293,.175,.96,.63,.62,hair,head);
+  if(hairstyle==='quiff'){
+   const tuft=oval(.126,-.092,.343,.104,.88,1.20,.73,hair,head);
+   tuft.rotation.z=.30;
+   const tuft2=oval(.099,.082,.345,.062,1.03,1.25,.87,hairLight,head);
+   tuft2.rotation.z=-.24
+  }
+  if(hairstyle==='short')oval(.154,.12,.248,.125,.86,.37,.64,hair,head)
  }else{
-  oval(.191,.035,1.655,.093,.93,.38,.60,hair);
+  for(const side of [-1,1]){
+   oval(.112,side*.234,.012,-.069,.86,1.79,1.02,hair,head);
+   oval(.126,side*.148,.238,.146,.98,.63,.59,hair,head)
+  }
+  if(hairstyle==='ponytail')
+   oval(.126,.184,.045,-.255,.96,2.07,.93,hair,head)
  }
- if(hairstyle==='ponytail'){
-  oval(.104,.153,1.53,-.217,.98,1.88,.94,hair);
-  oval(.045,.153,1.62,-.279,1.05,.70,1.00,mat(0xe8c278))
- }
+ // Bright reception coat: two open panels, collar, pocket and badge.
  if(staff){
-  // Distinct staff uniform: white collar, nameplate and a small badge.
-  box(.18,.105,.031,-.100,.996,.219,mat(0xffe19a),g,false);
-  box(.13,.025,.035,-.100,.996,.241,mat(0x39748b),g,false);
-  box(.16,.035,.04,.095,.840,.212,pale,g,false);
-  oval(.018,.19,1.655,.186,1.2,1.2,.5,mat(0xf7d678))
- }else if(characterSerial%3===0){
-  // A small shoulder bag adds a recognizable patient silhouette.
-  box(.21,.28,.12,.275,.76,.095,mat(0xc39463),g,false);
-  box(.035,.42,.035,.23,.98,.063,trouser,g,false)
+  for(const side of [-1,1]){
+   oval(.115,side*.199,-.056,.143,.74,2.19,.62,coat,torso);
+   const lapel=bar(.11,.34,.046,side*.133,1.055,.222,coat);
+   lapel.rotation.z=side*.23
+  }
+  bar(.18,.11,.030,-.10,1.022,.266,badge);
+  bar(.12,.024,.033,-.10,1.020,.288,mat(0x35677b,.66));
+  bar(.16,.037,.038,.115,.88,.252,mat(0x60c7af,.75))
+ }else if(variant%3===0){
+  // Patient accessories: small shoulder bag, visible in the overview.
+  bar(.22,.26,.12,.280,.77,.073,mat(0xc39463,.73));
+  bar(.036,.44,.038,.234,1.0,.065,trousers)
  }
- g.userData.characterRig={legs,arms,torso,eyes,walk:false,staff,
-  idleSeed:characterSerial*.81};
+ g.userData.characterRig={legs,arms,torso,head,eyes,walk:false,staff,
+  idleSeed:variant*.81};
  characterActors.push(g);
  return g
 }
@@ -2889,6 +2922,8 @@ function animateCharacterActors(seconds){
   const walkAmount=rig.walk?1:0;
   rig.torso.rotation.z=Math.sin(idle)*.018+stride*.045*walkAmount;
   rig.torso.scale.y=1+Math.sin(idle)*.015;
+  rig.head.rotation.z=Math.sin(idle*.67)*.023;
+  rig.head.rotation.y=Math.sin(idle*.50)*.028;
   rig.legs[0].rotation.x=stride*.42*walkAmount;
   rig.legs[1].rotation.x=-stride*.42*walkAmount;
   rig.arms[0].rotation.x=-stride*.30*walkAmount;
