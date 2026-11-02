@@ -133,7 +133,7 @@ body.furniture-active #stage{height:53dvh;min-height:275px;max-height:520px}
 <body>
 <header><div><div class="eyebrow">🏥 Eigenes Krankenhaus-Spiel</div><h1>Klinik am Park <span aria-hidden="true">✚</span></h1><p class="subtitle">Krankenhaus 3D · Großes Foyer und Hauptflur</p></div><span class="pill">KLINIK BAUEN</span></header>
 <div id="clinicFinance" aria-label="Krankenhaus-Finanzen">
- <span>🏦 Klinikkasse: <strong id="clinicBalance">60.000,00 €</strong></span>
+ <span>🏦 Klinikkasse: <strong id="clinicBalance">1.200,00 €</strong></span>
  <span>🗓️ Monat <strong id="clinicMonth">1</strong></span>
  <span>💸 Gehälter: <strong id="clinicPayroll">0,00 € / Monat</strong></span>
  <small id="clinicFinanceMessage"></small>
@@ -172,11 +172,11 @@ body.furniture-active #stage{height:53dvh;min-height:275px;max-height:520px}
 <button id="toggleStaff" type="button" aria-expanded="false" aria-controls="staffPanel">👩‍⚕️ Personal einstellen & Gehälter</button>
 <div id="staffPanel" hidden aria-label="Mitarbeiterverwaltung">
  <h2>👩‍⚕️ Personalbüro</h2>
- <p>Stelle Ärzte und Assistenten ein oder entlasse sie. Monatliche Gehälter werden automatisch aus der Klinikkasse bezahlt.</p>
+ <p>Wähle dein Team! ⭐ Je besser ein Arzt, desto höher sein Gehalt – und desto mehr Geld bringt eine Behandlung. Alle Gehälter: 90–250 Spiel-Euro pro Monat.</p>
  <div id="staffOverview">
   <span id="staffRoster">🩺 1 Arzt · 🧑‍💼 1 Assistentin</span>
   <span id="staffMonthTimer">⏱️ Nächster Gehaltstag: 6:00 Spielminuten</span>
-  <span id="staffIncome">💶 Behandlung: 180,00 € · Kaffee: 2,50 € · Getränke: 1,80 €</span>
+  <span id="staffIncome">💶 Behandlung: 27–52 € je nach Arzt · ☕ 2,50 € · 🥤 1,80 €</span>
  </div>
  <div id="staffTabs">
   <button type="button" data-staffrole="doctor" class="active" aria-pressed="true">🩺 Ärzte auswählen</button>
@@ -2124,29 +2124,31 @@ function animateVendingLights(dt,elapsed){
 // already paid staff, so the established receptionist and GP stay on screen.
 // One game month is six minutes of actively played time, not calendar time.
 const clinicStaffCandidates=[
- {id:'dr-lara',role:'doctor',name:'Dr. Lara Neumann',salary:4300,
-  skill:'Hausärztin · sehr freundlich',icon:'👩‍⚕️'},
- {id:'dr-jonas',role:'doctor',name:'Dr. Jonas Weber',salary:5100,
-  skill:'Erfahrener Allgemeinmediziner',icon:'👨‍⚕️'},
- {id:'dr-mila',role:'doctor',name:'Dr. Mila Fischer',salary:4700,
-  skill:'Diagnostik & Vorsorge',icon:'👩‍⚕️'},
- {id:'dr-ben',role:'doctor',name:'Dr. Ben Krüger',salary:3900,
-  skill:'Junger Hausarzt · motiviert',icon:'👨‍⚕️'},
- {id:'as-mia',role:'assistant',name:'Mia Berger',salary:2600,
-  skill:'Anmeldung & Patientenempfang',icon:'👩‍💼'},
- {id:'as-lea',role:'assistant',name:'Lea Sommer',salary:2900,
-  skill:'Patientenorganisation',icon:'👩‍💼'},
- {id:'as-tom',role:'assistant',name:'Tom Richter',salary:2500,
-  skill:'Anmeldung & Service',icon:'🧑‍💼'},
- {id:'as-sara',role:'assistant',name:'Sara Hoffmann',salary:3100,
-  skill:'Erfahrene medizinische Assistenz',icon:'👩‍⚕️'}
+ // Fun-game economy: stronger physicians earn more but generate better
+ // treatment income; assistants cost 90–130 game euros per game month.
+ {id:'dr-lara',role:'doctor',name:'Dr. Lara Neumann',salary:170,fee:35,
+  stars:3,skill:'Freundliche Hausärztin · guter Ruf',icon:'👩‍⚕️'},
+ {id:'dr-jonas',role:'doctor',name:'Dr. Jonas Weber',salary:250,fee:52,
+  stars:5,skill:'Top-Arzt · sehr erfahren',icon:'👨‍⚕️'},
+ {id:'dr-mila',role:'doctor',name:'Dr. Mila Fischer',salary:210,fee:43,
+  stars:4,skill:'Sehr gute Diagnostik',icon:'👩‍⚕️'},
+ {id:'dr-ben',role:'doctor',name:'Dr. Ben Krüger',salary:140,fee:27,
+  stars:2,skill:'Junger Arzt · lernt noch',icon:'👨‍⚕️'},
+ {id:'as-mia',role:'assistant',name:'Mia Berger',salary:90,
+  stars:2,skill:'Freundlicher Patientenempfang',icon:'👩‍💼'},
+ {id:'as-lea',role:'assistant',name:'Lea Sommer',salary:110,
+  stars:3,skill:'Gute Patientenorganisation',icon:'👩‍💼'},
+ {id:'as-tom',role:'assistant',name:'Tom Richter',salary:100,
+  stars:2,skill:'Anmeldung & Service',icon:'🧑‍💼'},
+ {id:'as-sara',role:'assistant',name:'Sara Hoffmann',salary:130,
+  stars:4,skill:'Erfahrene medizinische Assistenz',icon:'👩‍⚕️'}
 ];
 const clinicLedgerKey='klinik-am-park-personal-finanz-v1';
 const clinicMonthSeconds=360;
 const clinicStaffState={
- balanceCents:6000000,month:1,elapsedSeconds:0,
+ balanceCents:120000,month:1,elapsedSeconds:0,
  totalRevenueCents:0,totalSalariesCents:0,
- hired:['dr-lara','as-mia']
+ hired:['dr-lara','as-mia'],econVersion:2
 };
 try{
  const loaded=JSON.parse(localStorage.getItem(clinicLedgerKey)||'null');
@@ -2169,6 +2171,20 @@ try{
      !selected.slice(2).includes(id))
    }
   }
+  if(loaded.econVersion!==2){
+   // One-time conversion of an existing large-euro save to fun-game money.
+   // Save the exact previous ledger first; keep all selected employees.
+   try{
+    if(!localStorage.getItem(clinicLedgerKey+'-vor-fun'))
+     localStorage.setItem(clinicLedgerKey+'-vor-fun',JSON.stringify(loaded))
+   }catch(e){}
+   clinicStaffState.balanceCents=Math.max(50000,
+    Math.round(Math.max(0,clinicStaffState.balanceCents)/50));
+   clinicStaffState.totalRevenueCents=Math.round(clinicStaffState.totalRevenueCents/50);
+   clinicStaffState.totalSalariesCents=Math.round(clinicStaffState.totalSalariesCents/50);
+   clinicStaffState.econVersion=2;
+   try{localStorage.setItem(clinicLedgerKey,JSON.stringify(clinicStaffState))}catch(e){}
+  }
  }
 }catch(e){}
 let staffSelectedRole='doctor',staffRenderedSecond=-1,staffSavedTick=-1;
@@ -2180,6 +2196,13 @@ function clinicEmployees(role){
 function clinicHasStaff(role){return clinicEmployees(role).length>0}
 function clinicMonthlySalaryCents(){
  return clinicEmployees().reduce((total,person)=>total+person.salary*100,0)
+}
+function clinicTreatmentFeeCents(){
+ // The best available doctor takes the case. A better doctor earns more
+ // per completed appointment, making the higher salary worth considering.
+ const best=clinicEmployees('doctor').reduce((top,doctor)=>
+  !top||doctor.stars>top.stars?doctor:top,null);
+ return best?best.fee*100:0
 }
 function saveClinicLedger(){
  try{localStorage.setItem(clinicLedgerKey,JSON.stringify(clinicStaffState))}catch(e){}
@@ -2243,10 +2266,11 @@ function renderStaffCandidates(){
   const title=document.createElement('strong');
   title.textContent=person.icon+' '+person.name;
   const subtitle=document.createElement('small');
-  subtitle.textContent=person.skill;
+  subtitle.textContent='⭐'.repeat(person.stars)+' · '+person.skill;
   const wage=document.createElement('span');
   wage.className='salary';
-  wage.textContent='💶 '+euros.format(person.salary)+' / Monat';
+  wage.textContent='💶 '+euros.format(person.salary)+' / Monat'+
+   (person.role==='doctor'?' · 🩺 +'+euros.format(person.fee)+' je Behandlung':'');
   const button=document.createElement('button');
   button.type='button';
   button.className=hired?'fire':'hire';
@@ -2270,7 +2294,8 @@ function showStaffOffice(message){
   String(remaining%60).padStart(2,'0')+
   ' · 6 Minuten aktive Spielzeit = 1 Spielmonat';
  document.getElementById('staffIncome').textContent=
-  '🩺 Untersuchung: 180,00 € · ☕ Kaffee: 2,50 € · 🥤 Getränke: 1,80 €';
+  '🩺 Behandlung: '+euros.format(clinicTreatmentFeeCents()/100)+
+  ' je Termin · ☕ 2,50 € · 🥤 1,80 €';
  if(message!==undefined)document.getElementById('staffNotice').textContent=message;
  for(const button of document.querySelectorAll('[data-staffrole]')){
   const active=button.dataset.staffrole===staffSelectedRole;
@@ -2350,7 +2375,7 @@ for(const button of document.querySelectorAll('[data-staffrole]'))
 document.getElementById('staffPayMonth').addEventListener('click',()=>payClinicMonth(true));
 window.addEventListener('pagehide',saveClinicLedger);
 refreshStaffActors();
-showClinicFinance('🏥 Startbudget 60.000 € · Patienten & Automaten bringen Einnahmen');
+showClinicFinance('🎮 Fun-Wirtschaft: Gehälter 90–250 € · gute Ärzte verdienen mehr pro Behandlung');
 showStaffOffice('Startteam oder gespeicherte Mitarbeiter geladen.');
 // Four guests stroll along short, wall-free sections of foyer and corridor.
 // They never wander at random into treatment rooms, the desk or furniture.
@@ -2475,7 +2500,7 @@ function updateRegistrationScene(delta,elapsed){
   }
   sceneState.wait-=delta;
   if(sceneState.wait<=0){
-   receiveClinicIncome(18000,'🩺 Hausarztbehandlung');
+   receiveClinicIncome(clinicTreatmentFeeCents(),'🩺 Hausarztbehandlung');
    sceneState.phase='leaving';sceneState.waypoint=0
   }
  }else if(sceneState.phase==='leaving'){
