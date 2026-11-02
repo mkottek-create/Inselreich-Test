@@ -80,6 +80,22 @@ section{padding:15px 15px 20px}
 section h2{margin:0 0 12px;font-size:16px;letter-spacing:-.01em}
 .rooms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
 #roomBuilder{padding:11px 13px;background:#f5fcf9;border-bottom:1px solid #d1e8dd;display:flex;gap:7px;flex-direction:column}
+#easyRoomBar[hidden],#advancedBuildRow[hidden],#advancedBuildTools[hidden]{display:none!important}
+#easyRoomBar{position:absolute;z-index:10;bottom:10px;left:10px;right:10px;max-width:440px;margin:0 auto;background:#fffdf2f5;border:2px solid #e6c278;box-shadow:0 9px 25px #29484f52;border-radius:16px;padding:10px;display:grid;gap:6px;touch-action:manipulation}
+#easyRoomBar .easyRoomTop{display:flex;align-items:center;justify-content:space-between;gap:7px;color:#35686c;font-size:12px}
+#easyRoomState{font-size:11px;color:#8d6c32;font-weight:850;white-space:nowrap;max-width:46%;overflow:hidden;text-overflow:ellipsis}
+#easyRoomSelect{width:100%;min-height:42px;background:#fff;border:1px solid #b4cfc7;border-radius:9px;color:#315966;font-weight:800;font-size:13px;padding:8px}
+#easyRoomHelp{font-size:11px;margin:0;text-align:center;line-height:1.3;color:#5b777a;font-weight:730}
+.easyRoomButtons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+#easyRoomBar button{border:0;border-radius:10px;background:#e4f2eb;color:#275b67;min-height:43px;padding:8px;font-weight:850;font-size:18px;touch-action:manipulation}
+#easyRoomBar button:disabled{opacity:.36}
+.easyRoomFooter{display:grid;grid-template-columns:1fr 1.7fr;gap:7px}
+#easyRoomBar .easyRoomFooter button{font-size:12px;background:#647c82;color:white}
+#easyRoomBar #easyRoomDone{background:#268471;color:#fff}
+#roomBuilder #advancedBuildToggle{background:#e0eae6;color:#38666d;border:1px solid #b9d5c9;font-size:12px}
+#roomBuilder #advancedBuildRow[hidden]{display:none!important}
+@media(max-width:390px){#easyRoomBar{left:7px;right:7px;padding:8px;gap:5px}#easyRoomBar button{min-height:40px}#easyRoomBar .easyRoomFooter button{font-size:11px}}
+
 #roomBuilder[hidden],#roomBuilder button[hidden]{display:none!important}
 #roomBuilder .builderRow{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 #roomBuilder .builderRow[hidden]{display:none!important}
@@ -158,6 +174,23 @@ body.furniture-active #stage{height:53dvh;min-height:275px;max-height:520px}
 </div>
 <main>
 <div id="stage" aria-label="Interaktive dreidimensionale Ansicht des Krankenhauses">
+ <div id="easyRoomBar" hidden aria-label="Einfacher Grundrissmodus">
+  <div class="easyRoomTop"><strong>📱 Raum verschieben</strong><span id="easyRoomState">Raum antippen</span></div>
+  <select id="easyRoomSelect" aria-label="Raum für Touch-Bearbeitung auswählen">
+   <option value="">👉 Raum auswählen…</option>
+  </select>
+  <p id="easyRoomHelp">1. Raum antippen · 2. freien Platz antippen. Oder einfach ziehen.</p>
+  <div class="easyRoomButtons" aria-label="Raum in kleinen Schritten verschieben">
+   <button type="button" data-room-step="-1,0" aria-label="Raum nach links">⬅️</button>
+   <button type="button" data-room-step="0,-1" aria-label="Raum nach oben">⬆️</button>
+   <button type="button" data-room-step="0,1" aria-label="Raum nach unten">⬇️</button>
+   <button type="button" data-room-step="1,0" aria-label="Raum nach rechts">➡️</button>
+  </div>
+  <div class="easyRoomFooter">
+   <button id="easyRoomUndo" type="button">↶ Rückgängig</button>
+   <button id="easyRoomDone" type="button">✓ Fertig & speichern</button>
+  </div>
+ </div>
  <div id="topLegend"><strong>🏥 Klinik am Park</strong><small>🚪 Haupteingang · großes Foyer<br>🧑‍💻 Anmeldung links · 🪑 Warten rechts<br>⬆️ Dahinter der Hauptflur<br>🩺 Behandlung · 🔬 Diagnose · 🚻 WC</small></div>
  <div id="roomInfo" hidden role="status" aria-live="polite"><strong id="roomTitle"></strong><span id="roomDescription"></span></div>
  <div id="flyControls" hidden aria-label="Klinik-Rundgang mit Touch steuern">
@@ -225,7 +258,9 @@ body.furniture-active #stage{height:53dvh;min-height:275px;max-height:520px}
  <p id="furnitureCount">0 selbst platzierte Möbel · Bestehende Einrichtung bleibt.</p>
 </div>
 <div id="roomBuilder" hidden aria-label="Räume bauen und verschieben">
- <div class="builderRow"><select id="buildCategory" aria-label="Baumodus"><option value="rooms">🏠 Räume & Größen</option><option value="construction">🧱 Wände, Türen & Fenster</option></select></div>
+ <p style="margin:0;font-size:12px;font-weight:800;color:#3a7870">📱 Einfach bauen: Raumtyp & Größe auswählen, auf „Raum bauen“ tippen und oben im Bild platzieren.</p>
+ <button id="advancedBuildToggle" type="button" aria-expanded="false" aria-controls="advancedBuildRow">⚙️ Weitere Bauwerkzeuge (Wände & Fenster)</button>
+ <div id="advancedBuildRow" class="builderRow" hidden><select id="buildCategory" aria-label="Baumodus"><option value="rooms">🏠 Räume & Größen</option><option value="construction">🧱 Wände, Türen & Fenster</option></select></div>
  <div class="builderRow" data-room-controls><select id="roomType" aria-label="Raumtyp">
   <option value="treatment">🩺 Behandlungsraum</option>
   <option value="lab">🔬 Labor</option>
@@ -240,7 +275,7 @@ body.furniture-active #stage{height:53dvh;min-height:275px;max-height:520px}
  <button id="roomDelete" type="button" hidden>🗑 Raum entfernen</button>
  <button id="roomFinish" type="button">✓ Fertig</button></div>
  <div id="constructionControls" class="builderRow" hidden><select id="constructionTool" aria-label="Bauteil"><option value="pan">✋ Karte verschieben</option><option value="wall">🧱 Wand ziehen</option><option value="door">🚪 Tür einsetzen</option><option value="window">🪟 Fenster einsetzen</option><option value="floor">🟩 Boden ziehen</option><option value="erase">🧽 Bauteil entfernen</option></select><select id="constructionFacing" aria-label="Richtung"><option value="x">↔ Waagerecht</option><option value="z">↕ Senkrecht</option></select><button id="constructionUndo" type="button">↶ Rückgängig</button><button id="importOldConstruction" type="button" hidden>📦 Frühere Bauteile</button><button id="constructionDone" type="button">✓ Fertig</button></div>
- <p id="builderHint" class="builderHint">Raum antippen und ziehen, oder einen Raum auswählen und an einen freien Platz tippen. Zwei Finger: Zoomen und Drehen.</p>
+ <p id="builderHint" class="builderHint">Raum antippen → freie Stelle antippen. Zum Verschieben geht auch Ziehen mit einem Finger.</p>
 </div>
 <section>
  <h2>Das ist bereits gebaut</h2>
@@ -3108,6 +3143,116 @@ const floorplanToggle=document.getElementById('toggleFloorplan');
 const roomBuilder=document.getElementById('roomBuilder');
 const roomDelete=document.getElementById('roomDelete');
 const roomHint=document.getElementById('builderHint');
+// Lightweight touchscreen controls live directly over the 3D view.
+const easyRoomBar=document.getElementById('easyRoomBar');
+const easyRoomSelect=document.getElementById('easyRoomSelect');
+const easyRoomHelp=document.getElementById('easyRoomHelp');
+const easyRoomState=document.getElementById('easyRoomState');
+const easyRoomUndo=document.getElementById('easyRoomUndo');
+const advancedBuildRow=document.getElementById('advancedBuildRow');
+const advancedBuildToggle=document.getElementById('advancedBuildToggle');
+let advancedFloorplan=false,roomEditCamera=null,roomSelectionOutline=null;
+const roomUndoHistory=[];
+function roomSelected(){
+ return selectedRoomId?roomSpecs.find(r=>r.id===selectedRoomId):null
+}
+function refreshRoomSelection(){
+ const enabled=editingFloorplan&&buildCategory==='rooms';
+ easyRoomBar.hidden=!enabled;
+ const room=roomSelected();
+ // No destructive replacement: always show every existing or built room.
+ const previously=easyRoomSelect.value;
+ if(easyRoomSelect.options.length!==roomSpecs.length+1||
+  (room&&!Array.from(easyRoomSelect.options).some(o=>o.value===room.id))){
+  easyRoomSelect.replaceChildren();
+  const prompt=document.createElement('option');prompt.value='';prompt.textContent='👉 Raum auswählen…';
+  easyRoomSelect.append(prompt);
+  for(const spec of roomSpecs){
+   const option=document.createElement('option');
+   option.value=spec.id;option.textContent=spec.name;
+   easyRoomSelect.append(option)
+  }
+ }
+ easyRoomSelect.value=room?.id||'';
+ easyRoomState.textContent=room?'✓ '+room.name:'Raum antippen';
+ easyRoomHelp.textContent=room
+  ?'Jetzt freien Platz antippen, ziehen oder Pfeil drücken.'
+  :'1. Raum antippen · 2. freien Platz antippen.';
+ for(const control of document.querySelectorAll('[data-room-step]'))control.disabled=!room;
+ easyRoomUndo.disabled=!roomUndoHistory.length;
+ if(roomSelectionOutline){
+  scene.remove(roomSelectionOutline);
+  roomSelectionOutline.geometry.dispose();
+  roomSelectionOutline=null
+ }
+ if(enabled&&room){
+  const outline=new THREE.LineSegments(
+   new THREE.EdgesGeometry(new THREE.BoxGeometry(room.w,.22,room.d)),
+   new THREE.LineBasicMaterial({color:0xe4a629,depthTest:false,transparent:true,opacity:.96})
+  );
+  outline.position.set(room.x,.32,room.z);
+  outline.renderOrder=9;
+  scene.add(outline);
+  roomSelectionOutline=outline
+ }
+}
+function rememberRoomMove(id,x,z){
+ roomUndoHistory.push({id,x,z});
+ if(roomUndoHistory.length>25)roomUndoHistory.shift();
+ easyRoomUndo.disabled=false
+}
+function easyRoomNudge(dx,dz){
+ const room=roomSelected();
+ if(!editingFloorplan||buildCategory!=='rooms'||!room)return;
+ // Small initial moves are best, but rooms may adjoin others edge-to-edge.
+ // Find the first valid step in the chosen direction, never through a wall.
+ for(let n=1;n<=15;n++){
+  if(moveRoomTo(room.id,room.x+dx*n*.5,room.z+dz*n*.5)){
+   rememberRoomMove(room.id,room.x-dx*n*.5,room.z-dz*n*.5);
+   saveFloorplan();if(room.id==='reception')storeReception();
+   refreshRoomSelection();
+   roomHint.textContent='✅ '+room.name+' verschoben und gespeichert.';
+   document.getElementById('status').textContent=roomHint.textContent;
+   return true
+  }
+ }
+ roomHint.textContent='🚫 Dort ist kein Platz. Andere Richtung versuchen.';
+ easyRoomHelp.textContent='🚫 Kein Platz – anderen Pfeil oder freie Stelle probieren.';
+ return false
+}
+function undoRoomMove(){
+ const last=roomUndoHistory.pop();
+ if(!last)return;
+ if(moveRoomTo(last.id,last.x,last.z)){
+  selectedRoomId=last.id;
+  saveFloorplan();if(last.id==='reception')storeReception();
+  roomHint.textContent='↶ Letzte Verschiebung rückgängig.';
+  refreshRoomSelection()
+ }else{
+  roomUndoHistory.push(last);
+  easyRoomHelp.textContent='🚫 Alte Position derzeit belegt.'
+ }
+}
+easyRoomSelect.addEventListener('change',()=>{
+ selectedRoomId=roomSpecs.some(r=>r.id===easyRoomSelect.value)?easyRoomSelect.value:null;
+ refreshRoomSelection()
+});
+for(const control of document.querySelectorAll('[data-room-step]'))
+ control.addEventListener('click',()=>{
+  const [dx,dz]=control.dataset.roomStep.split(',').map(Number);
+  easyRoomNudge(dx,dz)
+ });
+easyRoomUndo.addEventListener('click',undoRoomMove);
+document.getElementById('easyRoomDone').addEventListener('click',()=>finishFloorplan());
+advancedBuildToggle.addEventListener('click',()=>{
+ advancedFloorplan=!advancedFloorplan;
+ if(!advancedFloorplan){
+  buildCategory='rooms';
+  document.getElementById('buildCategory').value='rooms';
+  clearConstructionPreview()
+ }
+ showBuilder()
+});
 function snapRoom(v){return Math.round(v*10)/10}
 function validRoomSpot(id,x,z){
  const r=roomSpecs.find(r=>r.id===id);
@@ -3236,41 +3381,58 @@ function applyFloorplanFromStorage(){
 }
 function showBuilder(){
  floorplanToggle.classList.toggle('active',editingFloorplan);
- floorplanToggle.textContent=editingFloorplan?'🏗️ Grundrissmodus aktiv':'🏗️ Grundriss bearbeiten';
+ floorplanToggle.textContent=editingFloorplan?'📱 Grundriss bearbeiten ✓':'🏗️ Grundriss bearbeiten';
  roomBuilder.hidden=!editingFloorplan;
  roomDelete.hidden=!editingFloorplan||!selectedRoomId||initialRooms.some(r=>r.id===selectedRoomId);
- for(const element of document.querySelectorAll('[data-room-controls]'))element.hidden=!editingFloorplan||buildCategory!=='rooms';
- document.getElementById('constructionControls').hidden=!editingFloorplan||buildCategory!=='construction';
+ advancedBuildRow.hidden=!editingFloorplan||!advancedFloorplan;
+ advancedBuildToggle.textContent=advancedFloorplan?
+  '⚙️ Weitere Bauwerkzeuge ausblenden':'⚙️ Weitere Bauwerkzeuge (Wände & Fenster)';
+ advancedBuildToggle.setAttribute('aria-expanded',String(advancedFloorplan));
+ for(const element of document.querySelectorAll('[data-room-controls]'))
+  element.hidden=!editingFloorplan||buildCategory!=='rooms';
+ document.getElementById('constructionControls').hidden=
+  !editingFloorplan||!advancedFloorplan||buildCategory!=='construction';
  const importPrevious=document.getElementById('importOldConstruction');
  const legacyBuild=localStorage.getItem('klinik-am-park-bauteile-v2')||
   localStorage.getItem('klinik-am-park-bauteile-v1');
  importPrevious.hidden=!editingFloorplan||buildCategory!=='construction'||!legacyBuild||
   !!localStorage.getItem('klinik-am-park-bauteile-v3');
  gestureHint.textContent=editingFloorplan
-  ?(buildCategory==='construction'?'☝️ Bauen · ✌️ Zoomen & Drehen':'☝️ Raum antippen & ziehen · ✌️ Zoomen & Drehen')
-  :editingReception?'☝️ Anmeldung verschieben · ✌️ Zoom & Drehen':'☝️ Verschieben · ✌️ Zoomen & Drehen'
+  ?(buildCategory==='construction'?'🧱 Werkzeug wählen und auf die Karte zeichnen':
+   '📱 Raum antippen → freie Stelle antippen · oder ziehen')
+  :editingReception?'☝️ Anmeldung verschieben · ✌️ Zoom & Drehen':'☝️ Verschieben · ✌️ Zoomen & Drehen';
+ refreshRoomSelection()
 }
 function finishFloorplan(){
  if(!editingFloorplan)return;
- editingFloorplan=false;selectedRoomId=null;clearConstructionPreview();saveConstruction();saveFloorplan();storeReception();showBuilder();
+ editingFloorplan=false;selectedRoomId=null;clearConstructionPreview();
+ saveConstruction();saveFloorplan();storeReception();showBuilder();
+ if(roomEditCamera){
+  focus.copy(roomEditCamera.focus);
+  orbit=roomEditCamera.orbit;elevation=roomEditCamera.elevation;
+  distance=roomEditCamera.distance;
+  roomEditCamera=null;placeCamera()
+ }
  setCameraMode('pan');
  document.getElementById('status').textContent='✅ Grundriss gespeichert! Du kannst die Kamera wieder frei bewegen.'
 }
 floorplanToggle.onclick=()=>{
  furnitureEditor.close();
- if(!editingFloorplan&&editingReception){
+ if(editingFloorplan){finishFloorplan();return}
+ if(editingReception){
   editingReception=false;storeReception();updateReceptionEditor()
  }
- editingFloorplan=!editingFloorplan;
- if(editingFloorplan){
-  selectedRoomId=null;
-  focus.set(0,.1,-1.65);
-  distance=Math.max(distance,28);
-  placeCamera();
-  document.getElementById('status').textContent='🏗️ Raum antippen und ziehen, oder neuen Raum bauen.';
- }else{selectedRoomId=null;clearConstructionPreview();saveConstruction();saveFloorplan();storeReception()}
+ roomEditCamera={focus:focus.clone(),orbit,elevation,distance};
+ editingFloorplan=true;selectedRoomId=null;advancedFloorplan=false;
+ buildCategory='rooms';document.getElementById('buildCategory').value='rooms';
+ roomUndoHistory.length=0;
+ // Flat overhead editor: a tap targets the room, not a skewed floor.
+ focus.set(0,.1,-1.5);orbit=0;elevation=1.48;distance=33.5;
+ placeCamera();
+ document.getElementById('status').textContent=
+  '📱 Einfach: Raum antippen → freien Platz antippen. Oder mit dem Finger ziehen.';
  showBuilder();
- setCameraMode(editingFloorplan?'build':'pan')
+ setCameraMode('build')
 };
 document.getElementById('roomFinish').onclick=finishFloorplan;
 document.getElementById('constructionDone').onclick=finishFloorplan;
@@ -3317,7 +3479,7 @@ document.getElementById('roomAdd').onclick=()=>{
  selectedRoomId=id;saveFloorplan();showBuilder();
  focus.set(r.x,.1,r.z);placeCamera();
  renderer.shadowMap.needsUpdate=true;
- roomHint.textContent=r.name+' gebaut. Du kannst ihn jetzt mit einem Finger ziehen.';
+ roomHint.textContent=r.name+' gebaut. Jetzt antippen oder mit dem Finger verschieben.';
  document.getElementById('status').textContent='✅ '+r.name+' ist fertig – noch ohne Einrichtung.'
 };
 roomDelete.onclick=()=>{
@@ -3340,6 +3502,7 @@ function roomPointerStart(px,py){
   selectedRoomId=room.id;showBuilder();
   roomHint.textContent=room.name+' ausgewählt – mit einem Finger bewegen.';
   return {mode:'room',id:room.id,startX:px,startY:py,moved:false,
+   initialX:room.x,initialZ:room.z,
    offsetX:room.x-hit.x,offsetZ:room.z-hit.z}
  }
  if(selectedRoomId){
@@ -3368,16 +3531,24 @@ function roomPointerMove(px,py,state){
  }
 }
 function roomPointerEnd(px,py,state){
- if((state.mode==='roomTap'&&!state.moved)||(state.mode==='room'&&!state.moved)){
+ if(state.mode==='roomTap'&&!state.moved){
   const hit=groundHit(px,py);
-  if(hit&&state.mode==='roomTap'&&moveRoomTo(state.id,hit.x,hit.z)){
-   roomHint.textContent='✓ Raum an neuer Stelle platziert.'
-  }else if(hit&&state.mode==='roomTap'){
-   roomHint.textContent='🚫 Hier ist zu wenig Platz. Freie Stelle suchen.'
+  const room=roomSpecs.find(r=>r.id===state.id);
+  if(hit&&room){
+   const oldX=room.x,oldZ=room.z;
+   if(moveRoomTo(state.id,hit.x,hit.z)){
+    if(oldX!==room.x||oldZ!==room.z)rememberRoomMove(state.id,oldX,oldZ);
+    roomHint.textContent='✅ Raum platziert und gespeichert.'
+   }else roomHint.textContent='🚫 Hier ist zu wenig Platz. Anderen Platz antippen.'
   }
+ }else if(state.mode==='room'&&state.moved){
+  const room=roomSpecs.find(r=>r.id===state.id);
+  if(room&&(room.x!==state.initialX||room.z!==state.initialZ))
+   rememberRoomMove(state.id,state.initialX,state.initialZ)
  }
  saveFloorplan();
- if(state.id==='reception')storeReception()
+ if(state.id==='reception')storeReception();
+ refreshRoomSelection()
 }
 
 /* Free-form hospital architecture: 1m grid segments plus draggable floor
