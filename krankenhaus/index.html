@@ -2049,6 +2049,17 @@ function updateVendingShoppers(dt,elapsed){
   p.position.y=ambient.baseY+Math.sin(elapsed*10)*.007
  }
 }
+function animateVendingCustomers(elapsed){
+ for(const customer of vendingShoppers){
+  if(customer.state!=='buy')continue;
+  const rig=customer.person.userData.characterRig;
+  if(!rig)continue;
+  // Reach for the vending button, glance at the window and take the cup.
+  rig.arms[1].rotation.x=-.67+Math.sin(elapsed*3.5)*.10;
+  rig.arms[1].rotation.z=.28;
+  rig.head.rotation.y=.08+Math.sin(elapsed*1.8)*.04
+ }
+}
 function animateVendingLights(dt,elapsed){
  for(const model of vendingMachines.values()){
   model.userData.flash=Math.max(0,model.userData.flash-dt);
@@ -3401,6 +3412,7 @@ function animate(time=0){
  updateAmbientActors(seconds,time/1000);
  updateVendingShoppers(seconds,time/1000);
  animateCharacterActors(time/1000);
+ animateVendingCustomers(time/1000);
  animateVendingLights(seconds,time/1000);
  animateGeneralPractice(time/1000);
  if(flyMode.active){
