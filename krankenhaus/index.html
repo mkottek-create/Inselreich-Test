@@ -62,7 +62,7 @@ body.fly-active #topLegend,body.fly-active #roomInfo{display:none!important}
 #staffPanel p{margin:5px 0 10px;color:#51747b;font-size:12px}
 #staffOverview{background:#e9f5ef;padding:10px;border-radius:11px;display:grid;gap:5px;font-size:12px;font-weight:750}
 #staffTabs{display:flex;gap:8px;margin:11px 0 8px}
-#staffTabs button{flex:1;min-height:44px;border:1px solid #96cfc8;background:#eff8f5;color:#2e6572;font-weight:850;border-radius:10px;font-size:13px}
+#staffTabs button{flex:1;min-width:0;min-height:44px;border:1px solid #96cfc8;background:#eff8f5;color:#2e6572;font-weight:850;border-radius:10px;font-size:13px}
 #staffTabs button.active{background:#257b84;color:white}
 #staffCandidates{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px}
 .staffCandidate{border:1px solid #c4ddd7;border-radius:11px;background:#fff;padding:10px;display:flex;gap:6px;flex-direction:column}
@@ -141,6 +141,10 @@ body.furniture-active #stage{height:53dvh;min-height:275px;max-height:520px}
  <span>💸 Gehälter: <strong id="clinicPayroll">0,00 € / Monat</strong></span>
  <small id="clinicFinanceMessage"></small>
 </div>
+<div id="cleaningEconomy" aria-label="Sauberkeit in der Klinik" style="background:#fff8e6;border-bottom:1px solid #eadcac;padding:7px 14px;text-align:center;font-size:12px;color:#7b622f;font-weight:800">
+ <span>🧹 Klinik-Sauberkeit: <strong id="clinicCleanliness">85 %</strong></span>
+ <span id="clinicCleaningStatus"> · Reinigungskraft im Personalbüro einstellbar</span>
+</div>
 <div id="patientEconomy" aria-label="Bezahlte Patienten und Behandlungseinnahmen">
  <span>💳 Patienten bezahlt: <strong id="patientPaidCount">0</strong></span>
  <span>🩺 Behandlungen: <strong id="patientIncome">0,00 €</strong></span>
@@ -188,8 +192,9 @@ body.furniture-active #stage{height:53dvh;min-height:275px;max-height:520px}
   <span id="staffIncome">💶 Behandlung: 27–52 € je nach Arzt · ☕ 2,50 € · 🥤 1,80 €</span>
  </div>
  <div id="staffTabs">
-  <button type="button" data-staffrole="doctor" class="active" aria-pressed="true">🩺 Ärzte auswählen</button>
-  <button type="button" data-staffrole="assistant" aria-pressed="false">🧑‍💼 Assistenten auswählen</button>
+  <button type="button" data-staffrole="doctor" class="active" aria-pressed="true">🩺 Ärzte</button>
+  <button type="button" data-staffrole="assistant" aria-pressed="false">🧑‍💼 Assistenten</button>
+  <button type="button" data-staffrole="cleaner" aria-pressed="false">🧹 Reinigung</button>
  </div>
  <div id="staffCandidates" aria-live="polite"></div>
  <div id="payrollActions">
@@ -248,6 +253,7 @@ body.furniture-active #stage{height:53dvh;min-height:275px;max-height:520px}
   <div class="room"><span class="symbol">🔬</span><strong>Diagnoseraum</strong><p>Linke hintere Seite, noch leer.</p></div>
   <div class="room"><span class="symbol">☕</span><strong>Personalraum</strong><p>Rechts hinten, noch leer.</p></div>
   <div class="room"><span class="symbol">🚻</span><strong>Toilette</strong><p>Hinten am Hauptflur: WC-Kabine, Waschbecken, Spiegel und Hygiene-Ausstattung.</p></div>
+  <div class="room"><span class="symbol">🧹</span><strong>Putzraum</strong><p>Hinten rechts: Putzwagen, Eimer, Mopp und Reinigungsmittel. Eine Reinigungskraft hält die Klinik sauber.</p></div>
  </div>
  <p class="note">Der große Haupteingang führt zuerst ins offene Foyer mit Anmeldung links und Wartebereich rechts. Erst hinter dem Foyer beginnt der Hauptflur mit zwei Behandlungsräumen, Diagnose, Personalraum und Toilette. Diagnose, Personalraum und Toilette bleiben vorerst ohne Einrichtung. Mit „🏗️ Grundriss bearbeiten“ verschiebst du Räume, wählst Größen oder ziehst eigene Wände, Türen, Fenster und Böden. Beim Empfang bleibt der verschiebbare Tresen erhalten. Über „🪑 Möbel bauen“ kannst du Stühle, Tische, Betten, medizinische Geräte und Dekoration einfach ergänzen. Alle Bau- und Kamerasteuerungen liegen unterhalb des 3D-Bildes. Dein alter Grundriss bleibt separat als Sicherung gespeichert; Inselreich ist unabhängig.</p>
 </section>
@@ -1151,17 +1157,19 @@ const initialRooms=[
  {id:'treatment2',name:'🩺 Behandlungsraum 2',kind:'treatment',x:4.05,z:-1.40,w:5.30,d:3.05,doorSide:'left',doorOffset:0},
  {id:'diagnostic',name:'🔬 Diagnoseraum',kind:'diagnostic',x:-4.05,z:-4.70,w:5.30,d:3.58,doorSide:'right',doorOffset:0},
  {id:'staff',name:'☕ Personalraum',kind:'staff',x:4.05,z:-4.70,w:5.30,d:3.58,doorSide:'left',doorOffset:0},
- {id:'toilet',name:'🚻 Toilette',kind:'toilet',x:-2.95,z:-7.80,w:3.10,d:2.65,doorSide:'right',doorOffset:0}
+ {id:'toilet',name:'🚻 Toilette',kind:'toilet',x:-2.95,z:-7.80,w:3.10,d:2.65,doorSide:'right',doorOffset:0},
+ {id:'cleaning',name:'🧹 Putzraum',kind:'cleaning',x:2.95,z:-7.80,w:3.10,d:2.65,doorSide:'left',doorOffset:0,
+  details:'Putzraum mit Reinigungswagen, Wischeimer, Mopp, Waschplatz und Putzmitteln. Hier startet die Reinigungskraft.'}
 ];
 const roomSpecs=initialRooms.map(r=>({...r}));
 const roomGroups=new Map();
 const roomColors={reception:tileBase,waiting:tileWaiting,treatment:tileTreatment,
- diagnostic:tileDiagnostic,staff:tileStaff,toilet:tileToilet,
+ diagnostic:tileDiagnostic,staff:tileStaff,toilet:tileToilet,cleaning:tileStaff,
  lab:tileDiagnostic,patient:tileTreatment,empty:tileBase};
 const trimTint={reception:mat(0x38baa7),waiting:mat(0x42bde0),
  treatment:mat(0x52c889),patient:mat(0x52c889),
  diagnostic:mat(0xb58be2),lab:mat(0xb58be2),
- staff:mat(0xf1ae60),toilet:mat(0x62bbef),empty:mat(0x8dc8cb)};
+ staff:mat(0xf1ae60),toilet:mat(0x62bbef),cleaning:mat(0xf0c15f),empty:mat(0x8dc8cb)};
 const brickLower=mat(0xe8c3a7);
 const wallSkirting=mat(0x98c9be,.85);
 const doorMetal=mat(0x98b0bc,.42,.22);
@@ -1449,6 +1457,66 @@ refreshSharedRoomWalls();
 // The room shell, side doors and custom room positions stay unchanged.
 // All furnishings are children of their movable room, so relocating the room
 // in the existing floorplan mode also relocates the furniture automatically.
+// Bright, original low-poly cleaning-closet furniture. All parts belong to
+// the movable cleaning room, keeping the main corridor free.
+function furnishCleaningRoom(){
+ const room=roomGroups.get('cleaning');if(!room)return;
+ const decor=new THREE.Group();decor.name='🧹 Putzraum – Eimer, Mopp, Putzwagen und Waschbecken';room.add(decor);
+ const yellow=mat(0xffcd58,.67),navy=mat(0x426987,.53),chrome=mat(0x93aeb7,.37,.25);
+ const aqua=mat(0x69cfd0,.62),mint=mat(0xd2f5e7,.74),soap=mat(0xed8b65,.65);
+ const towel=mat(0x9ee4dd,.85),plastic=mat(0xfbf8ea,.62);
+ // Utility sink and faucet on the back wall, leaving door corridor open.
+ box(.72,.72,.38,.84,.55,-.91,plastic,decor);
+ box(.78,.10,.46,.84,.94,-.85,mint,decor);
+ box(.55,.04,.30,.84,1.00,-.84,chrome,decor,false);
+ cylinder(.037,.04,.25,.88,1.11,-1.04,chrome,11,decor);
+ box(.12,.04,.15,.88,1.22,-.94,chrome,decor,false);
+ box(.18,.23,.14,.38,1.03,-1.08,soap,decor);
+ // Shelving and colored bottles behind the cart.
+ for(const y of [.46,.94,1.37])
+  box(1.10,.060,.40,-.68,y,-1.07,chrome,decor);
+ for(const x of [-1.20,-.15])box(.045,1.21,.38,x,.95,-1.06,navy,decor);
+ for(const [x,color] of [[-1.02,0x9bdddb],[-.72,0xffe29b],[-.41,0xf19f87],[-.11,0x82c7e6]]){
+  cylinder(.079,.082,.22,x,1.08,-1.03,mat(color,.55),10,decor);
+  cylinder(.044,.047,.07,x,1.23,-1.03,chrome,9,decor)
+ }
+ for(const x of [-.84,-.38])
+  box(.21,.25,.22,x,.58,-1.01,mat(0xfff5e8),decor);
+ // Parked rolling cleaning cart and bucket.
+ const cart=new THREE.Group();cart.name='Putzwagen';cart.position.set(.64,0,.30);decor.add(cart);
+ for(const x of [-.32,.32])for(const z of [-.24,.24]){
+  box(.052,.67,.052,x,.60,z,chrome,cart);
+  sphere(.102,x,.24,z,navy,cart)
+ }
+ for(const y of [.45,.83])box(.76,.065,.56,0,y,0,navy,cart);
+ box(.70,.28,.45,0,1.00,-.035,aqua,cart);
+ box(.12,.49,.12,.34,1.01,0,chrome,cart);
+ box(.07,.08,.57,.34,1.25,.12,chrome,cart);
+ cylinder(.19,.16,.38,-.19,.66,.07,yellow,13,cart);
+ cylinder(.16,.16,.021,-.19,.875,.07,navy,13,cart);
+ cylinder(.11,.10,.27,.19,.59,.07,mint,12,cart);
+ // Mop and broom resting on the wall.
+ for(const [xx,zz,brush] of [[1.23,.98,aqua],[1.31,-.12,yellow]]){
+  cylinder(.026,.026,1.28,xx,.84,zz,mat(0xb88955),8,decor);
+  box(.40,.075,.14,xx,.255,zz,brush,decor)
+ }
+ // Laundry bag, yellow wet-floor sign and cotton towels.
+ box(.46,.50,.41,-1.12,.47,.43,mint,decor);
+ box(.43,.055,.42,-1.12,.76,.43,navy,decor,false);
+ box(.42,.043,.12,-.27,.28,1.02,yellow,decor,false);
+ box(.37,.41,.05,-.27,.51,1.02,yellow,decor,false);
+ const warning=new THREE.Mesh(new THREE.PlaneGeometry(.36,.25),
+  new THREE.MeshBasicMaterial({map:labelTexture('ACHTUNG','#58452a','#ffe4a0',64),
+   transparent:true,side:THREE.DoubleSide,depthWrite:false}));
+ warning.position.set(-.27,.53,1.054);decor.add(warning);
+ for(const y of [.47,.58,.69])box(.33,.085,.25,1.24,y,.31,towel,decor);
+ const sign=new THREE.Mesh(new THREE.PlaneGeometry(1.02,.24),
+  new THREE.MeshBasicMaterial({map:labelTexture('PUTZRAUM','#286778','#fff7d5',72),
+   transparent:true,side:THREE.DoubleSide,depthWrite:false}));
+ sign.position.set(0,1.56,-1.305);decor.add(sign)
+}
+furnishCleaningRoom();
+
 const treatmentCotFrame=mat(0x3997a7,.58,.12);
 const treatmentCotMattress=mat(0xedfcf8,.82);
 const treatmentPillow=mat(0xfffbf0,.96);
