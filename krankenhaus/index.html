@@ -3183,6 +3183,7 @@ function refreshRoomSelection(){
  if(roomSelectionOutline){
   scene.remove(roomSelectionOutline);
   roomSelectionOutline.geometry.dispose();
+  roomSelectionOutline.material.dispose();
   roomSelectionOutline=null
  }
  if(enabled&&room){
@@ -3282,6 +3283,8 @@ function moveRoomTo(id,x,z,force=false,relocateContents=true){
  if(!force&&!validRoomSpot(id,x,z))return false;
  const dx=x-r.x,dz=z-r.z;
  r.x=x;r.z=z;root.position.set(x,0,z);
+ if(roomSelectionOutline&&selectedRoomId===id)
+  roomSelectionOutline.position.set(x,.32,z);
  // The registration counter remains independently movable, but follows its room.
  if(id==='reception'&&relocateContents){
   receptionDesk.position.x+=dx;receptionDesk.position.z+=dz;
@@ -3432,7 +3435,10 @@ floorplanToggle.onclick=()=>{
  document.getElementById('status').textContent=
   '📱 Einfach: Raum antippen → freien Platz antippen. Oder mit dem Finger ziehen.';
  showBuilder();
- setCameraMode('build')
+ setCameraMode('build');
+ // The mode button sits below the tall 3D stage on iPhone. Return to the
+ // playable touch area so the new editor controls are visible immediately.
+ stage.scrollIntoView({behavior:'smooth',block:'start'})
 };
 document.getElementById('roomFinish').onclick=finishFloorplan;
 document.getElementById('constructionDone').onclick=finishFloorplan;
@@ -3480,7 +3486,8 @@ document.getElementById('roomAdd').onclick=()=>{
  focus.set(r.x,.1,r.z);placeCamera();
  renderer.shadowMap.needsUpdate=true;
  roomHint.textContent=r.name+' gebaut. Jetzt antippen oder mit dem Finger verschieben.';
- document.getElementById('status').textContent='✅ '+r.name+' ist fertig – noch ohne Einrichtung.'
+ document.getElementById('status').textContent='✅ '+r.name+' ist fertig – noch ohne Einrichtung.';
+ stage.scrollIntoView({behavior:'smooth',block:'start'})
 };
 roomDelete.onclick=()=>{
  if(!editingFloorplan||!selectedRoomId||initialRooms.some(r=>r.id===selectedRoomId))return;
