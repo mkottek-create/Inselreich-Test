@@ -2746,8 +2746,8 @@ function registrationGoal(){
 }
 function clinicLinePosition(index){
  // Queue opposite the counter in the open foyer, clear of the main entrance.
- return new THREE.Vector3(-2.20+Math.min(index,3)*.70,0,
-  7.03+Math.min(index,3)*.12)
+ return new THREE.Vector3(-2.20+Math.min(index,5)*.70,0,
+  7.03+Math.min(index,5)*.12)
 }
 function clinicWaitPosition(index){
  if(index<clinicWaitingChairs.length){
@@ -2785,7 +2785,7 @@ function clinicPaymentPath(doctorIndex){
   generalRoomWorld(doctorIndex===1?-2.95:2.95,0,doctorIndex),
   new THREE.Vector3(.04,0,corridorZ),
   new THREE.Vector3(.04,0,4.65),
-  new THREE.Vector3(-2.22,0,6.80)
+  new THREE.Vector3(-2.22,0,5.92)
  ]
 }
 function clinicExitPath(){
@@ -2966,6 +2966,11 @@ function updateRegistrationScene(delta,elapsed){
    }
   }else if(phase==='seated'||phase==='waitingStanding'){
    patient.waitingSeconds+=step;
+   if(phase==='seated'&&patient.seatIndex!==null){
+    // Follow the actual chair when the player moves the waiting room.
+    const seatWorld=clinicWaitPosition(patient.seatIndex);
+    actor.position.x=seatWorld.x;actor.position.z=seatWorld.z
+   }
    if(phase==='waitingStanding'&&patient.seatIndex!==null){
     const nextSeat=clinicWaitingChairs[patient.seatIndex];
     if(nextSeat){
@@ -3011,7 +3016,7 @@ function updateRegistrationScene(delta,elapsed){
   }else if(phase==='readyToPay'){
    const paying=flow.active.filter(p=>p.phase==='readyToPay');
    const rank=paying.sort((a,b)=>a.id-b.id).indexOf(patient);
-   const stand=new THREE.Vector3(-2.22+rank*.48,0,6.8+rank*.12);
+   const stand=new THREE.Vector3(-2.22+rank*.48,0,5.92-rank*.22);
    moveClinicPatient(patient,stand,speed*.66)
   }else if(phase==='toCheckout'){
    if(moveClinicPatient(patient,registrationGoal(),speed))
@@ -3095,8 +3100,6 @@ function moveDoctorIndoors(doctor,goal,step){
 }
 function updateDoctorIndoorRounds(dt){
  const step=Math.max(0,Math.min(dt,.075));
- const appointment=registrationScene.phase==='toDoctor'||
-  registrationScene.phase==='exam';
  for(const [key,doctor] of [['primary',generalPractitioner],
                              ['secondary',secondClinicDoctor]]){
   if(!doctor)continue;
@@ -3104,19 +3107,20 @@ function updateDoctorIndoorRounds(dt){
   rig.walk=false;
   if(!doctor.visible||!step)continue;
   const state=doctorIndoorState[key];
-  if(key==='primary'&&appointment){
-   // Wait beside the examination chair, not inside the patient or the desk.
-   // The treatment animation and consultation continue unchanged.
+  const patient=clinicPatientFlow.doctors[key==='primary'?0:1];
+  const appointment=patient&&(patient.phase==='toDoctor'||patient.phase==='exam');
+  if(appointment){
+   // Both doctors come to their examination spot when a patient arrives.
    state.pause=1.5;
-   const arrived=moveDoctorIndoors(doctor,[1.07,-.18],step*.90);
+   const position=key==='primary'?[1.07,-.18]:[-.14,-.15];
+   const arrived=moveDoctorIndoors(doctor,position,step*.90);
    if(arrived){
-    // Both the patient and the room may have been moved by the player.
-    const patientWorld=registrationScene.patient.getWorldPosition(new THREE.Vector3());
-    const local=doctor.parent.worldToLocal(patientWorld);
-    const targetAngle=Math.atan2(local.x-doctor.position.x,
+    const world=patient.actor.getWorldPosition(new THREE.Vector3());
+    const local=doctor.parent.worldToLocal(world);
+    const angle=Math.atan2(local.x-doctor.position.x,
      local.z-doctor.position.z);
-    const turn=Math.atan2(Math.sin(targetAngle-doctor.rotation.y),
-     Math.cos(targetAngle-doctor.rotation.y));
+    const turn=Math.atan2(Math.sin(angle-doctor.rotation.y),
+     Math.cos(angle-doctor.rotation.y));
     doctor.rotation.y+=turn*Math.min(1,step*5)
    }
    continue
@@ -3148,10 +3152,13 @@ function animateGeneralPractice(elapsed){
  if(examining)rig.head.rotation.y=Math.sin(elapsed*1.6)*.06;
  if(secondClinicDoctor&&secondClinicDoctor.visible){
   const secondRig=secondClinicDoctor.userData.characterRig;
-  secondRig.arms[1].rotation.x=secondRig.walk
-   ?Math.sin(elapsed*9.2+secondRig.idleSeed)*.24:.04;
-  secondRig.arms[1].rotation.z=secondRig.walk
-   ?.11+Math.sin(elapsed*9.2+secondRig.idleSeed)*.08
+  const secondExam=clinicPatientFlow.doctors[1]?.phase==='exam';
+  secondRig.arms[1].rotation.x=secondExam
+   ?.16+Math.sin(elapsed*2.6)*.14
+   :secondRig.walk?Math.sin(elapsed*9.2+secondRig.idleSeed)*.24:.04;
+  secondRig.arms[1].rotation.z=secondExam
+   ?-.48+Math.sin(elapsed*3.1)*.15
+   :secondRig.walk?.11+Math.sin(elapsed*9.2+secondRig.idleSeed)*.08
    :.08+Math.sin(elapsed*1.7)*.03
  }
 }
