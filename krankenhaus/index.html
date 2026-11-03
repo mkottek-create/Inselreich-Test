@@ -2903,6 +2903,77 @@ function updateRegistrationScene(delta,elapsed){
  }
  person.position.y=.18;
 }
+// Doctors have their own short indoor rounds (in each room's LOCAL
+// coordinates), so moving a treatment room keeps its doctor and route together.
+// Routes stay in the clear aisle between examination furniture and the walls.
+const doctorIndoorRoutes={
+ primary:[[1.65,-1.08],[1.76,-.57],[1.74,.04],[1.24,.15],
+  [1.09,-.18],[1.50,.05],[1.76,-.57],[1.65,-1.08]],
+ secondary:[[-.20,.38],[-.10,.13],[-.16,-.28],[-.10,-.57],
+  [-.16,-.28],[-.10,.13],[-.20,.38]]
+};
+const doctorIndoorState={
+ primary:{index:1,pause:1.6},
+ secondary:{index:1,pause:2.4}
+};
+function moveDoctorIndoors(doctor,goal,step){
+ const dx=goal[0]-doctor.position.x,dz=goal[1]-doctor.position.z;
+ const distance=Math.hypot(dx,dz);
+ const rig=doctor.userData.characterRig;
+ if(distance<=.045){
+  rig.walk=false;
+  return true
+ }
+ const amount=Math.min(step,distance);
+ doctor.position.x+=dx/distance*amount;
+ doctor.position.z+=dz/distance*amount;
+ const angle=Math.atan2(dx,dz);
+ const diff=Math.atan2(Math.sin(angle-doctor.rotation.y),
+  Math.cos(angle-doctor.rotation.y));
+ doctor.rotation.y+=diff*Math.min(1,step*6);
+ rig.walk=true;
+ return false
+}
+function updateDoctorIndoorRounds(dt){
+ const step=Math.max(0,Math.min(dt,.075));
+ const appointment=registrationScene.phase==='toDoctor'||
+  registrationScene.phase==='exam';
+ for(const [key,doctor] of [['primary',generalPractitioner],
+                             ['secondary',secondClinicDoctor]]){
+  if(!doctor)continue;
+  const rig=doctor.userData.characterRig;
+  rig.walk=false;
+  if(!doctor.visible||!step)continue;
+  const state=doctorIndoorState[key];
+  if(key==='primary'&&appointment){
+   // Wait beside the examination chair, not inside the patient or the desk.
+   // The treatment animation and consultation continue unchanged.
+   state.pause=1.5;
+   const arrived=moveDoctorIndoors(doctor,[1.07,-.18],step*.90);
+   if(arrived){
+    // Both the patient and the room may have been moved by the player.
+    const patientWorld=registrationScene.patient.getWorldPosition(new THREE.Vector3());
+    const local=doctor.parent.worldToLocal(patientWorld);
+    const targetAngle=Math.atan2(local.x-doctor.position.x,
+     local.z-doctor.position.z);
+    const turn=Math.atan2(Math.sin(targetAngle-doctor.rotation.y),
+     Math.cos(targetAngle-doctor.rotation.y));
+    doctor.rotation.y+=turn*Math.min(1,step*5)
+   }
+   continue
+  }
+  if(state.pause>0){
+   state.pause=Math.max(0,state.pause-step);
+   continue
+  }
+  const route=doctorIndoorRoutes[key],goal=route[state.index];
+  if(moveDoctorIndoors(doctor,goal,step*(key==='primary'?.72:.64))){
+   state.index=(state.index+1)%route.length;
+   // Short natural pauses: glance at the desk, tidy supplies, look around.
+   state.pause=state.index%3===0?1.7:.75
+  }
+ }
+}
 function animateGeneralPractice(elapsed){
  if(!generalPractitioner)return;
  const rig=generalPractitioner.userData.characterRig;
@@ -2910,10 +2981,20 @@ function animateGeneralPractice(elapsed){
  generalDoctorBubble.visible=examining;
  rig.arms[1].rotation.z=examining
   ?-.48+Math.sin(elapsed*3.1)*.15
+  :rig.walk?.11+Math.sin(elapsed*9.2+rig.idleSeed)*.08
   :.08+Math.sin(elapsed*1.7)*.03;
  rig.arms[1].rotation.x=examining
-  ?.16+Math.sin(elapsed*2.6)*.14:.04;
- if(examining)rig.head.rotation.y=Math.sin(elapsed*1.6)*.06
+  ?.16+Math.sin(elapsed*2.6)*.14
+  :rig.walk?Math.sin(elapsed*9.2+rig.idleSeed)*.24:.04;
+ if(examining)rig.head.rotation.y=Math.sin(elapsed*1.6)*.06;
+ if(secondClinicDoctor&&secondClinicDoctor.visible){
+  const secondRig=secondClinicDoctor.userData.characterRig;
+  secondRig.arms[1].rotation.x=secondRig.walk
+   ?Math.sin(elapsed*9.2+secondRig.idleSeed)*.24:.04;
+  secondRig.arms[1].rotation.z=secondRig.walk
+   ?.11+Math.sin(elapsed*9.2+secondRig.idleSeed)*.08
+   :.08+Math.sin(elapsed*1.7)*.03
+ }
 }
 // Outdoor detail to suggest future expansion, without prematurely adding new departments.
 for(const [x,z] of [[-8,-2],[-8,2],[8,-2],[8,3],[-7,-5.8],[7.4,-5.9]]){
@@ -4281,6 +4362,7 @@ function animate(time=0){
  registrationLastTime=time;
  advanceClinicMonthClock(seconds);
  updateRegistrationScene(seconds,time/1000);
+ updateDoctorIndoorRounds(seconds);
  updateAmbientActors(seconds,time/1000);
  updateVendingShoppers(seconds,time/1000);
  updateClinicCleaning(seconds,time/1000);
