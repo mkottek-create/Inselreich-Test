@@ -162,6 +162,7 @@ body.furniture-active #stage{height:53dvh;min-height:275px;max-height:520px}
  <span id="clinicCleaningStatus"> · Reinigungskraft im Personalbüro einstellbar</span>
 </div>
 <div id="patientEconomy" aria-label="Bezahlte Patienten und Behandlungseinnahmen">
+ <span id="patientFlowHud">👥 Patienten: 0 · 🪑 Warten: 0 · 🩺 Behandlung: 0</span>
  <span>💳 Patienten bezahlt: <strong id="patientPaidCount">0</strong></span>
  <span>🩺 Behandlungen: <strong id="patientIncome">0,00 €</strong></span>
  <span>⭐ Trinkgeld: <strong id="patientTips">0,00 €</strong></span>
@@ -2703,69 +2704,158 @@ addAmbientActor(visitor(-.25,-6.42,mat(0xe6c67c),.85,0),'patrol',[
  [-.25,-6.42],[.21,-7.63],[.23,-8.46],[-.20,-8.04]]);
 // One first patient repeatedly demonstrates a simple registration workflow.
 // Existing static visitors remain unchanged; no new furniture/save data is used.
-const firstPatient=visitor(0,8.04,mat(0xf2b776),.88,Math.PI);
-firstPatient.name='Erster Patient – Anmeldung';
-const registrationScene={phase:'approach',wait:0,waypoint:0,
- lastPos:new THREE.Vector3(),patient:firstPatient,
- waitingSeconds:0,pendingFeeCents:0,pendingBonusCents:0,
- paymentPaid:false,paymentTime:0};
-const registrationWaitingPath=[
- new THREE.Vector3(0,0,6.45),
- new THREE.Vector3(2.06,0,6.05),
- new THREE.Vector3(2.80,0,4.60)
+// Several real patients can register, wait, be examined and pay at once.
+// Reuse six cartoon avatars (rather than endlessly creating 3D geometry)
+// so the game remains comfortable on iPhone and older phones.
+const firstPatient=visitor(0,8.35,mat(0xf2b776),.88,Math.PI);
+firstPatient.name='Patient 1';
+const patientActors=[firstPatient];
+for(const color of [0x8ec7db,0xeeb3ba,0x8fd6ae,0xf2ce8c,0xc9abe6]){
+ const actor=visitor(0,8.35,mat(color),.84,Math.PI,'patient');
+ actor.name='Klinikpatient '+(patientActors.length+1);
+ patientActors.push(actor)
+}
+for(const actor of patientActors)actor.visible=false;
+const clinicPatientFlow={
+ max:6,active:[],desk:null,doctors:[null,null],
+ nextId:1,arrivalTimer:0,hudTimer:0,finished:0
+};
+// The two existing coffee-shop guests still use their chairs, so the four
+// remaining chairs are available for actual appointments.
+const clinicWaitingChairs=[
+ {x:-1.93,z:1.52,rotation:Math.PI}, // front-left row
+ {x:.07,z:1.52,rotation:Math.PI},
+ {x:-.93,z:-1.02,rotation:0},
+ {x:.07,z:-1.02,rotation:0}
 ];
-function generalRoomWorld(x,z){
- const room=roomGroups.get('treatment');
- return room?room.localToWorld(new THREE.Vector3(x,0,z)):new THREE.Vector3(x-4.05,0,z-1.4)
+const clinicStandingSpots=[
+ {x:-1.85,z:.18},{x:.99,z:.22}
+];
+const registrationScene={phase:'idle',patient:firstPatient}; // doctor animation compatibility
+function patientRoomWorld(id,x,z){
+ const root=roomGroups.get(id);
+ return root?root.localToWorld(new THREE.Vector3(x,0,z)):
+  new THREE.Vector3(x+(id==='treatment2'?4.05:id==='waiting'?4.35:-4.05),
+   0,z+(id==='waiting'?4.1:-1.4))
+}
+function generalRoomWorld(x,z,doctorIndex=0){
+ return patientRoomWorld(doctorIndex===1?'treatment2':'treatment',x,z)
 }
 function registrationGoal(){
- // Transform the counter-front position so moving / rotating the reception
- // doesn't break the greeting scene.
  return receptionDesk.localToWorld(new THREE.Vector3(0,0,1.52))
 }
-function generalVisitPath(){
- const room=roomSpecs.find(r=>r.id==='treatment');
- return [
+function clinicLinePosition(index){
+ // Queue opposite the counter in the open foyer, clear of the main entrance.
+ return new THREE.Vector3(-2.20+Math.min(index,3)*.70,0,
+  7.03+Math.min(index,3)*.12)
+}
+function clinicWaitPosition(index){
+ if(index<clinicWaitingChairs.length){
+  const spot=clinicWaitingChairs[index];
+  return patientRoomWorld('waiting',spot.x,spot.z)
+ }
+ const spot=clinicStandingSpots[Math.min(index-clinicWaitingChairs.length,
+  clinicStandingSpots.length-1)];
+ return patientRoomWorld('waiting',spot.x,spot.z)
+}
+function clinicVisitPath(doctorIndex){
+ const room=roomSpecs.find(r=>r.id=== (doctorIndex===1?'treatment2':'treatment'));
+ const corridorZ=room?.z??-1.4;
+ return doctorIndex===1?[
+  new THREE.Vector3(1.15,0,4.72),
+  new THREE.Vector3(.04,0,4.15),
+  new THREE.Vector3(.04,0,corridorZ),
+  generalRoomWorld(-2.95,0,1),
+  generalRoomWorld(-1.95,0,1),
+  generalRoomWorld(-1.16,.28,1)
+ ]:[
   new THREE.Vector3(1.04,0,4.65),
   new THREE.Vector3(.04,0,4.15),
-  new THREE.Vector3(.04,0,room?.z??-1.4),
-  generalRoomWorld(2.95,0),   // corridor-side approach to the real doorway
-  generalRoomWorld(1.95,0),   // walk through the door
-  generalRoomWorld(.95,.66)  // stop beside the examination chair
+  new THREE.Vector3(.04,0,corridorZ),
+  generalRoomWorld(2.95,0,0),
+  generalRoomWorld(1.95,0,0),
+  generalRoomWorld(.95,.66,0)
  ]
 }
-function generalPaymentPath(){
- const room=roomSpecs.find(r=>r.id==='treatment');
+function clinicPaymentPath(doctorIndex){
+ const room=roomSpecs.find(r=>r.id=== (doctorIndex===1?'treatment2':'treatment'));
+ const corridorZ=room?.z??-1.4;
  return [
-  generalRoomWorld(1.95,0),
-  generalRoomWorld(2.95,0),
-  new THREE.Vector3(.04,0,room?.z??-1.4),
+  generalRoomWorld(doctorIndex===1?-1.95:1.95,0,doctorIndex),
+  generalRoomWorld(doctorIndex===1?-2.95:2.95,0,doctorIndex),
+  new THREE.Vector3(.04,0,corridorZ),
   new THREE.Vector3(.04,0,4.65),
-  new THREE.Vector3(.04,0,6.85),
-  registrationGoal()
+  new THREE.Vector3(-2.22,0,6.80)
  ]
 }
-function generalExitPath(){
+function clinicExitPath(){
  return [
-  new THREE.Vector3(0,0,7.57),
-  new THREE.Vector3(0,0,8.80)
+  new THREE.Vector3(-.30,0,7.46),
+  new THREE.Vector3(0,0,8.88)
  ]
+}
+function moveClinicPatient(patient,target,step){
+ const actor=patient.actor;
+ const dx=target.x-actor.position.x,dz=target.z-actor.position.z;
+ const distance=Math.hypot(dx,dz);
+ if(distance<=.055)return true;
+ const distanceMoved=Math.min(distance,step);
+ actor.position.x+=dx/distance*distanceMoved;
+ actor.position.z+=dz/distance*distanceMoved;
+ actor.rotation.y=Math.atan2(dx,dz);
+ actor.userData.characterRig.walk=true;
+ return false
+}
+function walkClinicPath(patient,path,speed){
+ const target=path[patient.waypoint];
+ if(!target)return true;
+ if(moveClinicPatient(patient,target,speed)){
+  patient.waypoint++;
+  return patient.waypoint>=path.length
+ }
+ return false
+}
+function setClinicPatientState(patient,state,seconds=0){
+ patient.phase=state;patient.timer=seconds;patient.waypoint=0
+}
+function clinicFindFreeSeat(){
+ const occupied=new Set(clinicPatientFlow.active
+  .filter(p=>p.seatIndex!==null).map(p=>p.seatIndex));
+ for(let i=0;i<clinicWaitingChairs.length+clinicStandingSpots.length;i++)
+  if(!occupied.has(i))return i;
+ return null
+}
+function spawnClinicPatient(){
+ const flow=clinicPatientFlow;
+ if(flow.active.length>=flow.max)return false;
+ const occupied=new Set(flow.active.map(p=>p.actor));
+ const actor=patientActors.find(a=>!occupied.has(a));
+ if(!actor)return false;
+ const id=flow.nextId++;
+ const patient={id,actor,phase:'arriving',timer:0,waypoint:0,
+  seatIndex:null,doctorIndex:null,waitingSeconds:0,
+  pendingFeeCents:0,pendingBonusCents:0,paymentPaid:false,
+  paymentTime:0};
+ actor.position.set(-.23+(id%3)*.23,.18,8.58);
+ actor.rotation.y=Math.PI;actor.visible=true;
+ actor.userData.ambientMotion=null;
+ flow.active.push(patient);
+ return true
 }
 function settlePatientBill(state,elapsed){
- // Charging happens at exactly one point: at the desk, after treatment.
- // Existing income at the doctor's office is intentionally removed.
+ // The doctor does not credit anything: only the real checkout does.
  if(state.paymentPaid||!clinicHasStaff('assistant')||
-  !Number.isSafeInteger(state.pendingFeeCents)||state.pendingFeeCents<=0)return false;
+  !Number.isSafeInteger(state.pendingFeeCents)||
+  state.pendingFeeCents<=0)return false;
  state.paymentPaid=true;
- const fee=state.pendingFeeCents;
- const bonus=state.pendingBonusCents;
- const total=fee+bonus;
+ const total=state.pendingFeeCents+state.pendingBonusCents;
  clinicStaffState.patientsPaid++;
  clinicStaffState.patientIncomeCents+=total;
- clinicStaffState.tipsEarnedCents+=bonus;
+ clinicStaffState.tipsEarnedCents+=state.pendingBonusCents;
  receiveClinicIncome(total,'💳 Patient bezahlt');
- showPatientPayments('💳 +'+euros.format(total/100)+(bonus?' · ⭐ +'+euros.format(bonus/100):''));
- const label='+'+euros.format(total/100)+(bonus?' ⭐':'');
+ showPatientPayments('💳 +'+euros.format(total/100)+
+  (state.pendingBonusCents?' · ⭐ +'+euros.format(state.pendingBonusCents/100):''));
+ const label='+'+euros.format(total/100)+(state.pendingBonusCents?' ⭐':'');
  let texture=paymentBubbleLabels.get(label);
  if(!texture){
   texture=labelTexture(label,'#17694e','#fff5c8',52);
@@ -2776,132 +2866,201 @@ function settlePatientBill(state,elapsed){
  state.paymentTime=elapsed;
  return true
 }
-function moveRegistrationPatient(target,step){
- const person=registrationScene.patient;
- const dx=target.x-person.position.x,dz=target.z-person.position.z;
- const remaining=Math.hypot(dx,dz);
- if(remaining>.05){
-  const moved=Math.min(remaining,step);
-  if(person.userData.characterRig)person.userData.characterRig.walk=true;
-  person.position.x+=dx/remaining*moved;
-  person.position.z+=dz/remaining*moved;
-  person.rotation.y=Math.atan2(dx,dz);
-  return false
+function clinicPatientCounter(){
+ const flow=clinicPatientFlow,waiting=flow.active.filter(p=>
+  p.phase==='seated'||p.phase==='waitingStanding'||p.phase==='toSeat').length;
+ const treatment=flow.doctors.filter(Boolean).length;
+ const payment=flow.active.filter(p=>['toPayment','readyToPay',
+  'toCheckout','checkout','paid'].includes(p.phase)).length;
+ document.getElementById('patientFlowHud').textContent=
+  '👥 In der Klinik: '+flow.active.length+
+  ' · 🪑 Warten: '+waiting+
+  ' · 🩺 Arzt: '+treatment+
+  (payment?' · 💳 Kasse: '+payment:'')
+}
+function clinicAssignReception(){
+ const flow=clinicPatientFlow;
+ if(flow.desk||!clinicHasStaff('assistant'))return;
+ // Returning patients pay first, then the next newly arrived patient.
+ const paying=flow.active.filter(p=>p.phase==='readyToPay')
+  .sort((a,b)=>a.id-b.id)[0];
+ if(paying){
+  flow.desk=paying;setClinicPatientState(paying,'toCheckout');
+  return
  }
- return true
+ const next=flow.active.filter(p=>p.phase==='queue')
+  .sort((a,b)=>a.id-b.id)[0];
+ if(next){
+  flow.desk=next;setClinicPatientState(next,'toRegistration')
+ }
+}
+function clinicAssignDoctors(){
+ const flow=clinicPatientFlow;
+ const staff=clinicEmployees('doctor');
+ for(let i=0;i<Math.min(2,staff.length);i++){
+  if(flow.doctors[i])continue;
+  const next=flow.active.filter(p=>p.phase==='seated'||
+   p.phase==='waitingStanding').sort((a,b)=>a.id-b.id)[0];
+  if(!next)continue;
+  flow.doctors[i]=next;
+  next.doctorIndex=i;
+  next.seatIndex=null;next.actor.userData.ambientMotion=null;
+  setClinicPatientState(next,'toDoctor')
+ }
 }
 function updateRegistrationScene(delta,elapsed){
- const sceneState=registrationScene,person=sceneState.patient;
- if(person.userData.characterRig)person.userData.characterRig.walk=false;
- const speed=1.30*Math.min(.08,Math.max(0,delta));
- // Welcome at the desk and show a little animated wave.
- receptionist.position.y=.18+Math.sin(elapsed*2.1)*.013;
- receptionWave.rotation.z=sceneState.phase==='greet'
-  ?-1.75+Math.sin(elapsed*7)*.28
-  :sceneState.phase==='checkout'||sceneState.phase==='paid'
-   ?-.57+Math.sin(elapsed*5)*.10
-   :-.13+Math.sin(elapsed*2.8)*.04;
- greetingBubble.visible=clinicHasStaff('assistant')&&sceneState.phase==='greet';
- paymentBubble.visible=clinicHasStaff('assistant')&&sceneState.phase==='paid';
- if(paymentBubble.visible)paymentBubble.position.y=
-  1.97+Math.min(.20,(elapsed-sceneState.paymentTime)*.065);
- if(sceneState.phase==='approach'){
-  if(!clinicHasStaff('assistant'))return;
-  if(moveRegistrationPatient(registrationGoal(),speed)){
-   sceneState.phase='greet';sceneState.wait=2.9;
-  }
- }else if(sceneState.phase==='greet'){
-  const counter=receptionDesk.localToWorld(new THREE.Vector3(0,0,0));
-  person.rotation.y=Math.atan2(counter.x-person.position.x,
-   counter.z-person.position.z);
-  sceneState.wait-=delta;
-  if(sceneState.wait<=0){
-   sceneState.phase='waiting';sceneState.waypoint=0
-  }
- }else if(sceneState.phase==='waiting'){
-  const goal=registrationWaitingPath[sceneState.waypoint];
-  if(moveRegistrationPatient(goal,speed)){
-   sceneState.waypoint++;
-   if(sceneState.waypoint>=registrationWaitingPath.length){
-    sceneState.phase='seated';sceneState.wait=5;
-    person.rotation.y=Math.PI
-   }
-  }
- }else if(sceneState.phase==='seated'){
-  // Long queues reduce the chance of a happy bonus.
-  sceneState.waitingSeconds+=delta;
-  sceneState.wait-=delta;
-  if(sceneState.wait<=0&&clinicHasStaff('doctor')){
-   sceneState.phase='toDoctor';sceneState.waypoint=0
-  }
- }else if(sceneState.phase==='toDoctor'){
-  if(!clinicHasStaff('doctor'))return;
-  const path=generalVisitPath();
-  if(moveRegistrationPatient(path[sceneState.waypoint],speed)){
-   sceneState.waypoint++;
-   if(sceneState.waypoint>=path.length){
-    sceneState.phase='exam';sceneState.wait=8.5
-   }
-  }
- }else if(sceneState.phase==='exam'){
-  if(!clinicHasStaff('doctor'))return;
-  // Small face-to-face consultation while the doctor gestures and nods.
-  const doctor=generalPractitioner;
-  if(doctor){
-   const worldPos=doctor.getWorldPosition(new THREE.Vector3());
-   person.rotation.y=Math.atan2(worldPos.x-person.position.x,
-    worldPos.z-person.position.z)
-  }
-  sceneState.wait-=delta;
-  if(sceneState.wait<=0){
-   sceneState.pendingFeeCents=clinicTreatmentFeeCents();
-   // Better doctors and a short wait make occasional 2–5 € tips possible.
-   const stars=clinicBestDoctorStars();
-   const eligible=stars>=3&&sceneState.waitingSeconds<9&&
-    clinicStaffState.cleanliness>=55&&
-    (clinicStaffState.patientsPaid+1)%3!==0;
-   sceneState.pendingBonusCents=eligible
-    ?(2+(stars+clinicStaffState.patientsPaid)%4)*100:0;
-   sceneState.paymentPaid=false;
-   sceneState.phase='toPayment';sceneState.waypoint=0
-  }
- }else if(sceneState.phase==='toPayment'){
-  const path=generalPaymentPath();
-  if(moveRegistrationPatient(path[sceneState.waypoint],speed)){
-   sceneState.waypoint++;
-   if(sceneState.waypoint>=path.length){
-    sceneState.phase='checkout';sceneState.wait=.8
-   }
-  }
- }else if(sceneState.phase==='checkout'){
-  const counter=receptionDesk.localToWorld(new THREE.Vector3(0,0,0));
-  person.rotation.y=Math.atan2(counter.x-person.position.x,
-   counter.z-person.position.z);
-  if(clinicHasStaff('assistant')){
-   sceneState.wait-=delta;
-   if(sceneState.wait<=0&&settlePatientBill(sceneState,elapsed)){
-    sceneState.phase='paid';sceneState.wait=2.7
-   }
-  }
- }else if(sceneState.phase==='paid'){
-  sceneState.wait-=delta;
-  if(sceneState.wait<=0){
-   sceneState.phase='leaving';sceneState.waypoint=0
-  }
- }else if(sceneState.phase==='leaving'){
-  const path=generalExitPath();
-  if(moveRegistrationPatient(path[sceneState.waypoint],speed)){
-   sceneState.waypoint++;
-   if(sceneState.waypoint>=path.length){
-    person.position.set(0,.18,8.04);
-    sceneState.phase='approach';
-    sceneState.waypoint=0;sceneState.wait=0;
-    sceneState.waitingSeconds=0;sceneState.pendingFeeCents=0;
-    sceneState.pendingBonusCents=0;sceneState.paymentPaid=false
-   }
-  }
+ const flow=clinicPatientFlow,step=Math.min(.075,Math.max(0,delta));
+ if(!step)return;
+ flow.arrivalTimer-=step;
+ if(flow.arrivalTimer<=0&&flow.active.length<flow.max){
+  spawnClinicPatient();
+  flow.arrivalTimer=6.2+(flow.nextId%4)*1.3
  }
- person.position.y=.18;
+ // Desk is shared by all patients, but the assistant never processes two
+ // registration / payment transactions at once.
+ clinicAssignReception();
+ clinicAssignDoctors();
+ const line=flow.active.filter(p=>p.phase==='arriving'||p.phase==='queue')
+  .sort((a,b)=>a.id-b.id);
+ const speed=1.34*step;
+ for(const patient of flow.active.slice()){
+  const actor=patient.actor,rig=actor.userData.characterRig;
+  rig.walk=false;
+  const phase=patient.phase;
+  if(phase==='arriving'||phase==='queue'){
+   const lineIndex=line.indexOf(patient);
+   if(moveClinicPatient(patient,clinicLinePosition(lineIndex),speed))
+    patient.phase='queue';
+  }else if(phase==='toRegistration'){
+   if(moveClinicPatient(patient,registrationGoal(),speed))
+    setClinicPatientState(patient,'registering',2.0)
+  }else if(phase==='registering'){
+   patient.timer-=step;
+   const counter=receptionDesk.localToWorld(new THREE.Vector3(0,0,0));
+   actor.rotation.y=Math.atan2(counter.x-actor.position.x,
+    counter.z-actor.position.z);
+   if(patient.timer<=0){
+    const seat=clinicFindFreeSeat();
+    if(seat!==null){
+     patient.seatIndex=seat;
+     setClinicPatientState(patient,'toSeat')
+    }else setClinicPatientState(patient,'waitingStanding');
+    if(flow.desk===patient)flow.desk=null
+   }
+  }else if(phase==='toSeat'){
+   const seat=patient.seatIndex;
+   if(seat===null){setClinicPatientState(patient,'waitingStanding');continue}
+   const spot=clinicWaitPosition(seat);
+   const walkPath=[
+    new THREE.Vector3(0,0,6.46),
+    new THREE.Vector3(1.56,0,6.35),
+    spot
+   ];
+   if(walkClinicPath(patient,walkPath,speed)){
+    const chair=clinicWaitingChairs[seat];
+    if(chair){
+     setClinicPatientState(patient,'seated');
+     actor.rotation.y=chair.rotation;
+     actor.userData.ambientMotion={mode:'seated'}
+    }else setClinicPatientState(patient,'waitingStanding')
+   }
+  }else if(phase==='seated'||phase==='waitingStanding'){
+   patient.waitingSeconds+=step;
+   if(phase==='waitingStanding'&&patient.seatIndex!==null){
+    const nextSeat=clinicWaitingChairs[patient.seatIndex];
+    if(nextSeat){
+     const spot=clinicWaitPosition(patient.seatIndex);
+     if(moveClinicPatient(patient,spot,speed)){
+      setClinicPatientState(patient,'seated');
+      actor.rotation.y=nextSeat.rotation;
+      actor.userData.ambientMotion={mode:'seated'}
+     }
+    }
+   }
+  }else if(phase==='toDoctor'){
+   if(clinicEmployees('doctor').length<=patient.doctorIndex)continue;
+   if(walkClinicPath(patient,clinicVisitPath(patient.doctorIndex),speed))
+    setClinicPatientState(patient,'exam',8.3)
+  }else if(phase==='exam'){
+   if(clinicEmployees('doctor').length<=patient.doctorIndex)continue;
+   const physician=patient.doctorIndex===1?secondClinicDoctor:generalPractitioner;
+   if(physician){
+    const pos=physician.getWorldPosition(new THREE.Vector3());
+    actor.rotation.y=Math.atan2(pos.x-actor.position.x,
+     pos.z-actor.position.z)
+   }
+   patient.timer-=step;
+   if(patient.timer<=0){
+    const doc=clinicEmployees('doctor')[patient.doctorIndex];
+    // Billing is locked to the doctor who performed this examination.
+    patient.pendingFeeCents=(doc?.fee||0)*100;
+    const stars=doc?.stars||0;
+    const eligible=stars>=3&&patient.waitingSeconds<18&&
+     clinicStaffState.cleanliness>=55&&
+     (patient.id%3)!==0;
+    patient.pendingBonusCents=eligible?(2+(stars+patient.id)%4)*100:0;
+    setClinicPatientState(patient,'toPayment')
+   }
+  }else if(phase==='toPayment'){
+   const path=clinicPaymentPath(patient.doctorIndex);
+   if(walkClinicPath(patient,path,speed))
+    setClinicPatientState(patient,'readyToPay');
+   // Release doctor only AFTER the patient leaves through the doorway.
+   if(patient.waypoint>=3&&flow.doctors[patient.doctorIndex]===patient)
+    flow.doctors[patient.doctorIndex]=null
+  }else if(phase==='readyToPay'){
+   const paying=flow.active.filter(p=>p.phase==='readyToPay');
+   const rank=paying.sort((a,b)=>a.id-b.id).indexOf(patient);
+   const stand=new THREE.Vector3(-2.22+rank*.48,0,6.8+rank*.12);
+   moveClinicPatient(patient,stand,speed*.66)
+  }else if(phase==='toCheckout'){
+   if(moveClinicPatient(patient,registrationGoal(),speed))
+    setClinicPatientState(patient,'checkout',.95)
+  }else if(phase==='checkout'){
+   if(clinicHasStaff('assistant')){
+    patient.timer-=step;
+    if(patient.timer<=0&&settlePatientBill(patient,elapsed))
+     setClinicPatientState(patient,'paid',1.85)
+   }
+  }else if(phase==='paid'){
+   patient.timer-=step;
+   if(patient.timer<=0){
+    if(flow.desk===patient)flow.desk=null;
+    setClinicPatientState(patient,'leaving')
+   }
+  }else if(phase==='leaving'){
+   if(walkClinicPath(patient,clinicExitPath(),speed)){
+    // The patient really leaves before their 3D avatar can be reused.
+    if(flow.desk===patient)flow.desk=null;
+    for(let i=0;i<2;i++)
+     if(flow.doctors[i]===patient)flow.doctors[i]=null;
+    actor.visible=false;actor.userData.ambientMotion=null;
+    actor.userData.characterRig.walk=false;
+    flow.active.splice(flow.active.indexOf(patient),1);
+    flow.finished++
+   }
+  }
+  actor.position.y=.18
+ }
+ // Existing receptionist greetings + successful payment animation.
+ const atDesk=flow.desk;
+ receptionist.position.y=.18+Math.sin(elapsed*2.1)*.013;
+ const greeting=atDesk?.phase==='registering';
+ const paying=atDesk?.phase==='checkout'||atDesk?.phase==='paid';
+ receptionWave.rotation.z=greeting?-1.75+Math.sin(elapsed*7)*.28:
+  paying?-.57+Math.sin(elapsed*5)*.10:
+  -.13+Math.sin(elapsed*2.8)*.04;
+ greetingBubble.visible=clinicHasStaff('assistant')&&greeting;
+ paymentBubble.visible=clinicHasStaff('assistant')&&atDesk?.phase==='paid';
+ if(paymentBubble.visible)paymentBubble.position.y=
+  1.97+Math.min(.20,(elapsed-atDesk.paymentTime)*.065);
+ // The doctors use their own assigned patient rather than a global singleton.
+ registrationScene.patient=flow.doctors[0]?.actor||firstPatient;
+ registrationScene.phase=flow.doctors[0]?.phase||'idle';
+ flow.hudTimer+=step;
+ if(flow.hudTimer>=.5){
+  flow.hudTimer=0;clinicPatientCounter()
+ }
 }
 // Doctors have their own short indoor rounds (in each room's LOCAL
 // coordinates), so moving a treatment room keeps its doctor and route together.
