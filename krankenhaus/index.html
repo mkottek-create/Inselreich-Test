@@ -948,6 +948,9 @@ const characterPalettes=[
  {skin:0xe7b590,hair:0xc89455,pants:0x557582,iris:0x567866,style:'ponytail'},
  {skin:0x9c6a54,hair:0x292e38,pants:0x67526b,iris:0x806947,style:'cropped'}
 ];
+// Keep all hospital people in proportion with their rooms on mobile.
+// Applies to every patient, doctor, assistant and cleaning employee.
+const personSizeFactor=.82;
 function visitor(x,z,shirt=teal,scale=1,angle=0,role='patient'){
  const variant=characterSerial++;
  const profile=characterPalettes[variant%characterPalettes.length];
@@ -967,7 +970,8 @@ function visitor(x,z,shirt=teal,scale=1,angle=0,role='patient'){
  const badge=mat(0xf7d385,.75);
  const coat=mat(0xf3f6f2,.85);
  const g=new THREE.Group();g.name=role==='doctor'?'Arzt Allgemeinmedizin':role==='cleaner'?'🧹 Reinigungskraft':staff?'Empfangsdame':'Patientenfigur';
- g.position.set(x,.18,z);g.rotation.y=angle;g.scale.setScalar(scale);group.add(g);
+ g.position.set(x,.18,z);g.rotation.y=angle;
+ g.scale.setScalar(scale*personSizeFactor);group.add(g);
  function oval(radius,x,y,z,sx,sy,sz,material,parent=g){
   const o=new THREE.Mesh(new THREE.SphereGeometry(radius,12,9),material);
   o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.castShadow=true;
