@@ -53,6 +53,7 @@ body.fly-active #topLegend,body.fly-active #roomInfo{display:none!important}
 #clinicFinanceMessage{flex-basis:100%;font-size:11px;text-align:center;color:#956a29}
 #patientEconomy{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:5px 15px;padding:8px 12px;background:#fff9e9;color:#6d613f;border-bottom:1px solid #e9d7ae;font-size:12px;font-weight:750;font-variant-numeric:tabular-nums}
 #patientEconomy strong{font-weight:900;color:#277d67}
+#patientFlowHud{flex-basis:100%;text-align:center;font-weight:950;color:#246b61;background:#fff4d1;border-radius:8px;padding:4px 5px;font-size:11px}
 #patientLastPayment{font-weight:900;color:#b67e30}
 #toggleStaff{width:calc(100% - 24px);margin:10px 12px 7px;background:#3e749b;color:white;border:0;border-radius:13px;padding:13px;font-weight:900;font-size:15px;min-height:49px;cursor:pointer}
 #toggleStaff.active{background:#c88b40}
@@ -2908,6 +2909,26 @@ function clinicAssignDoctors(){
   setClinicPatientState(next,'toDoctor')
  }
 }
+function requeuePatientWithoutDoctor(patient){
+ const flow=clinicPatientFlow;
+ if(patient.doctorIndex!==null&&flow.doctors[patient.doctorIndex]===patient)
+  flow.doctors[patient.doctorIndex]=null;
+ patient.doctorIndex=null;
+ const seat=clinicFindFreeSeat();
+ patient.seatIndex=seat;
+ if(seat!==null){
+  const spot=clinicWaitPosition(seat);
+  patient.actor.position.set(spot.x,.18,spot.z);
+  const chair=clinicWaitingChairs[seat];
+  setClinicPatientState(patient,chair?'seated':'waitingStanding');
+  patient.actor.rotation.y=chair?.rotation??Math.PI;
+  patient.actor.userData.ambientMotion=chair?{mode:'seated'}:null
+ }else{
+  patient.actor.position.set(1.8,.18,4.3);
+  patient.actor.userData.ambientMotion=null;
+  setClinicPatientState(patient,'waitingStanding')
+ }
+}
 function updateRegistrationScene(delta,elapsed){
  const flow=clinicPatientFlow,step=Math.min(.075,Math.max(0,delta));
  if(!step)return;
@@ -2927,6 +2948,13 @@ function updateRegistrationScene(delta,elapsed){
   const actor=patient.actor,rig=actor.userData.characterRig;
   rig.walk=false;
   const phase=patient.phase;
+  if((phase==='toDoctor'||phase==='exam')&&
+    clinicEmployees('doctor').length<=patient.doctorIndex){
+   // If a doctor is dismissed mid-visit, reschedule rather than trap the
+   // patient forever in an unmanned room. No appointment is charged.
+   requeuePatientWithoutDoctor(patient);
+   continue
+  }
   if(phase==='arriving'||phase==='queue'){
    const lineIndex=line.indexOf(patient);
    if(moveClinicPatient(patient,clinicLinePosition(lineIndex),speed))
@@ -2935,6 +2963,7 @@ function updateRegistrationScene(delta,elapsed){
    if(moveClinicPatient(patient,registrationGoal(),speed))
     setClinicPatientState(patient,'registering',2.0)
   }else if(phase==='registering'){
+   if(!clinicHasStaff('assistant'))continue;
    patient.timer-=step;
    const counter=receptionDesk.localToWorld(new THREE.Vector3(0,0,0));
    actor.rotation.y=Math.atan2(counter.x-actor.position.x,
@@ -2983,11 +3012,9 @@ function updateRegistrationScene(delta,elapsed){
     }
    }
   }else if(phase==='toDoctor'){
-   if(clinicEmployees('doctor').length<=patient.doctorIndex)continue;
    if(walkClinicPath(patient,clinicVisitPath(patient.doctorIndex),speed))
     setClinicPatientState(patient,'exam',8.3)
   }else if(phase==='exam'){
-   if(clinicEmployees('doctor').length<=patient.doctorIndex)continue;
    const physician=patient.doctorIndex===1?secondClinicDoctor:generalPractitioner;
    if(physician){
     const pos=physician.getWorldPosition(new THREE.Vector3());
